@@ -1,0 +1,6 @@
+# Repo-weit einheitliche Unix-Zeilenenden erzwingen - unabhängig von lokalen
+# Git-Einstellungen (z. B. core.autocrlf auf Windows). Wichtig insbesondere für
+# docker-entrypoint.sh: eine CRLF-Shebang-Zeile ("#!/bin/sh\r") lässt den
+# Container beim Start mit "no such file or directory" fehlschlagen.
+* text=auto eol=lf
+*.sh text eol=lf
