@@ -4,6 +4,12 @@ import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
+  // Fest im Code statt nur per AUTH_TRUST_HOST-Umgebungsvariable, da sich
+  // Umgebungsvariablen-Änderungen in Container Manager (Synology) ohne
+  // vollständigen Image-Rebuild als unzuverlässig erwiesen haben. Ohne dies
+  // lehnt NextAuth im Produktionsmodus (NODE_ENV=production) Requests unter
+  // vom localhost abweichenden Hostnamen mit "UntrustedHost" ab.
+  trustHost: true,
   session: { strategy: "jwt" },
   pages: {
     signIn: "/login",

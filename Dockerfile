@@ -23,6 +23,13 @@ ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
+# Ohne openssl kann Prismas Migrations-Engine die libssl-Version nicht
+# erkennen ("Prisma failed to detect the libssl/openssl version") und
+# faellt auf eine Vermutung zurueck - funktioniert meist, ist aber unnoetig
+# unzuverlaessig.
+RUN apt-get update && apt-get install -y --no-install-recommends openssl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
 
 # Bewusst die komplette, unveränderte node_modules sowie den vollständigen
