@@ -210,6 +210,8 @@ model Song {
   timeSignature String?
   durationSec   Int?
   genre         String?
+  /// Original-Interpret bei Coversongs
+  artist        String?
   status        SongStatus @default(NEW)
   /// Bei automatischer Ablehnung durch einstimmiges Downvoting gesetzt (Status ARCHIVED)
   rejected      Boolean    @default(false)

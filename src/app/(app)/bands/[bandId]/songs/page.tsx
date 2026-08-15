@@ -95,7 +95,7 @@ export default async function SongsPage({
               <div>
                 <p className="font-medium text-foreground">{song.title}</p>
                 <p className="text-sm text-muted">
-                  {[song.key, song.bpm ? `${song.bpm} BPM` : null, song.genre]
+                  {[song.artist, song.key, song.bpm ? `${song.bpm} BPM` : null, song.genre]
                     .filter(Boolean)
                     .join(" · ") || "Keine weiteren Angaben"}
                 </p>

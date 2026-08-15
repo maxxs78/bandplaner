@@ -37,6 +37,7 @@ export default async function EditSongPage({
             timeSignature: song.timeSignature ?? "",
             durationSec: song.durationSec?.toString() ?? "",
             genre: song.genre ?? "",
+            artist: song.artist ?? "",
             status: song.status,
             lyrics: song.lyrics ?? "",
             remarks: song.remarks ?? "",

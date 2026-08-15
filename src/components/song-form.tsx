@@ -33,6 +33,7 @@ export function SongForm({
     timeSignature?: string;
     durationSec?: string;
     genre?: string;
+    artist?: string;
     status?: string;
     lyrics?: string;
     remarks?: string;
@@ -97,6 +98,15 @@ export function SongForm({
         <div>
           <Label htmlFor="genre">Genre</Label>
           <Input id="genre" name="genre" defaultValue={defaultValues?.genre} />
+        </div>
+        <div>
+          <Label htmlFor="artist">Interpret</Label>
+          <Input
+            id="artist"
+            name="artist"
+            placeholder="Original-Interpret bei Coversongs"
+            defaultValue={defaultValues?.artist}
+          />
         </div>
       </div>
 

@@ -66,6 +66,7 @@ export const songSchema = z.object({
   timeSignature: z.string().optional(),
   durationSec: z.coerce.number().int().positive().optional().or(z.literal("")),
   genre: z.string().optional(),
+  artist: z.string().optional(),
   status: z.enum(["PROPOSED", "NEW", "IN_PROGRESS", "STAGE_READY", "ACTIVE", "ARCHIVED"]),
   lyrics: z.string().optional(),
   remarks: z.string().optional(),

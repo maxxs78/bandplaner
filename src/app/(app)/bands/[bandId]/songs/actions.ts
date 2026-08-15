@@ -52,6 +52,7 @@ function parseSongForm(formData: FormData) {
     timeSignature: formData.get("timeSignature") || undefined,
     durationSec: totalSec > 0 ? totalSec : "",
     genre: formData.get("genre") || undefined,
+    artist: formData.get("artist") || undefined,
     status: formData.get("status"),
     lyrics: formData.get("lyrics") || undefined,
     remarks: formData.get("remarks") || undefined,
@@ -86,6 +87,7 @@ export async function createSongAction(
       timeSignature: d.timeSignature || null,
       durationSec: d.durationSec === "" ? null : d.durationSec,
       genre: d.genre || null,
+      artist: d.artist || null,
       status: isAdmin ? (d.status as SongStatus) : "PROPOSED",
       lyrics: d.lyrics || null,
       remarks: d.remarks || null,
@@ -134,6 +136,7 @@ export async function updateSongAction(
       timeSignature: d.timeSignature || null,
       durationSec: d.durationSec === "" ? null : d.durationSec,
       genre: d.genre || null,
+      artist: d.artist || null,
       status,
       // "Abgelehnt"-Markierung nur relevant, solange der Song archiviert bleibt
       rejected: status === "ARCHIVED" ? undefined : false,

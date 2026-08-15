@@ -187,6 +187,7 @@ export default async function SongDetailPage({
           <Info label="Taktart" value={song.timeSignature} />
           <Info label="Dauer" value={formatDuration(song.durationSec)} />
           <Info label="Genre" value={song.genre} />
+          <Info label="Interpret" value={song.artist} />
         </dl>
         {song.remarks && (
           <div className="mt-4">
