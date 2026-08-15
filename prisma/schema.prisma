@@ -1,0 +1,390 @@
+// Bandplaner - Datenmodell für die Kernmodule
+// Auth, Bands/Rollen, Kalender, Verfügbarkeiten, Songs, Setlisten
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  ADMIN
+  FINANCE_ADMIN
+  MEMBER
+  GUEST
+}
+
+enum AvailabilityStatus {
+  YES
+  NO
+  MAYBE
+}
+
+enum EventType {
+  REHEARSAL
+  GIG
+  MEETING
+  OTHER
+}
+
+enum SongStatus {
+  PROPOSED
+  NEW
+  IN_PROGRESS
+  STAGE_READY
+  ACTIVE
+  ARCHIVED
+}
+
+enum FileVisibility {
+  PRIVATE
+  BAND
+}
+
+enum VoteValue {
+  UP
+  DOWN
+}
+
+enum BandFileCategory {
+  NOTES
+  CONTRACTS
+  PHOTOS
+  RECORDINGS
+  OTHER
+}
+
+enum BandFileVisibility {
+  INTERNAL
+  PUBLIC
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  createdAt    DateTime @default(now())
+
+  memberships    Membership[]
+  availabilities Availability[]
+  absences       Absence[]
+  songNotes      SongNote[]
+  createdEvents  Event[]        @relation("EventCreatedBy")
+  eventParticipations EventParticipant[]
+  invitationsSent Invitation[]  @relation("InvitationInvitedBy")
+  setlistNotes           SetlistNote[]
+  setlistItemAnnotations SetlistItemAnnotation[]
+  uploadedSongFiles      SongFile[]
+  songVotes              SongVote[]
+  proposedSongs          Song[]                  @relation("SongProposedBy")
+  uploadedBandFiles      BandFile[]
+}
+
+model Band {
+  id           String   @id @default(cuid())
+  name         String
+  imageUrl     String?
+  genre        String?
+  bio          String?
+  location     String?
+  contactEmail String?
+  websiteUrl   String?
+  instagramUrl String?
+  facebookUrl  String?
+  spotifyUrl   String?
+  createdAt    DateTime @default(now())
+
+  memberships Membership[]
+  events      Event[]
+  songs       Song[]
+  setlists    Setlist[]
+  absences    Absence[]
+  invitations Invitation[]
+  files       BandFile[]
+}
+
+model Membership {
+  id         String    @id @default(cuid())
+  role       Role      @default(MEMBER)
+  guestUntil DateTime?
+  createdAt  DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  @@unique([userId, bandId])
+}
+
+model Invitation {
+  id         String    @id @default(cuid())
+  email      String
+  role       Role      @default(MEMBER)
+  guestUntil DateTime?
+  token      String    @unique @default(cuid())
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  band     Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId   String
+
+  invitedBy   User   @relation("InvitationInvitedBy", fields: [invitedById], references: [id])
+  invitedById String
+}
+
+model Event {
+  id          String    @id @default(cuid())
+  title       String
+  type        EventType @default(REHEARSAL)
+  startsAt    DateTime
+  endsAt      DateTime
+  location    String?
+  description String?
+  seriesId    String?
+  createdAt   DateTime  @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
+  createdById String
+
+  availabilities Availability[]
+  setlists       Setlist[]
+  participants   EventParticipant[]
+  files          BandFile[]
+}
+
+/// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
+/// bei Meeting/Sonstiges nur der/die Ersteller:in - im Termin-Formular individuell anpassbar.
+model EventParticipant {
+  id String @id @default(cuid())
+
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([eventId, userId])
+}
+
+model Availability {
+  id          String             @id @default(cuid())
+  status      AvailabilityStatus
+  note        String?
+  respondedAt DateTime           @default(now())
+
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([eventId, userId])
+}
+
+model Absence {
+  id        String   @id @default(cuid())
+  startDate DateTime
+  endDate   DateTime
+  reason    String?
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+}
+
+model Song {
+  id            String     @id @default(cuid())
+  title         String
+  key           String?
+  bpm           Int?
+  timeSignature String?
+  durationSec   Int?
+  genre         String?
+  status        SongStatus @default(NEW)
+  /// Bei automatischer Ablehnung durch einstimmiges Downvoting gesetzt (Status ARCHIVED)
+  rejected      Boolean    @default(false)
+  lyrics        String?
+  /// Für alle Bandmitglieder sichtbare Anmerkung, z. B. "Live-Version", Sonderarrangements
+  remarks       String?
+  createdAt     DateTime   @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  proposedBy   User?   @relation("SongProposedBy", fields: [proposedById], references: [id], onDelete: SetNull)
+  proposedById String?
+
+  notes         SongNote[]
+  setlistItems  SetlistItem[]
+  files         SongFile[]
+  links         SongLink[]
+  votes         SongVote[]
+  bandFiles     BandFile[]
+}
+
+/// Daumen-hoch/-runter-Abstimmung über einen vorgeschlagenen Song, optional mit für alle sichtbarem Kommentar.
+model SongVote {
+  id        String    @id @default(cuid())
+  vote      VoteValue
+  comment   String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([songId, userId])
+}
+
+/// Externer Referenzlink zu einem Song (z. B. Streaming-Plattform, YouTube, Tab-Website). Mehrere pro Song möglich.
+model SongLink {
+  id        String   @id @default(cuid())
+  url       String
+  label     String?
+  createdAt DateTime @default(now())
+
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId String
+}
+
+/// Hochgeladene Datei zu einem Song (z. B. Audio, PDF, Guitar Pro).
+/// PRIVATE: nur für die hochladende Person (und Admins) sichtbar. BAND: für alle Bandmitglieder sichtbar.
+model SongFile {
+  id         String         @id @default(cuid())
+  filename   String
+  /// Relativer Pfad im (nicht öffentlichen) Dateispeicher - Zugriff nur über die geschützte Download-Route
+  storageKey String
+  mimeType   String
+  size       Int
+  visibility FileVisibility @default(BAND)
+  createdAt  DateTime       @default(now())
+
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId String
+
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedById String
+}
+
+/// Zentraler, bandweiter Dateispeicher (Noten, Verträge, Fotos, Aufnahmen, Sonstiges) -
+/// unabhängig von den song-gebundenen Dateien (SongFile). Optional mit Song/Termin verknüpfbar.
+/// INTERNAL: nur für Bandmitglieder sichtbar. PUBLIC: zusätzlich über einen Link ohne Login abrufbar.
+model BandFile {
+  id         String              @id @default(cuid())
+  filename   String
+  /// Relativer Pfad im (nicht öffentlichen) Dateispeicher - Zugriff nur über die geschützten Download-Routen
+  storageKey String
+  mimeType   String
+  size       Int
+  category   BandFileCategory    @default(OTHER)
+  visibility BandFileVisibility  @default(INTERNAL)
+  /// Token für den öffentlichen Freigabelink (nur bei visibility=PUBLIC nutzbar)
+  shareToken String              @unique @default(cuid())
+  createdAt  DateTime            @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  uploadedById String
+
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+
+  song   Song?   @relation(fields: [songId], references: [id], onDelete: SetNull)
+  songId String?
+}
+
+model SongNote {
+  id        String   @id @default(cuid())
+  content   String
+  /// Kurze, einzeilige Bühnen-Notiz - Standardwert, der beim Hinzufügen zu einer Setlist übernommen wird
+  shortNote String?
+  /// Standard-Hintergrundfarbe für Setlist-Einträge dieses Songs
+  color     String?
+  /// JSON-kodierte Liste von Hinweis-Icons (Standardwert für Setlist-Einträge)
+  cues      String?
+  updatedAt DateTime @updatedAt
+
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([songId, userId])
+}
+
+model Setlist {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+
+  items SetlistItem[]
+  notes SetlistNote[]
+}
+
+model SetlistNote {
+  id        String   @id @default(cuid())
+  content   String
+  updatedAt DateTime @updatedAt
+
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  setlistId String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([setlistId, userId])
+}
+
+model SetlistItem {
+  id          String  @id @default(cuid())
+  order       Int
+  customTitle String?
+  /// Gesetzt, wenn der ursprünglich verknüpfte Song aus der Bibliothek gelöscht wurde;
+  /// customTitle enthält dann dessen früheren Titel als Fallback-Anzeige.
+  songDeleted Boolean @default(false)
+
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  setlistId String
+
+  song   Song?   @relation(fields: [songId], references: [id], onDelete: SetNull)
+  songId String?
+
+  annotations SetlistItemAnnotation[]
+}
+
+/// Persönliche, nur für das jeweilige Mitglied sichtbare Markierung eines Setlist-Eintrags
+/// (Notiz, Farbe, Hinweis-Icons wie Umstimmen/Instrumentwechsel/Programmwechsel).
+model SetlistItemAnnotation {
+  id        String   @id @default(cuid())
+  note      String?
+  color     String?
+  /// JSON-kodierte Liste von Hinweis-Icons, z. B. [{"type":"PROGRAM_CHANGE","value":"12"}]
+  cues      String?
+  updatedAt DateTime @updatedAt
+
+  item   SetlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId String
+  user   User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([itemId, userId])
+}

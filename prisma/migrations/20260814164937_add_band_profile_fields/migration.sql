@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "Band" ADD COLUMN "bio" TEXT;
+ALTER TABLE "Band" ADD COLUMN "contactEmail" TEXT;
+ALTER TABLE "Band" ADD COLUMN "facebookUrl" TEXT;
+ALTER TABLE "Band" ADD COLUMN "genre" TEXT;
+ALTER TABLE "Band" ADD COLUMN "instagramUrl" TEXT;
+ALTER TABLE "Band" ADD COLUMN "location" TEXT;
+ALTER TABLE "Band" ADD COLUMN "spotifyUrl" TEXT;
+ALTER TABLE "Band" ADD COLUMN "websiteUrl" TEXT;

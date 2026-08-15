@@ -1,0 +1,24 @@
+services:
+  bandplaner:
+    build: .
+    image: bandplaner:latest
+    restart: unless-stopped
+    ports:
+      # Links der Port, auf dem die App auf der DiskStation erreichbar ist.
+      # Bei Bedarf anpassen (z. B. "8080:3000"), falls Port 3000 schon belegt ist.
+      - "3000:3000"
+    environment:
+      DATABASE_URL: "file:/data/production.db"
+      AUTH_SECRET: "${AUTH_SECRET}"
+      NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL}"
+    volumes:
+      # Datenbank, hochgeladene Song-/Band-Dateien sowie Profil-/Bandbilder
+      # liegen in benannten Volumes und überleben damit Image-Updates/Neustarts.
+      - bandplaner_data:/data
+      - bandplaner_storage:/app/storage
+      - bandplaner_uploads:/app/public/uploads
+
+volumes:
+  bandplaner_data:
+  bandplaner_storage:
+  bandplaner_uploads:
