@@ -11,6 +11,12 @@ services:
       DATABASE_URL: "file:/data/production.db"
       AUTH_SECRET: "${AUTH_SECRET}"
       NEXT_PUBLIC_APP_URL: "${NEXT_PUBLIC_APP_URL}"
+      # NextAuth (Auth.js) v5 prueft im Produktionsmodus (NODE_ENV=production),
+      # ob es dem Host des eingehenden Requests vertrauen darf, und verweigert
+      # sonst mit "There was a problem with the server configuration". Da der
+      # Host je nach Netzwerk/Deployment variieren kann (Hostname, IP, Domain),
+      # vertrauen wir hier explizit statt eine einzelne feste URL zu erzwingen.
+      AUTH_TRUST_HOST: "true"
     volumes:
       # Datenbank, hochgeladene Song-/Band-Dateien sowie Profil-/Bandbilder
       # liegen in benannten Volumes und überleben damit Image-Updates/Neustarts.
