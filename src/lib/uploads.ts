@@ -102,10 +102,13 @@ const ALLOWED_BAND_FILE_EXTENSIONS = new Set([
   ".wav",
   ".ogg",
   ".m4a",
+  ".mp4",
   ".zip",
 ]);
 
-const MAX_BAND_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+// 200 MB statt 25 MB, da mit MP4-Unterstützung auch kurze Video-Mitschnitte hierüber laufen -
+// bei 25 MB wäre die Video-Kategorie in der Praxis kaum nutzbar gewesen.
+const MAX_BAND_FILE_SIZE_BYTES = 200 * 1024 * 1024;
 
 /** Speicherkontingent pro Band für den zentralen Dateispeicher (BandFile + SongFile zusammen). */
 export const BAND_STORAGE_QUOTA_BYTES = 2 * 1024 * 1024 * 1024;
@@ -120,11 +123,11 @@ export async function saveBandFile(
   if (!ALLOWED_BAND_FILE_EXTENSIONS.has(extension)) {
     return {
       error:
-        "Dateityp nicht erlaubt. Erlaubt: PDF, Word, Excel, Text, Bilder (JPG/PNG/WEBP/GIF), Audio (MP3/WAV/OGG/M4A), ZIP",
+        "Dateityp nicht erlaubt. Erlaubt: PDF, Word, Excel, Text, Bilder (JPG/PNG/WEBP/GIF), Audio (MP3/WAV/OGG/M4A), Video (MP4), ZIP",
     };
   }
   if (file.size > MAX_BAND_FILE_SIZE_BYTES) {
-    return { error: "Datei darf maximal 25 MB groß sein" };
+    return { error: "Datei darf maximal 200 MB groß sein" };
   }
 
   const storedFilename = `${randomUUID()}${extension}`;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Users } from "lucide-react";
 import clsx from "clsx";
 
 const tabs = [
@@ -12,6 +12,7 @@ const tabs = [
   { href: "/songs", label: "Songs", icon: Music },
   { href: "/setlists", label: "Setlisten", icon: ListMusic },
   { href: "/files", label: "Dateien", icon: Folder },
+  { href: "/equipment", label: "Equipment", icon: Package },
   { href: "/members", label: "Band", icon: Users },
 ];
 

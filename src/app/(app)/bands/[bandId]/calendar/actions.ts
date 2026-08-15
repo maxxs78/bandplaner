@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { eventSchema } from "@/lib/validation";
+import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
@@ -165,4 +166,16 @@ export async function respondAvailabilityAction(
   });
 
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+}
+
+export async function uploadEventFileAction(
+  bandId: string,
+  eventId: string,
+  prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  formData.set("eventId", eventId);
+  const result = await uploadBandFileAction(bandId, prevState, formData);
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  return result;
 }

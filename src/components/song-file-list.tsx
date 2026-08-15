@@ -1,6 +1,8 @@
 import { FileAudio, FileMusic, FileText, Lock, Users } from "lucide-react";
 import { DeleteButton } from "@/components/delete-button";
-import { deleteSongFileAction } from "@/app/(app)/bands/[bandId]/songs/actions";
+import { FileEditButton } from "@/components/file-edit-button";
+import { deleteSongFileAction, updateSongFileAction } from "@/app/(app)/bands/[bandId]/songs/actions";
+import { songFileVisibilityOptions as SONG_VISIBILITY_OPTIONS } from "@/lib/band-file-categories";
 
 type SongFileItem = {
   id: string;
@@ -49,7 +51,7 @@ export function SongFileList({
         return (
           <div
             key={file.id}
-            className="flex items-center gap-3 rounded-lg border border-border px-3 py-2"
+            className="flex flex-wrap items-center gap-3 rounded-lg border border-border px-3 py-2"
           >
             <Icon className="h-5 w-5 shrink-0 text-muted" />
             <a
@@ -61,6 +63,14 @@ export function SongFileList({
               {file.filename}
             </a>
             <span className="shrink-0 text-xs text-muted">{formatSize(file.size)}</span>
+            {canDelete && (
+              <FileEditButton
+                filename={file.filename}
+                visibility={file.visibility}
+                visibilityOptions={SONG_VISIBILITY_OPTIONS}
+                action={(data) => updateSongFileAction(bandId, songId, file.id, data)}
+              />
+            )}
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted"
               title={

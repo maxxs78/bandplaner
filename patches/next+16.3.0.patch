@@ -1,0 +1,18 @@
+diff --git a/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js b/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+index d6bb381..3c6a58c 100644
+--- a/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
++++ b/node_modules/next/dist/server/lib/router-utils/setup-dev-bundler.js
+@@ -289,6 +289,13 @@ async function startWatcher(opts) {
+         const wp = new _watchpack.default({
+             // Watchpack default is 200ms which adds 200ms of dead time on bootup.
+             aggregateTimeout: 5,
++            // Bandplaner: dieses Projekt liegt auf einer per SMB gemappten
++            // Netzlaufwerk-Freigabe. Native Dateisystem-Events (ReadDirectoryChangesW)
++            // werden dort unzuverlässig/verzögert zugestellt, wodurch der initiale
++            // Routen-Scan verschachtelte dynamische Routen verpasst (404 trotz
++            // existierender Datei). Polling erzwingt ein periodisches Neu-Einlesen
++            // und macht die Routen-Erkennung robust gegen SMB-Latenz.
++            poll: 500,
+             ignored: (pathname)=>{
+                 return !files.some((file)=>file.startsWith(pathname)) && !directories.some((d)=>pathname.startsWith(d) || d.startsWith(pathname));
+             }

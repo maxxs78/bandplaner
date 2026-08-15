@@ -54,6 +54,7 @@ enum BandFileCategory {
   CONTRACTS
   PHOTOS
   RECORDINGS
+  VIDEOS
   OTHER
 }
 
@@ -83,6 +84,9 @@ model User {
   songVotes              SongVote[]
   proposedSongs          Song[]                  @relation("SongProposedBy")
   uploadedBandFiles      BandFile[]
+  ownedEquipment         Equipment[]
+  responsibleForEquipment Equipment[]            @relation("EquipmentResponsible")
+  assignedPacklistItems  PacklistItem[]
 }
 
 model Band {
@@ -106,6 +110,8 @@ model Band {
   absences    Absence[]
   invitations Invitation[]
   files       BandFile[]
+  equipment   Equipment[]
+  packlists   Packlist[]
 }
 
 model Membership {
@@ -160,6 +166,7 @@ model Event {
   setlists       Setlist[]
   participants   EventParticipant[]
   files          BandFile[]
+  packlists      Packlist[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
@@ -281,7 +288,7 @@ model SongFile {
 }
 
 /// Zentraler, bandweiter Dateispeicher (Noten, Verträge, Fotos, Aufnahmen, Sonstiges) -
-/// unabhängig von den song-gebundenen Dateien (SongFile). Optional mit Song/Termin verknüpfbar.
+/// unabhängig von den song-gebundenen Dateien (SongFile). Optional mit Song/Termin/Equipment verknüpfbar.
 /// INTERNAL: nur für Bandmitglieder sichtbar. PUBLIC: zusätzlich über einen Link ohne Login abrufbar.
 model BandFile {
   id         String              @id @default(cuid())
@@ -307,6 +314,9 @@ model BandFile {
 
   song   Song?   @relation(fields: [songId], references: [id], onDelete: SetNull)
   songId String?
+
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  equipmentId String?
 }
 
 model SongNote {
@@ -389,4 +399,76 @@ model SetlistItemAnnotation {
   userId String
 
   @@unique([itemId, userId])
+}
+
+enum EquipmentCategory {
+  INSTRUMENTS
+  INSTRUMENT_ACCESSORIES
+  AMPS_PEDALBOARD
+  STAGE_EQUIPMENT
+  PA
+  MONITORING
+  PERSONAL
+  OTHER
+}
+
+/// Katalogeintrag für Bandequipment. Eigentum entweder bei der Band (ownerId = null)
+/// oder bei einem einzelnen Mitglied (persönliches Equipment).
+model Equipment {
+  id          String            @id @default(cuid())
+  name        String
+  description String?
+  category    EquipmentCategory @default(OTHER)
+  /// Lagerort, z. B. "Proberaum-Schrank", "Kofferraum Max"
+  location    String?
+  createdAt   DateTime          @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  ownerId String?
+
+  /// Für Band-Equipment optional festgelegte, für dieses Equipment zuständige Person
+  /// (unabhängig vom Eigentum) - wird beim Hinzufügen zu einer Packliste als
+  /// Verantwortliche:r vorbelegt, falls gesetzt (sonst der/die Eigentümer:in).
+  responsible   User?   @relation("EquipmentResponsible", fields: [responsibleId], references: [id], onDelete: SetNull)
+  responsibleId String?
+
+  packlistItems PacklistItem[]
+  files         BandFile[]
+}
+
+/// Packliste für einen Gig oder eine Probe, optional mit einem Termin verknüpft.
+model Packlist {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+
+  items PacklistItem[]
+}
+
+/// Eintrag einer Packliste - entweder mit einem Equipment-Katalogeintrag verknüpft
+/// oder ein freier Eintrag (customName), analog zu SetlistItem/Song.
+model PacklistItem {
+  id      String  @id @default(cuid())
+  order   Int
+  checked Boolean @default(false)
+
+  customName String?
+
+  packlist   Packlist @relation(fields: [packlistId], references: [id], onDelete: Cascade)
+  packlistId String
+
+  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
+  equipmentId String?
+
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId String?
 }

@@ -30,7 +30,7 @@ export default async function BandOverviewPage({
         availabilities: { select: { userId: true, status: true } },
       },
     }),
-    prisma.song.count({ where: { bandId } }),
+    prisma.song.count({ where: { bandId, status: { not: "ARCHIVED" } } }),
     prisma.setlist.count({ where: { bandId } }),
     prisma.membership.count({ where: { bandId } }),
   ]);

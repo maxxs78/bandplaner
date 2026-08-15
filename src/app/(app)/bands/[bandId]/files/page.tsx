@@ -4,8 +4,8 @@ import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
 import { BandFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
-import { uploadBandFileAction, deleteBandFileAction, bandFileStorageUsage } from "./actions";
-import { deleteSongFileAction } from "../songs/actions";
+import { uploadBandFileAction, deleteBandFileAction, updateBandFileAction, bandFileStorageUsage } from "./actions";
+import { deleteSongFileAction, updateSongFileAction } from "../songs/actions";
 import { BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
 import type { BandFileCategory } from "@/generated/prisma/client";
 import clsx from "clsx";
@@ -16,6 +16,7 @@ const categoryFilters: { value: BandFileCategory | undefined; label: string }[] 
   { value: "CONTRACTS", label: "Verträge" },
   { value: "PHOTOS", label: "Fotos" },
   { value: "RECORDINGS", label: "Aufnahmen" },
+  { value: "VIDEOS", label: "Video" },
   { value: "OTHER", label: "Sonstiges" },
 ];
 
@@ -41,7 +42,7 @@ export default async function FilesPage({
   const isAdmin = canManageBand(membership.role);
   const { category } = await searchParams;
 
-  const [bandFiles, songFiles, events, songs, usedBytes] = await Promise.all([
+  const [bandFiles, songFiles, events, songs, equipment, usedBytes] = await Promise.all([
     prisma.bandFile.findMany({
       where: { bandId, ...(category ? { category: category as BandFileCategory } : {}) },
       orderBy: { createdAt: "desc" },
@@ -49,6 +50,7 @@ export default async function FilesPage({
         uploadedBy: { select: { name: true } },
         event: { select: { id: true, title: true } },
         song: { select: { id: true, title: true } },
+        equipment: { select: { id: true, name: true } },
       },
     }),
     prisma.songFile.findMany({
@@ -69,9 +71,14 @@ export default async function FilesPage({
       take: 50,
     }),
     prisma.song.findMany({
-      where: { bandId, status: { not: "PROPOSED" } },
+      where: { bandId, status: { notIn: ["PROPOSED", "ARCHIVED"] } },
       orderBy: { title: "asc" },
       select: { id: true, title: true },
+    }),
+    prisma.equipment.findMany({
+      where: { bandId },
+      orderBy: { name: "asc" },
+      select: { id: true, name: true },
     }),
     bandFileStorageUsage(bandId),
   ]);
@@ -82,13 +89,17 @@ export default async function FilesPage({
     size: f.size,
     category: f.category,
     visibility: f.visibility,
+    rawVisibility: f.visibility,
+    kind: "band" as const,
     shareToken: f.shareToken,
     uploadedBy: f.uploadedBy,
     uploadedById: f.uploadedById,
     songTitle: f.song?.title,
     eventTitle: f.event?.title,
+    equipmentName: f.equipment?.name,
     downloadHref: `/api/band-files/${f.id}`,
     deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
+    updateAction: updateBandFileAction.bind(null, bandId, f.id),
   }));
 
   const fromSongFiles: FileListItem[] = songFiles
@@ -99,11 +110,14 @@ export default async function FilesPage({
       size: f.size,
       category: categoryForSongFile(f.filename),
       visibility: f.visibility === "PRIVATE" ? "PRIVATE" : "INTERNAL",
+      rawVisibility: f.visibility,
+      kind: "song" as const,
       uploadedBy: f.uploadedBy,
       uploadedById: f.uploadedById,
       songTitle: f.song.title,
       downloadHref: `/api/song-files/${f.id}`,
       deleteAction: deleteSongFileAction.bind(null, bandId, f.song.id, f.id),
+      updateAction: updateSongFileAction.bind(null, bandId, f.song.id, f.id),
     }));
 
   const files = [...fromBandFiles, ...fromSongFiles].sort((a, b) => a.filename.localeCompare(b.filename));
@@ -142,7 +156,12 @@ export default async function FilesPage({
             Song-Seite hochladen und erscheinen dann automatisch auch hier.
           </p>
           <div className="mt-3">
-            <BandFileUpload action={uploadBandFileAction.bind(null, bandId)} events={events} songs={songs} />
+            <BandFileUpload
+              action={uploadBandFileAction.bind(null, bandId)}
+              events={events}
+              songs={songs}
+              equipment={equipment}
+            />
           </div>
         </Card>
       )}

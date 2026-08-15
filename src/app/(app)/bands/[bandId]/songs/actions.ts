@@ -8,7 +8,7 @@ import type { AnnotationValues } from "@/components/cue-annotation-editor";
 import { saveSongFile, deleteStoredFile } from "@/lib/uploads";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import type { SongStatus } from "@/generated/prisma/client";
+import type { SongStatus, FileVisibility } from "@/generated/prisma/client";
 
 export type FormState = { error?: string } | undefined;
 
@@ -245,6 +245,32 @@ export async function deleteSongFileAction(bandId: string, songId: string, fileI
 
   await prisma.songFile.delete({ where: { id: fileId } });
   await deleteStoredFile(file.storageKey);
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function updateSongFileAction(
+  bandId: string,
+  songId: string,
+  fileId: string,
+  data: { filename: string; visibility: string }
+) {
+  const { user, membership } = await requireMembership(bandId);
+
+  const filename = data.filename.trim();
+  if (!filename) return;
+  if (data.visibility !== "PRIVATE" && data.visibility !== "BAND") return;
+
+  const file = await prisma.songFile.findUnique({ where: { id: fileId } });
+  if (!file || file.songId !== songId) return;
+
+  const isAdmin = canManageBand(membership.role);
+  if (!isAdmin && file.uploadedById !== user.id) return;
+
+  await prisma.songFile.update({
+    where: { id: fileId },
+    data: { filename, visibility: data.visibility as FileVisibility },
+  });
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   revalidatePath(`/bands/${bandId}/files`);
 }

@@ -36,7 +36,7 @@ export default async function SetlistDetailPage({
   if (!setlist) notFound();
 
   const songs = await prisma.song.findMany({
-    where: { bandId, status: { not: "PROPOSED" } },
+    where: { bandId, status: { notIn: ["PROPOSED", "ARCHIVED"] } },
     orderBy: { title: "asc" },
     select: { id: true, title: true, key: true, bpm: true, status: true },
   });

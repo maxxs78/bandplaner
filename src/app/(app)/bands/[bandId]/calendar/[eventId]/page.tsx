@@ -5,9 +5,12 @@ import { requireMembership, canManageBand, canManageContent } from "@/lib/access
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { respondAvailabilityAction, deleteEventAction } from "../actions";
+import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction } from "../actions";
+import { deleteBandFileAction, updateBandFileAction } from "../../files/actions";
 import { AvailabilityButtons } from "@/components/availability-buttons";
 import { DeleteButton } from "@/components/delete-button";
+import { MinimalFileUpload } from "@/components/band-file-upload";
+import { FileList, type FileListItem } from "@/components/file-list";
 import { eventTypeLabels, eventTypeBadgeVariant } from "@/lib/event-colors";
 
 const statusLabels: Record<string, string> = { YES: "Zusage", NO: "Absage", MAYBE: "Vielleicht" };
@@ -32,6 +35,10 @@ export default async function EventDetailPage({
       participants: true,
       setlists: true,
       createdBy: true,
+      files: {
+        orderBy: { createdAt: "desc" },
+        include: { uploadedBy: { select: { name: true } } },
+      },
     },
   });
   if (!event) notFound();
@@ -61,6 +68,23 @@ export default async function EventDetailPage({
 
   const canManage = canManageContent(membership.role);
   const canEdit = canManageBand(membership.role) || (canManage && event.createdById === user.id);
+  const isAdmin = canManageBand(membership.role);
+
+  const files: FileListItem[] = event.files.map((f) => ({
+    id: f.id,
+    filename: f.filename,
+    size: f.size,
+    category: f.category,
+    visibility: f.visibility,
+    rawVisibility: f.visibility,
+    kind: "band" as const,
+    shareToken: f.shareToken,
+    uploadedBy: f.uploadedBy,
+    uploadedById: f.uploadedById,
+    downloadHref: `/api/band-files/${f.id}`,
+    deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
+    updateAction: updateBandFileAction.bind(null, bandId, f.id),
+  }));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -167,6 +191,18 @@ export default async function EventDetailPage({
               {s.name}
             </Link>
           ))}
+        </div>
+      </Card>
+
+      <Card>
+        <h2 className="font-semibold text-foreground">Dateien</h2>
+        {canManage && (
+          <div className="mt-3">
+            <MinimalFileUpload action={uploadEventFileAction.bind(null, bandId, eventId)} />
+          </div>
+        )}
+        <div className="mt-3">
+          <FileList files={files} currentUserId={user.id} isAdmin={isAdmin} />
         </div>
       </Card>
     </div>

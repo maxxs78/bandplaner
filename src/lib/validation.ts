@@ -86,3 +86,26 @@ export const setlistSchema = z.object({
   name: z.string().min(1, "Name ist erforderlich"),
   eventId: z.string().optional(),
 });
+
+export const equipmentSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich"),
+  description: z.string().optional(),
+  location: z.string().optional(),
+  ownerId: z.string().optional(),
+  responsibleId: z.string().optional(),
+  category: z.enum([
+    "INSTRUMENTS",
+    "INSTRUMENT_ACCESSORIES",
+    "AMPS_PEDALBOARD",
+    "STAGE_EQUIPMENT",
+    "PA",
+    "MONITORING",
+    "PERSONAL",
+    "OTHER",
+  ]),
+});
+
+export const packlistSchema = z.object({
+  name: z.string().min(1, "Name ist erforderlich"),
+  eventId: z.string().optional(),
+});

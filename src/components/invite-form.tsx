@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select, FieldError } from "@/components/ui/input";
 import type { Role } from "@/generated/prisma/client";
 
+// Finanz-Administrator ist deaktiviert, bis das Finanzmodul existiert -
+// nicht für neue Einladungen wählbar. Zum Reaktivieren einfach die Option
+// wieder einfügen.
 const roleOptions: { value: Role; label: string }[] = [
   { value: "MEMBER", label: "Mitglied" },
-  { value: "FINANCE_ADMIN", label: "Finanz-Administrator" },
   { value: "ADMIN", label: "Administrator" },
   { value: "GUEST", label: "Gast" },
 ];
