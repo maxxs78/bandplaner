@@ -16,7 +16,7 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-# ---- runner: schlankes Produktions-Image ----
+# ---- runner: Produktions-Image ----
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -25,19 +25,19 @@ ENV HOSTNAME=0.0.0.0
 
 RUN groupadd --system --gid 1001 nodejs && useradd --system --uid 1001 --gid nodejs nextjs
 
-# Eigenständiges Next.js-Server-Bundle - enthält bereits die tatsächlich zur
-# Laufzeit benötigten Abhängigkeiten (inkl. better-sqlite3 mit nativem Addon).
+# Bewusst die komplette, unveränderte node_modules sowie den vollständigen
+# Next.js-Build aus dem Builder übernehmen (statt einzelne Pakete von Hand
+# zusammenzustellen) - deutlich robuster, da z. B. das Prisma-CLI-Startskript
+# (node_modules/.bin/prisma) auf andere Dateien im selben Paket per relativem
+# Pfad verweist und bei einer Teilkopie fehlschlägt ("Cannot find module").
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/.next ./.next
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# Prisma-Schema, Migrationen und CLI zusätzlich kopieren: werden vom
-# Server-Bundle nicht erfasst, aber für "prisma migrate deploy" beim
-# Containerstart benötigt (siehe docker-entrypoint.sh).
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
+COPY --from=builder /app/next.config.ts ./next.config.ts
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/src/generated ./src/generated
 
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
@@ -48,7 +48,7 @@ COPY docker-entrypoint.sh ./docker-entrypoint.sh
 # Profil-/Bandbilder) - siehe docker-compose.yml für die zugehörigen Volumes.
 RUN chmod 755 ./docker-entrypoint.sh \
     && mkdir -p /data /app/storage /app/public/uploads/avatars /app/public/uploads/bands \
-    && chown -R nextjs:nodejs /data /app/storage /app/public/uploads
+    && chown -R nextjs:nodejs /app /data
 
 USER nextjs
 EXPOSE 3000
@@ -57,4 +57,4 @@ EXPOSE 3000
 # genügt Lese- statt Ausführrecht, als zusätzliche Absicherung gegen
 # Berechtigungs-Eigenheiten des Build-Hosts.
 ENTRYPOINT ["/bin/sh", "./docker-entrypoint.sh"]
-CMD ["node", "server.js"]
+CMD ["npm", "start"]
