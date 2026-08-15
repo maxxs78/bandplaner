@@ -57,11 +57,13 @@ RUN chmod 755 ./docker-entrypoint.sh \
     && mkdir -p /data /app/storage /app/public/uploads/avatars /app/public/uploads/bands \
     && chown -R nextjs:nodejs /app /data
 
-USER nextjs
 EXPOSE 3000
 
-# Explizit über /bin/sh aufrufen statt das Skript direkt auszuführen: so
-# genügt Lese- statt Ausführrecht, als zusätzliche Absicherung gegen
-# Berechtigungs-Eigenheiten des Build-Hosts.
+# Bewusst NICHT "USER nextjs" hier: der Container startet als root, damit
+# docker-entrypoint.sh bei jedem Start die Rechte der gemounteten Volumes
+# reparieren kann (siehe dort) - benannte Docker-Volumes behalten sonst
+# dauerhaft den Eigentümer von ihrer allerersten Initialisierung, auch nach
+# einem Image-Rebuild mit anderen Rechten. Der eigentliche Server läuft
+# danach trotzdem als nextjs (Rechte werden im Entrypoint per su abgegeben).
 ENTRYPOINT ["/bin/sh", "./docker-entrypoint.sh"]
 CMD ["npm", "start"]
