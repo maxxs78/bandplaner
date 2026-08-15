@@ -39,14 +39,15 @@ COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
 
-# --chmod setzt die Rechte im Image explizit und unabhängig von den
-# Original-Dateirechten auf dem Host (z. B. DSM-ACLs/SMB-Freigabe), die beim
-# COPY sonst übernommen würden und zu "Permission denied" führen können.
-COPY --chmod=755 docker-entrypoint.sh ./docker-entrypoint.sh
+COPY docker-entrypoint.sh ./docker-entrypoint.sh
 
+# Numerisches chmod (statt "+x"): wird absolut gesetzt und ist damit -
+# anders als die symbolische Form - unabhängig vom umask des Build-Prozesses
+# und von den Original-Dateirechten auf dem Host (z. B. DSM-ACLs/SMB-Freigabe).
 # Mount-Punkte für persistente Daten (Datenbank, Song-/Band-Dateien,
 # Profil-/Bandbilder) - siehe docker-compose.yml für die zugehörigen Volumes.
-RUN mkdir -p /data /app/storage /app/public/uploads/avatars /app/public/uploads/bands \
+RUN chmod 755 ./docker-entrypoint.sh \
+    && mkdir -p /data /app/storage /app/public/uploads/avatars /app/public/uploads/bands \
     && chown -R nextjs:nodejs /data /app/storage /app/public/uploads
 
 USER nextjs
