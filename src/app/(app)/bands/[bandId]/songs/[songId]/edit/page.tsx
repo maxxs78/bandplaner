@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { updateSongAction } from "../../actions";
 import { SongForm } from "@/components/song-form";
@@ -11,11 +11,11 @@ export default async function EditSongPage({
   params: Promise<{ bandId: string; songId: string }>;
 }) {
   const { bandId, songId } = await params;
-  const { membership } = await requireMembership(bandId);
+  const { membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) {
     redirect(`/bands/${bandId}/songs/${songId}`);
   }
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
   const song = await prisma.song.findUnique({ where: { id: songId, bandId } });
   if (!song) notFound();

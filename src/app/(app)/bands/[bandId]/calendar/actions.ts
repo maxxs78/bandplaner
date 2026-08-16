@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { eventSchema } from "@/lib/validation";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
@@ -92,8 +92,14 @@ export async function createEventAction(
   redirect(`/bands/${bandId}/calendar/${firstEvent.id}`);
 }
 
-async function canEditEvent(bandId: string, eventId: string, userId: string, role: Role) {
-  if (canManageBand(role)) return true;
+async function canEditEvent(
+  bandId: string,
+  eventId: string,
+  userId: string,
+  role: Role,
+  isFinanceAdmin: boolean
+) {
+  if (canManageBandContent(role, isFinanceAdmin)) return true;
   if (!canManageContent(role)) return false;
 
   const event = await prisma.event.findUnique({
@@ -109,8 +115,8 @@ export async function updateEventAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const { user, membership } = await requireMembership(bandId);
-  if (!(await canEditEvent(bandId, eventId, user.id, membership.role))) {
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  if (!(await canEditEvent(bandId, eventId, user.id, membership.role, isFinanceAdmin))) {
     return { error: "Keine Berechtigung, diesen Termin zu bearbeiten" };
   }
 
@@ -144,8 +150,8 @@ export async function updateEventAction(
 }
 
 export async function deleteEventAction(bandId: string, eventId: string) {
-  const { user, membership } = await requireMembership(bandId);
-  if (!(await canEditEvent(bandId, eventId, user.id, membership.role))) return;
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  if (!(await canEditEvent(bandId, eventId, user.id, membership.role, isFinanceAdmin))) return;
 
   await prisma.event.delete({ where: { id: eventId, bandId } });
   revalidatePath(`/bands/${bandId}/calendar`);

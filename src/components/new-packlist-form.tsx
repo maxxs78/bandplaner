@@ -9,9 +9,11 @@ import type { FormState } from "@/app/(app)/bands/[bandId]/equipment/actions";
 export function NewPacklistForm({
   action,
   events,
+  defaultEventId,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   events: { id: string; title: string; startsAt: string }[];
+  defaultEventId?: string;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
 
@@ -24,7 +26,7 @@ export function NewPacklistForm({
 
       <div>
         <Label htmlFor="eventId">Termin verknüpfen (optional)</Label>
-        <Select id="eventId" name="eventId" defaultValue="">
+        <Select id="eventId" name="eventId" defaultValue={defaultEventId ?? ""}>
           <option value="">Kein Termin</option>
           {events.map((e) => (
             <option key={e.id} value={e.id}>

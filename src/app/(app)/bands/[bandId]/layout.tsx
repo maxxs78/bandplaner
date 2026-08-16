@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Settings } from "lucide-react";
-import { requireMembership, canManageBand } from "@/lib/access";
+import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { BandNav } from "@/components/band-nav";
@@ -61,7 +61,11 @@ export default async function BandLayout({
       </div>
 
       <div className="mt-6">
-        <BandNav bandId={bandId} showEquipment={features.equipment} />
+        <BandNav
+          bandId={bandId}
+          showEquipment={features.equipment}
+          showFinance={features.finance && canManageContent(membership.role)}
+        />
       </div>
 
       <div className="mt-6">{children}</div>

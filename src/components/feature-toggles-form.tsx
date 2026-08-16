@@ -7,18 +7,39 @@ import { FieldError } from "@/components/ui/input";
 import { ToggleRow } from "@/components/ui/toggle-row";
 import type { FormState } from "@/app/(app)/bands/[bandId]/settings/actions";
 
+const settlementModes = [
+  {
+    value: "NO_BALANCE",
+    label: "Kein Bandkonto",
+    description:
+      "Der Saldo der Band ist immer ausgeglichen. Einnahmen werden vollständig auf Mitglieder verteilt, Ausgaben vollständig anteilig von Mitgliedern getragen.",
+  },
+  {
+    value: "BAND_BALANCE",
+    label: "Bandkonto (Bandkapital)",
+    description:
+      "Die Band kann ein eigenes Guthaben halten. Einnahmen und Ausgaben müssen nicht zu 100 % auf Mitglieder verteilt werden – der Rest wird automatisch mit dem Bandkonto verrechnet.",
+  },
+] as const;
+
 export function FeatureTogglesForm({
   action,
   initialEquipmentEnabled,
   initialPacklistsEnabled,
+  initialFinanceEnabled,
+  initialFinanceSettlementMode,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
   initialPacklistsEnabled: boolean;
+  initialFinanceEnabled: boolean;
+  initialFinanceSettlementMode: "NO_BALANCE" | "BAND_BALANCE";
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
   const [packlistsEnabled, setPacklistsEnabled] = useState(initialPacklistsEnabled);
+  const [financeEnabled, setFinanceEnabled] = useState(initialFinanceEnabled);
+  const [financeSettlementMode, setFinanceSettlementMode] = useState(initialFinanceSettlementMode);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -41,6 +62,41 @@ export function FeatureTogglesForm({
         disabled={!equipmentEnabled}
         onChange={setPacklistsEnabled}
       />
+      <ToggleRow
+        name="financeEnabled"
+        label="Finanzen"
+        description={
+          initialFinanceEnabled || financeEnabled
+            ? "Einnahmen, Ausgaben und Gagen der Band. Sichtbar nur für Finanzadmin:innen; alle anderen sehen nur ihre eigenen Posten."
+            : "Einnahmen, Ausgaben und Gagen der Band. Beim Aktivieren wirst du automatisch Finanzadmin:in, falls die Band noch keine:n hat."
+        }
+        checked={financeEnabled}
+        onChange={setFinanceEnabled}
+      />
+      {financeEnabled && (
+        <div className="ml-4 space-y-2 border-l-2 border-border pl-4">
+          <p className="text-xs font-medium text-foreground">Abrechnungsmodus</p>
+          {settlementModes.map((m) => (
+            <label
+              key={m.value}
+              className="flex items-start gap-3 rounded-lg border border-border p-3 cursor-pointer hover:border-primary"
+            >
+              <input
+                type="radio"
+                name="financeSettlementMode"
+                value={m.value}
+                checked={financeSettlementMode === m.value}
+                onChange={() => setFinanceSettlementMode(m.value)}
+                className="mt-0.5 h-4 w-4 shrink-0 accent-primary"
+              />
+              <div>
+                <p className="text-sm font-medium text-foreground">{m.label}</p>
+                <p className="mt-0.5 text-xs text-muted">{m.description}</p>
+              </div>
+            </label>
+          ))}
+        </div>
+      )}
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />

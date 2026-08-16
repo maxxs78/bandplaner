@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
@@ -16,7 +16,7 @@ export default async function EditEquipmentPage({
   params: Promise<{ bandId: string; equipmentId: string }>;
 }) {
   const { bandId, equipmentId } = await params;
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).equipment) redirect(`/bands/${bandId}`);
 
   const equipment = await prisma.equipment.findFirst({
@@ -38,7 +38,7 @@ export default async function EditEquipmentPage({
   if (!canEdit) {
     redirect(`/bands/${bandId}/equipment`);
   }
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
   const memberships = await prisma.membership.findMany({
     where: { bandId },

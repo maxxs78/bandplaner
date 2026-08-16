@@ -21,32 +21,54 @@ export function isGuestAccessExpired(membership: Pick<Membership, "role" | "gues
 
 export async function requireMembership(bandId: string) {
   const user = await requireUser();
-  const membership = await prisma.membership.findUnique({
-    where: { userId_bandId: { userId: user.id, bandId } },
-    include: { band: true },
-  });
+  const [membership, financeAdmin] = await Promise.all([
+    prisma.membership.findUnique({
+      where: { userId_bandId: { userId: user.id, bandId } },
+      include: { band: true },
+    }),
+    prisma.bandFinanceAdmin.findUnique({
+      where: { bandId_userId: { bandId, userId: user.id } },
+      select: { id: true },
+    }),
+  ]);
   if (!membership) {
     redirect("/dashboard");
   }
   if (isGuestAccessExpired(membership)) {
     redirect("/dashboard?accessExpired=1");
   }
-  return { user, membership };
+  return { user, membership, isFinanceAdmin: financeAdmin !== null };
 }
 
 const ROLE_RANK: Record<Role, number> = {
   GUEST: 0,
   MEMBER: 1,
-  FINANCE_ADMIN: 2,
-  ADMIN: 3,
+  ADMIN: 2,
 };
 
 export function canManageBand(role: Role) {
   return role === "ADMIN";
 }
 
-export function canManageFinance(role: Role) {
-  return role === "ADMIN" || role === "FINANCE_ADMIN";
+/**
+ * Finanzberechtigt (siehe BandFinanceAdmin) - bewusst losgelöst von Role, damit
+ * dieselbe Person gleichzeitig Admin und Finanzadmin sein kann und mehrere
+ * Personen gleichzeitig finanzberechtigt sein können. Nur diese Personen sehen
+ * die vollständige Finanzübersicht der Band; alle anderen (auch normale Admins)
+ * sehen ausschließlich ihre eigenen Gagen.
+ */
+export function canManageFinance(isFinanceAdmin: boolean) {
+  return isFinanceAdmin;
+}
+
+/**
+ * "Admin-Rechte ohne Governance": Finanzadmins dürfen wie echte Admins Inhalte
+ * verwalten/überschreiben (Songs, Equipment, Dateien, Termine), aber keine
+ * Mitgliederrollen ändern, niemanden entfernen oder Funktions-Schalter setzen -
+ * das bleibt canManageBand (echten Admins) vorbehalten.
+ */
+export function canManageBandContent(role: Role, isFinanceAdmin: boolean) {
+  return canManageBand(role) || isFinanceAdmin;
 }
 
 /** Termine, Songs und Setlisten anlegen/bearbeiten/löschen — Gäste sind ausgeschlossen. */

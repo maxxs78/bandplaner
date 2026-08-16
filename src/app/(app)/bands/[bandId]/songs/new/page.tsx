@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { createSongAction } from "../actions";
 import { SongForm } from "@/components/song-form";
 import { Card } from "@/components/ui/card";
@@ -10,11 +10,11 @@ export default async function NewSongPage({
   params: Promise<{ bandId: string }>;
 }) {
   const { bandId } = await params;
-  const { membership } = await requireMembership(bandId);
+  const { membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) {
     redirect(`/bands/${bandId}/songs`);
   }
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const boundAction = createSongAction.bind(null, bandId);
 
   return (

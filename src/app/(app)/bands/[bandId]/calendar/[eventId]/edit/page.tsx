@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { updateEventAction } from "../../actions";
 import { EventForm } from "@/components/event-form";
@@ -12,7 +12,7 @@ export default async function EditEventPage({
   params: Promise<{ bandId: string; eventId: string }>;
 }) {
   const { bandId, eventId } = await params;
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const event = await prisma.event.findUnique({
     where: { id: eventId, bandId },
@@ -21,7 +21,7 @@ export default async function EditEventPage({
   if (!event) notFound();
 
   const canEdit =
-    canManageBand(membership.role) ||
+    canManageBandContent(membership.role, isFinanceAdmin) ||
     (canManageContent(membership.role) && event.createdById === user.id);
   if (!canEdit) {
     redirect(`/bands/${bandId}/calendar/${eventId}`);

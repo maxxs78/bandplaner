@@ -12,7 +12,6 @@ datasource db {
 
 enum Role {
   ADMIN
-  FINANCE_ADMIN
   MEMBER
   GUEST
 }
@@ -87,6 +86,9 @@ model User {
   ownedEquipment         Equipment[]             @relation("EquipmentOwnerUser")
   responsibleForEquipment Equipment[]            @relation("EquipmentResponsible")
   assignedPacklistItems  PacklistItem[]
+  financeAdminOf         BandFinanceAdmin[]
+  createdFinanceEntries  FinanceEntry[]
+  financeAllocations     FinanceAllocation[]
 }
 
 model Band {
@@ -107,6 +109,17 @@ model Band {
   /// Abhaengigkeiten - packlistsEnabled wirkt nur, wenn equipmentEnabled auch an ist).
   equipmentEnabled Boolean @default(true)
   packlistsEnabled Boolean @default(true)
+  /// Finanzmodul ist ein komplett neues Feature (anders als Equipment/Packlisten,
+  /// die es schon vorher gab) - Standard bewusst aus, jede Band aktiviert es
+  /// aktiv. Siehe BandFinanceAdmin fuer die separate, rollenunabhaengige Liste
+  /// der finanzberechtigten Personen.
+  financeEnabled Boolean @default(false)
+  /// Abrechnungsmodus fuer das Finanzmodul: NO_BALANCE = kein Bandkonto, Zu-/Abfluesse
+  /// muessen immer zu 100% auf Mitglieder verteilt werden (durchgesetzt in
+  /// finance/actions.ts). BAND_BALANCE = die Band darf ein eigenes Kapital halten,
+  /// nicht verteilte Restbetraege werden automatisch mit dem Bandsaldo verrechnet
+  /// (siehe computeBandBalance in finance/page.tsx).
+  financeSettlementMode FinanceSettlementMode @default(NO_BALANCE)
 
   /// Vorbelegung fuer "Zugriff bis" bei neuen Gast-Einladungen (Tage ab Einladung).
   /// null = kein Standard, Admin traegt das Datum wie bisher manuell ein.
@@ -128,6 +141,95 @@ model Band {
   files       BandFile[]
   ownedEquipment Equipment[] @relation("EquipmentOwnerBand")
   packlists   Packlist[]
+  financeAdmins BandFinanceAdmin[]
+  financeEntries FinanceEntry[]
+}
+
+/// Finanzberechtigte Person einer Band - bewusst losgeloest von Role (Admin/Mitglied),
+/// damit dieselbe Person gleichzeitig Admin und Finanzadmin sein kann (Personalunion)
+/// und mehrere Personen gleichzeitig finanzberechtigt sein koennen. Sieht/verwaltet die
+/// vollstaendige Finanzuebersicht der Band; alle anderen sehen nur ihre eigenen Gagen.
+model BandFinanceAdmin {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([bandId, userId])
+}
+
+/// BALANCE_PAYOUT/BALANCE_DEPOSIT sind direkte Bandkonto-Bewegungen (nur im
+/// Abrechnungsmodus BAND_BALANCE moeglich, siehe finance/actions.ts): der
+/// Finanzadmin zahlt Mitgliedern Geld aus dem Bandkonto aus, oder Mitglieder
+/// zahlen ins Bandkonto ein - anders als bei INCOME/EXPENSE muss die Zuordnung
+/// dabei immer 100% betragen. Dient u. a. dazu, das Bandkonto vor einem
+/// Wechsel zurueck zu NO_BALANCE auf null auszugleichen.
+enum FinanceEntryType {
+  INCOME
+  EXPENSE
+  BALANCE_PAYOUT
+  BALANCE_DEPOSIT
+}
+
+enum FinanceSettlementMode {
+  NO_BALANCE
+  BAND_BALANCE
+}
+
+/// Einnahme oder Ausgabe der Band, optional einem Termin zugeordnet. Der Finanzadmin
+/// ordnet Mitgliedern anteilige Betraege zu (FinanceAllocation) - je nach
+/// financeSettlementMode der Band muss deren Summe exakt dem Eintragsbetrag
+/// entsprechen oder darf darunter liegen (Rest verrechnet sich mit dem Bandsaldo,
+/// durchgesetzt in finance/actions.ts).
+model FinanceEntry {
+  id          String           @id @default(cuid())
+  type        FinanceEntryType
+  /// Betrag in Cent (ganzzahlig, um Rundungsfehler bei Geldbetraegen zu vermeiden).
+  amountCents Int
+  /// Aktuell immer "EUR" - als eigenes Feld angelegt, um spaeter weitere
+  /// Waehrungen zu unterstuetzen, ohne bestehende Eintraege migrieren zu muessen.
+  currency    String           @default("EUR")
+  /// Freier Text; das UI bietet eine feste Auswahlliste an, die ueberschreibbar ist.
+  category    String
+  description String?
+  date        DateTime
+  createdAt   DateTime         @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+
+  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdById String
+
+  allocations FinanceAllocation[]
+}
+
+/// Anteiliger Betrag eines Mitglieds an einer FinanceEntry. Bei Einnahmen eine
+/// Auszahlung der Band an das Mitglied (Gage) - das Mitglied selbst bestaetigt hier
+/// den Erhalt. Bei Ausgaben ein Kostenanteil, den das Mitglied der Band schuldet -
+/// hier bestaetigt der Finanzadmin den Zahlungseingang. Bis zur Bestaetigung gilt
+/// der Posten als offen/ausstehend (siehe confirmedAt).
+model FinanceAllocation {
+  id          String    @id @default(cuid())
+  amountCents Int
+  note        String?
+  confirmedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  financeEntry   FinanceEntry @relation(fields: [financeEntryId], references: [id], onDelete: Cascade)
+  financeEntryId String
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([financeEntryId, userId])
 }
 
 model Membership {
@@ -140,6 +242,10 @@ model Membership {
   userId String
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
+
+  /// Vorbelegung fuer neue Gagen-Eintraege dieser Person (in Cent) - bleibt dort
+  /// frei aenderbar. null = keine Vorbelegung.
+  defaultPayoutAmountCents Int?
 
   @@unique([userId, bandId])
 }
@@ -183,6 +289,7 @@ model Event {
   participants   EventParticipant[]
   files          BandFile[]
   packlists      Packlist[]
+  financeEntries FinanceEntry[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,

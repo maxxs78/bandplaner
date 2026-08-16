@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction } from "../actions";
 import { deleteBandFileAction, updateBandFileAction } from "../../files/actions";
+import { linkSetlistToEventAction, unlinkSetlistFromEventAction } from "../../setlists/actions";
+import { linkPacklistToEventAction, unlinkPacklistFromEventAction } from "../../equipment/actions";
 import { AvailabilityButtons } from "@/components/availability-buttons";
 import { DeleteButton } from "@/components/delete-button";
 import { MinimalFileUpload } from "@/components/band-file-upload";
@@ -27,7 +29,7 @@ export default async function EventDetailPage({
   params: Promise<{ bandId: string; eventId: string }>;
 }) {
   const { bandId, eventId } = await params;
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const event = await prisma.event.findUnique({
     where: { id: eventId, bandId },
@@ -35,6 +37,7 @@ export default async function EventDetailPage({
       availabilities: { include: { user: true } },
       participants: true,
       setlists: true,
+      packlists: true,
       createdBy: true,
       files: {
         orderBy: { createdAt: "desc" },
@@ -68,9 +71,24 @@ export default async function EventDetailPage({
   });
 
   const canManage = canManageContent(membership.role);
-  const canEdit = canManageBand(membership.role) || (canManage && event.createdById === user.id);
-  const isAdmin = canManageBand(membership.role);
   const features = getEnabledFeatures(membership.band);
+  const otherSetlists = canManage
+    ? await prisma.setlist.findMany({
+        where: { bandId, OR: [{ eventId: null }, { eventId: { not: eventId } }] },
+        include: { event: { select: { title: true } } },
+        orderBy: { createdAt: "desc" },
+      })
+    : [];
+  const otherPacklists =
+    canManage && features.packlists
+      ? await prisma.packlist.findMany({
+          where: { bandId, OR: [{ eventId: null }, { eventId: { not: eventId } }] },
+          include: { event: { select: { title: true } } },
+          orderBy: { createdAt: "desc" },
+        })
+      : [];
+  const canEdit = canManageBandContent(membership.role, isFinanceAdmin) || (canManage && event.createdById === user.id);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
   const files: FileListItem[] = event.files.map((f) => ({
     id: f.id,
@@ -185,16 +203,123 @@ export default async function EventDetailPage({
             <p className="text-sm text-muted">Noch keine Setlist verknüpft.</p>
           )}
           {event.setlists.map((s) => (
-            <Link
+            <div
               key={s.id}
-              href={`/bands/${bandId}/setlists/${s.id}`}
-              className="block rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:border-primary"
+              className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
             >
-              {s.name}
-            </Link>
+              <Link href={`/bands/${bandId}/setlists/${s.id}`} className="flex-1 text-foreground hover:text-primary">
+                {s.name}
+              </Link>
+              {canManage && (
+                <form action={unlinkSetlistFromEventAction.bind(null, bandId, s.id, eventId)}>
+                  <button type="submit" className="text-xs text-muted hover:text-danger">
+                    Trennen
+                  </button>
+                </form>
+              )}
+            </div>
           ))}
         </div>
+        {canManage && otherSetlists.length > 0 && (
+          <form
+            action={linkSetlistToEventAction.bind(null, bandId, eventId)}
+            className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          >
+            <select
+              name="setlistId"
+              defaultValue=""
+              required
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="" disabled>
+                Bestehende Setlist verknüpfen…
+              </option>
+              {otherSetlists.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                  {s.event ? ` (aktuell: ${s.event.title})` : ""}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
+            >
+              Verknüpfen
+            </button>
+          </form>
+        )}
       </Card>
+
+      {features.packlists && (
+        <Card>
+          <div className="flex items-center justify-between">
+            <h2 className="font-semibold text-foreground">Packlisten</h2>
+            {canManage && (
+              <Link href={`/bands/${bandId}/equipment/packlists?eventId=${eventId}`}>
+                <Button variant="secondary" size="sm">
+                  <Plus className="h-4 w-4" />
+                  Packliste
+                </Button>
+              </Link>
+            )}
+          </div>
+          <div className="mt-3 space-y-2">
+            {event.packlists.length === 0 && (
+              <p className="text-sm text-muted">Noch keine Packliste verknüpft.</p>
+            )}
+            {event.packlists.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <Link
+                  href={`/bands/${bandId}/equipment/packlists/${p.id}`}
+                  className="flex-1 text-foreground hover:text-primary"
+                >
+                  {p.name}
+                </Link>
+                {canManage && (
+                  <form action={unlinkPacklistFromEventAction.bind(null, bandId, p.id, eventId)}>
+                    <button type="submit" className="text-xs text-muted hover:text-danger">
+                      Trennen
+                    </button>
+                  </form>
+                )}
+              </div>
+            ))}
+          </div>
+          {canManage && otherPacklists.length > 0 && (
+            <form
+              action={linkPacklistToEventAction.bind(null, bandId, eventId)}
+              className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+            >
+              <select
+                name="packlistId"
+                defaultValue=""
+                required
+                className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+              >
+                <option value="" disabled>
+                  Bestehende Packliste verknüpfen…
+                </option>
+                {otherPacklists.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.event ? ` (aktuell: ${p.event.title})` : ""}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="submit"
+                className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
+              >
+                Verknüpfen
+              </button>
+            </form>
+          )}
+        </Card>
+      )}
 
       <Card>
         <h2 className="font-semibold text-foreground">Dateien</h2>

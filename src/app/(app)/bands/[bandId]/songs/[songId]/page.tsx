@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Pencil, Save } from "lucide-react";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBand, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -42,9 +42,14 @@ export default async function SongDetailPage({
   params: Promise<{ bandId: string; songId: string }>;
 }) {
   const { bandId, songId } = await params;
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   const canManage = canManageContent(membership.role);
+  // Bewusst strikt (nur echte Admins): steuert Sichtbarkeit fremder privater Dateien
+  // sowie das endgültige Löschen - beides nicht auf Finanzadmins erweitert.
   const isAdmin = canManageBand(membership.role);
+  // Erweitert um Finanzadmins: Songs verwalten/überschreiben (Status setzen,
+  // Vorschläge entscheiden, fremde hochgeladene Dateien umbenennen/löschen).
+  const canManageSongs = canManageBandContent(membership.role, isFinanceAdmin);
 
   const song = await prisma.song.findUnique({
     where: { id: songId, bandId },
@@ -169,7 +174,7 @@ export default async function SongDetailPage({
             <SongVoteList votes={song.votes} />
           </div>
 
-          {isAdmin && (
+          {canManageSongs && (
             <div className="mt-4 border-t border-border pt-4">
               <p className="mb-2 text-sm text-muted">Als Admin entscheiden:</p>
               <AdminProposalDecision
@@ -252,7 +257,7 @@ export default async function SongDetailPage({
             songId={songId}
             files={song.files}
             currentUserId={user.id}
-            isAdmin={isAdmin}
+            isAdmin={canManageSongs}
           />
         </div>
         {canManage && (

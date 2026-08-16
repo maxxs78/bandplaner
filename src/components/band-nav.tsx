@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users } from "lucide-react";
 import clsx from "clsx";
 
 const tabs = [
@@ -13,13 +13,24 @@ const tabs = [
   { href: "/setlists", label: "Setlisten", icon: ListMusic },
   { href: "/files", label: "Dateien", icon: Folder },
   { href: "/equipment", label: "Equipment", icon: Package },
+  { href: "/finance", label: "Finanzen", icon: Wallet },
   { href: "/members", label: "Band", icon: Users },
 ];
 
-export function BandNav({ bandId, showEquipment = true }: { bandId: string; showEquipment?: boolean }) {
+export function BandNav({
+  bandId,
+  showEquipment = true,
+  showFinance = false,
+}: {
+  bandId: string;
+  showEquipment?: boolean;
+  showFinance?: boolean;
+}) {
   const pathname = usePathname();
   const base = `/bands/${bandId}`;
-  const visibleTabs = tabs.filter((tab) => showEquipment || tab.href !== "/equipment");
+  const visibleTabs = tabs.filter(
+    (tab) => (showEquipment || tab.href !== "/equipment") && (showFinance || tab.href !== "/finance")
+  );
 
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-border">

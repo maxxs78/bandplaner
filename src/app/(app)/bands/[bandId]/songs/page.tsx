@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -33,9 +33,9 @@ export default async function SongsPage({
   searchParams: Promise<{ status?: string }>;
 }) {
   const { bandId } = await params;
-  const { membership } = await requireMembership(bandId);
+  const { membership, isFinanceAdmin } = await requireMembership(bandId);
   const canCreate = canManageContent(membership.role);
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const { status } = await searchParams;
 
   const songs = await prisma.song.findMany({

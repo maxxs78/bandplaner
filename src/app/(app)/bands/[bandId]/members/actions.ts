@@ -167,9 +167,26 @@ export async function removeMemberAction(
     }
   }
 
-  await prisma.membership.delete({
-    where: { id: membershipId, bandId },
-  });
+  const band = await prisma.band.findUnique({ where: { id: bandId }, select: { financeEnabled: true } });
+  if (band?.financeEnabled) {
+    const isTargetFinanceAdmin = await prisma.bandFinanceAdmin.findUnique({
+      where: { bandId_userId: { bandId, userId: target.userId } },
+    });
+    if (isTargetFinanceAdmin) {
+      const financeAdminCount = await prisma.bandFinanceAdmin.count({ where: { bandId } });
+      if (financeAdminCount <= 1) {
+        return {
+          error:
+            "Die Band braucht mindestens eine:n Finanzadmin:in, solange das Finanzmodul aktiviert ist. Weise die Rolle zuerst jemand anderem zu.",
+        };
+      }
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.bandFinanceAdmin.deleteMany({ where: { bandId, userId: target.userId } }),
+    prisma.membership.delete({ where: { id: membershipId, bandId } }),
+  ]);
   revalidatePath(`/bands/${bandId}/members`);
 }
 

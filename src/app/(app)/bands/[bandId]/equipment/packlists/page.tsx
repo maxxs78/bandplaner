@@ -10,13 +10,16 @@ import { createPacklistAction } from "../actions";
 
 export default async function PacklistsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bandId: string }>;
+  searchParams: Promise<{ eventId?: string }>;
 }) {
   const { bandId } = await params;
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${bandId}/equipment`);
   const canCreate = canManageContent(membership.role);
+  const { eventId } = await searchParams;
 
   const [packlists, events] = await Promise.all([
     prisma.packlist.findMany({
@@ -46,6 +49,7 @@ export default async function PacklistsPage({
             <NewPacklistForm
               action={createPacklistAction.bind(null, bandId)}
               events={events.map((e) => ({ ...e, startsAt: e.startsAt.toISOString() }))}
+              defaultEventId={eventId}
             />
           </div>
         </Card>

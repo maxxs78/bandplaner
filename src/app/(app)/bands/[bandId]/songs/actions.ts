@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBand, canManageBandContent, canManageContent } from "@/lib/access";
 import { songSchema, songLinkSchema, songVoteSchema } from "@/lib/validation";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
@@ -64,11 +64,11 @@ export async function createSongAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) {
     return { error: "Gäste können keine Songs anlegen" };
   }
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
   const parsed = parseSongForm(formData);
   if (!parsed.success) {
@@ -105,11 +105,11 @@ export async function updateSongAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const { membership } = await requireMembership(bandId);
+  const { membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) {
     return { error: "Gäste können Songs nicht bearbeiten" };
   }
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
   const parsed = parseSongForm(formData);
   if (!parsed.success) {
@@ -151,7 +151,8 @@ export async function updateSongAction(
 
 export async function deleteSongAction(bandId: string, songId: string) {
   const { membership } = await requireMembership(bandId);
-  // Nur Admins dürfen Songs final löschen.
+  // Nur echte Admins dürfen Songs final löschen - bewusst nicht auf Finanzadmins
+  // erweitert, da das endgültige Löschen die einschneidendste dieser Aktionen ist.
   if (!canManageBand(membership.role)) return;
 
   const song = await prisma.song.findUnique({ where: { id: songId, bandId }, select: { title: true, status: true } });
@@ -235,12 +236,12 @@ export async function uploadSongFileAction(
 }
 
 export async function deleteSongFileAction(bandId: string, songId: string, fileId: string) {
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const file = await prisma.songFile.findUnique({ where: { id: fileId } });
   if (!file || file.songId !== songId) return;
 
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   if (!isAdmin && file.uploadedById !== user.id) return;
 
   await prisma.songFile.delete({ where: { id: fileId } });
@@ -255,7 +256,7 @@ export async function updateSongFileAction(
   fileId: string,
   data: { filename: string; visibility: string }
 ) {
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const filename = data.filename.trim();
   if (!filename) return;
@@ -264,7 +265,7 @@ export async function updateSongFileAction(
   const file = await prisma.songFile.findUnique({ where: { id: fileId } });
   if (!file || file.songId !== songId) return;
 
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   if (!isAdmin && file.uploadedById !== user.id) return;
 
   await prisma.songFile.update({
@@ -395,8 +396,8 @@ export async function adminDecideProposalAction(
   songId: string,
   decision: "APPROVE" | "REJECT"
 ) {
-  const { membership } = await requireMembership(bandId);
-  if (!canManageBand(membership.role)) return;
+  const { membership, isFinanceAdmin } = await requireMembership(bandId);
+  if (!canManageBandContent(membership.role, isFinanceAdmin)) return;
 
   const song = await prisma.song.findUnique({
     where: { id: songId, bandId },

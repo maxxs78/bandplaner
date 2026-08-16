@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
@@ -39,9 +39,9 @@ export default async function FilesPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { bandId } = await params;
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   const canUpload = canManageContent(membership.role);
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const features = getEnabledFeatures(membership.band);
   const { category } = await searchParams;
 

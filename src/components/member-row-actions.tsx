@@ -11,10 +11,7 @@ import { Select, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { Role } from "@/generated/prisma/client";
 
-// Finanz-Administrator ist deaktiviert, bis das Finanzmodul existiert - nicht
-// mehr neu zuweisbar. Bereits so eingestellte Mitglieder behalten die Option
-// in ihrer eigenen Zeile, damit ihre Rolle weiterhin korrekt angezeigt wird.
-const baseRoleOptions: { value: Role; label: string }[] = [
+const roleOptions: { value: Role; label: string }[] = [
   { value: "MEMBER", label: "Mitglied" },
   { value: "ADMIN", label: "Administrator" },
   { value: "GUEST", label: "Gast" },
@@ -41,15 +38,6 @@ export function MemberRowActions({
   const [currentGuestUntil, setCurrentGuestUntil] = useState(toDateInputValue(guestUntil));
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-
-  const roleOptions: { value: Role; label: string }[] =
-    currentRole === "FINANCE_ADMIN"
-      ? [
-          baseRoleOptions[0],
-          { value: "FINANCE_ADMIN", label: "Finanz-Administrator" },
-          ...baseRoleOptions.slice(1),
-        ]
-      : baseRoleOptions;
 
   function handleRoleChange(newRole: Role) {
     const previousRole = currentRole;

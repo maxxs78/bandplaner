@@ -87,6 +87,27 @@ export async function createSetlistAction(
   redirect(`/bands/${bandId}/setlists/${setlist.id}`);
 }
 
+export async function linkSetlistToEventAction(bandId: string, eventId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const setlistId = formData.get("setlistId") as string;
+  if (!setlistId) return;
+
+  await prisma.setlist.update({ where: { id: setlistId, bandId }, data: { eventId } });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/setlists`);
+}
+
+export async function unlinkSetlistFromEventAction(bandId: string, setlistId: string, eventId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  await prisma.setlist.update({ where: { id: setlistId, bandId }, data: { eventId: null } });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/setlists`);
+}
+
 export async function deleteSetlistAction(bandId: string, setlistId: string) {
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) return;

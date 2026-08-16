@@ -181,6 +181,29 @@ export async function deletePacklistAction(bandId: string, packlistId: string) {
   redirect(`/bands/${bandId}/equipment/packlists`);
 }
 
+export async function linkPacklistToEventAction(bandId: string, eventId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
+  if (!canManageContent(membership.role)) return;
+
+  const packlistId = formData.get("packlistId") as string;
+  if (!packlistId) return;
+
+  await prisma.packlist.update({ where: { id: packlistId, bandId }, data: { eventId } });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/equipment/packlists`);
+}
+
+export async function unlinkPacklistFromEventAction(bandId: string, packlistId: string, eventId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
+  if (!canManageContent(membership.role)) return;
+
+  await prisma.packlist.update({ where: { id: packlistId, bandId }, data: { eventId: null } });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/equipment/packlists`);
+}
+
 export async function addPacklistEquipmentAction(bandId: string, packlistId: string, equipmentId: string) {
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) return;

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { saveBandFile, deleteStoredFile, BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
 import { bandFileCategoryLabels } from "@/lib/band-file-categories";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
@@ -94,7 +94,7 @@ export async function updateBandFileAction(
   fileId: string,
   data: { filename: string; category?: string; visibility: string }
 ) {
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const filename = data.filename.trim();
   if (!filename) return;
@@ -105,7 +105,7 @@ export async function updateBandFileAction(
   const file = await prisma.bandFile.findUnique({ where: { id: fileId } });
   if (!file || file.bandId !== bandId) return;
 
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   if (!isAdmin && file.uploadedById !== user.id) return;
 
   await prisma.bandFile.update({
@@ -116,12 +116,12 @@ export async function updateBandFileAction(
 }
 
 export async function deleteBandFileAction(bandId: string, fileId: string) {
-  const { user, membership } = await requireMembership(bandId);
+  const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
 
   const file = await prisma.bandFile.findUnique({ where: { id: fileId } });
   if (!file || file.bandId !== bandId) return;
 
-  const isAdmin = canManageBand(membership.role);
+  const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   if (!isAdmin && file.uploadedById !== user.id) return;
 
   await prisma.bandFile.delete({ where: { id: fileId } });
