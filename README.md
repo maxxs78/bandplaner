@@ -1,4 +1,25 @@
-Bandplaner ist eine webbasierte Band-Organisations-App (Kalender, Verfügbarkeit, Songs, Setlisten, Dateien) auf Basis von Next.js, Prisma und SQLite.
+Bandplaner ist eine webbasierte Band-Organisations-App auf Basis von Next.js, Prisma und SQLite. Sie bündelt die Organisation einer Band oder Musikgruppe – Termine, Verfügbarkeiten, Repertoire, Setlisten, Dateien und Equipment – an einem Ort, statt sie über E-Mail, Messenger-Gruppen und Tabellen zu verstreuen.
+
+## Über die App
+
+Ein Benutzerkonto kann Mitglied in mehreren Bands sein und zwischen diesen wechseln. Innerhalb jeder Band gilt ein Rollenmodell: **Administrator:in** (volle Rechte inkl. Mitglieder- und Rollenverwaltung), **Finanz-Administrator:in** (vorbereitete Rolle für einen künftigen Finanzbereich, siehe Funktionsspezifikation), **Mitglied** sowie **Gast/Aushilfe** mit zeitlich befristetem Zugriff (`Zugriff bis`-Datum). Neue Mitglieder und Gäste werden per Einladungslink hinzugefügt.
+
+Aktuell umgesetzte Module:
+
+- **Kalender & Termine** – Proben, Auftritte, Meetings und sonstige Termine inkl. Terminserien; je Terminart vorbelegter Teilnehmerkreis (bei Proben/Auftritten standardmäßig alle Mitglieder, bei Meetings nur die erstellende Person), individuell anpassbar. Abonnierbar als ICS-Feed für externe Kalender-Apps.
+- **Verfügbarkeiten** – Rückmeldung je Termin (Zusage/Absage/Vielleicht) sowie Eintragen längerfristiger persönlicher Abwesenheiten, unabhängig von konkreten Terminen.
+- **Songbibliothek** – zentrale, bandweit geteilte Songs mit Metadaten (Tonart, BPM, Taktart, Dauer, Genre, Interpret bei Coversongs), Song-Dokumenten (Audiodateien mit Player, Songtexte, Tabulaturen/Noten) mit je Datei einstellbarer Sichtbarkeit, externen Links sowie persönlichen Notizen je Mitglied. Songs durchlaufen einen Status-Workflow von „vorgeschlagen" bis „archiviert"; Vorschläge werden per Daumen-hoch/-runter mit sichtbarem Namen abgestimmt, bei einstimmigem Downvote automatisch abgelehnt.
+- **Setlisten** – Zusammenstellung aus der Songbibliothek, personalisierte Kennzeichnung einzelner Einträge je Mitglied (Farbe, Notiz, Bühnen-Hinweis-Icons wie Umstimmen/Instrumentwechsel/Programmwechsel), persönliche Gesamt-Anmerkung sowie PDF-/Druckexport – auch personalisiert je Mitglied.
+- **Equipment & Packlisten** – Katalog mit Eigentum (Band oder Einzelperson) und optional zuständiger Person, Packlisten je Termin mit Abhak-Fortschritt und Druckexport. Beide Module lassen sich je Band ein-/ausschalten.
+- **Dateiverwaltung** – bandinterner Dateispeicher, verknüpfbar mit Songs und Terminen; einzelne Dateien können optional über einen nicht erratbaren Link ohne Login freigegeben werden (Funktion je Band abschaltbar).
+- **Bandprofil** – Genre, Kurzbeschreibung, Standort, Kontakt-E-Mail, Links zu Website/Social-Media/Streaming sowie Bandbild.
+- **Benutzerprofil** – Anzeigename, E-Mail und Avatar, kontobezogen und unabhängig von der jeweiligen Bandzugehörigkeit.
+
+Die vollständige, detailliertere fachliche Spezifikation – inklusive geplanter, noch nicht umgesetzter Erweiterungen wie Finanzverwaltung, Band-Chat/Umfragen, KI-gestützten Setlist-Vorschlägen und einem Audio-/Video-Player mit Übungsfunktionen – steht in [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md).
+
+## Tech-Stack
+
+Next.js 16 (App Router), Prisma 7 mit SQLite (`better-sqlite3`-Adapter), NextAuth (Auth.js) v5, TypeScript, Tailwind CSS.
 
 ## Lokale Entwicklung
 
@@ -11,39 +32,13 @@ npm run dev
 
 Öffne [http://localhost:3000](http://localhost:3000). Die App legt beim ersten Start ein neues Konto über `/register` an; das erste Bandmitglied wird beim Anlegen der ersten Band automatisch deren Administrator:in.
 
-## Deployment per Docker (z. B. Synology DiskStation)
+## Self-Hosting / Deployment
 
-Das Repository enthält ein `Dockerfile` (mehrstufiger Build, eigenständiges Next.js-Server-Bundle) sowie eine `docker-compose.yml` mit persistenten Volumes für Datenbank, hochgeladene Dateien und Profil-/Bandbilder.
+Für den produktiven Betrieb (z. B. per Docker auf einer Synology DiskStation oder in Proxmox VE) siehe die ausführliche [Installationsanleitung](INSTALLATION.md).
 
-**Voraussetzung**: Docker bzw. Container Manager auf der DiskStation, sowie SSH-Zugriff oder die Möglichkeit, ein `docker-compose.yml`-Projekt anzulegen.
+## Weitere Ressourcen
 
-1. Repository auf die DiskStation holen (z. B. per `git clone`, oder Ordner hochladen).
-2. Neben `docker-compose.yml` eine eigene `.env`-Datei anlegen (Vorlage: `.env.example`):
-   ```bash
-   cp .env.example .env
-   ```
-   - `AUTH_SECRET`: eigenen, zufälligen Wert erzeugen, z. B. `openssl rand -base64 32`
-   - `NEXT_PUBLIC_APP_URL`: die später genutzte URL der DiskStation (z. B. `http://diskstation.local:3000`)
-   - `DATABASE_URL` wird für den Container bereits in `docker-compose.yml` auf das persistente Volume gesetzt und muss dort nicht angepasst werden.
-3. Bauen und starten:
-   ```bash
-   docker compose up -d --build
-   ```
-   Beim Start wendet der Container automatisch ausstehende Datenbank-Migrationen an (`prisma migrate deploy`, siehe `docker-entrypoint.sh`).
-4. App unter `http://<diskstation-ip>:3000` (Port in `docker-compose.yml` bei Bedarf anpassen) aufrufen und über `/register` das erste Konto anlegen.
-
-**Updates einspielen** (nachdem lokal weiterentwickelt und gepusht wurde):
-
-```bash
-git pull
-docker compose up -d --build
-```
-
-**Persistente Daten**: Datenbank (`bandplaner_data`), Song-/Band-Dateien (`bandplaner_storage`) und Profil-/Bandbilder (`bandplaner_uploads`) liegen in benannten Docker-Volumes und bleiben bei `docker compose up --build` erhalten. Ein `docker compose down -v` löscht sie unwiderruflich - nur bewusst verwenden.
-
-> Hinweis: Der Docker-Build wurde in dieser Entwicklungsumgebung nicht selbst getestet (kein Docker verfügbar). Vor dem produktiven Einsatz einmal testweise auf der Zielumgebung durchlaufen lassen.
-
-## Weitere Next.js-Ressourcen
-
+- [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – vollständige fachliche Spezifikation inkl. Roadmap
+- [INSTALLATION.md](INSTALLATION.md) – Installationsanleitung für den Selbsthost-Betrieb
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Learn Next.js](https://nextjs.org/learn)
