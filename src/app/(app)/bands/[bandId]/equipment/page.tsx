@@ -1,7 +1,10 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Pencil, Users } from "lucide-react";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/delete-button";
@@ -19,19 +22,24 @@ export default async function EquipmentPage({
 }) {
   const { bandId } = await params;
   const { user, membership } = await requireMembership(bandId);
+  const features = getEnabledFeatures(membership.band);
+  if (!features.equipment) redirect(`/bands/${bandId}`);
   const canManage = canManageContent(membership.role);
-  const isAdmin = canManageBand(membership.role);
   const { owner } = await searchParams;
+
+  const ownerFilter =
+    owner === "band"
+      ? { ownerBandId: bandId }
+      : owner === "mine"
+        ? { ownerUserId: user.id }
+        : equipmentVisibleInBand(bandId);
 
   const [equipment, memberships] = await Promise.all([
     prisma.equipment.findMany({
-      where: {
-        bandId,
-        ...(owner === "band" ? { ownerId: null } : owner === "mine" ? { ownerId: user.id } : {}),
-      },
+      where: ownerFilter,
       orderBy: { name: "asc" },
       include: {
-        owner: { select: { id: true, name: true } },
+        ownerUser: { select: { id: true, name: true } },
         responsible: { select: { id: true, name: true } },
       },
     }),
@@ -54,7 +62,7 @@ export default async function EquipmentPage({
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold text-foreground">Equipment</h1>
-        <EquipmentSubNav bandId={bandId} active="catalog" />
+        <EquipmentSubNav bandId={bandId} active="catalog" showPacklists={features.packlists} />
       </div>
 
       {canManage && (
@@ -94,7 +102,7 @@ export default async function EquipmentPage({
           <Card className="text-sm text-muted">Kein Equipment gefunden.</Card>
         )}
         {equipment.map((item) => {
-          const canEdit = isAdmin || item.ownerId === null || item.ownerId === user.id;
+          const canEdit = item.ownerUser ? item.ownerUser.id === user.id : canManage;
           return (
             <Card key={item.id} className="flex items-center justify-between gap-3">
               <div className="min-w-0">
@@ -107,8 +115,8 @@ export default async function EquipmentPage({
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
-                <Badge variant={item.owner ? "accent" : "default"}>
-                  {item.owner ? item.owner.name : "Band"}
+                <Badge variant={item.ownerUser ? "accent" : "default"}>
+                  {item.ownerUser ? item.ownerUser.name : "Band"}
                 </Badge>
                 {canEdit && (
                   <>
@@ -133,7 +141,8 @@ export default async function EquipmentPage({
       {members.length > 1 && (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-muted">
           <Users className="h-3.5 w-3.5" />
-          Persönliches Equipment kann nur die besitzende Person selbst oder ein:e Admin bearbeiten.
+          Persönliches Equipment kann nur die besitzende Person selbst bearbeiten und ist automatisch in
+          jeder Band nutzbar, in der sie Mitglied ist.
         </p>
       )}
     </div>

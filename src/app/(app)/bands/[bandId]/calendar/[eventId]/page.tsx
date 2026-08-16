@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
 import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction } from "../actions";
@@ -69,6 +70,7 @@ export default async function EventDetailPage({
   const canManage = canManageContent(membership.role);
   const canEdit = canManageBand(membership.role) || (canManage && event.createdById === user.id);
   const isAdmin = canManageBand(membership.role);
+  const features = getEnabledFeatures(membership.band);
 
   const files: FileListItem[] = event.files.map((f) => ({
     id: f.id,
@@ -198,11 +200,20 @@ export default async function EventDetailPage({
         <h2 className="font-semibold text-foreground">Dateien</h2>
         {canManage && (
           <div className="mt-3">
-            <MinimalFileUpload action={uploadEventFileAction.bind(null, bandId, eventId)} />
+            <MinimalFileUpload
+              action={uploadEventFileAction.bind(null, bandId, eventId)}
+              publicLinksEnabled={membership.band.publicFileLinksEnabled}
+            />
           </div>
         )}
         <div className="mt-3">
-          <FileList files={files} currentUserId={user.id} isAdmin={isAdmin} />
+          <FileList
+            files={files}
+            currentUserId={user.id}
+            isAdmin={isAdmin}
+            equipmentEnabled={features.equipment}
+            publicLinksEnabled={membership.band.publicFileLinksEnabled}
+          />
         </div>
       </Card>
     </div>

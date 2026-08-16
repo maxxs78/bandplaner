@@ -12,13 +12,19 @@ export function BandFileUpload({
   events,
   songs,
   equipment,
+  publicLinksEnabled = true,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   events: { id: string; title: string }[];
   songs: { id: string; title: string }[];
-  equipment: { id: string; name: string }[];
+  /** undefined, wenn das Equipment-Modul für diese Band deaktiviert ist - blendet das Feld aus. */
+  equipment?: { id: string; name: string }[];
+  publicLinksEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const visibilityOptions = publicLinksEnabled
+    ? bandFileVisibilityOptions
+    : bandFileVisibilityOptions.filter((v) => v.value !== "PUBLIC");
 
   return (
     <form action={formAction} className="space-y-3">
@@ -42,7 +48,7 @@ export function BandFileUpload({
         <div>
           <Label htmlFor="visibility">Sichtbarkeit</Label>
           <Select id="visibility" name="visibility" defaultValue="INTERNAL">
-            {bandFileVisibilityOptions.map((v) => (
+            {visibilityOptions.map((v) => (
               <option key={v.value} value={v.value}>
                 {v.label}
               </option>
@@ -71,17 +77,19 @@ export function BandFileUpload({
             ))}
           </Select>
         </div>
-        <div>
-          <Label htmlFor="equipmentId">Verknüpftes Equipment</Label>
-          <Select id="equipmentId" name="equipmentId" defaultValue="">
-            <option value="">– keines –</option>
-            {equipment.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-          </Select>
-        </div>
+        {equipment && (
+          <div>
+            <Label htmlFor="equipmentId">Verknüpftes Equipment</Label>
+            <Select id="equipmentId" name="equipmentId" defaultValue="">
+              <option value="">– keines –</option>
+              {equipment.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
       </div>
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" size="sm" disabled={pending}>
@@ -97,10 +105,15 @@ export function BandFileUpload({
  * den Kontext bereits feststeht (in der gebundenen Server Action vorbelegt). */
 export function MinimalFileUpload({
   action,
+  publicLinksEnabled = true,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
+  publicLinksEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const visibilityOptions = publicLinksEnabled
+    ? bandFileVisibilityOptions
+    : bandFileVisibilityOptions.filter((v) => v.value !== "PUBLIC");
 
   return (
     <form action={formAction} className="space-y-3">
@@ -124,7 +137,7 @@ export function MinimalFileUpload({
         <div>
           <Label htmlFor="visibility">Sichtbarkeit</Label>
           <Select id="visibility" name="visibility" defaultValue="INTERNAL">
-            {bandFileVisibilityOptions.map((v) => (
+            {visibilityOptions.map((v) => (
               <option key={v.value} value={v.value}>
                 {v.label}
               </option>

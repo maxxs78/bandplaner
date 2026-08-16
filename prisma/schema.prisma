@@ -84,7 +84,7 @@ model User {
   songVotes              SongVote[]
   proposedSongs          Song[]                  @relation("SongProposedBy")
   uploadedBandFiles      BandFile[]
-  ownedEquipment         Equipment[]
+  ownedEquipment         Equipment[]             @relation("EquipmentOwnerUser")
   responsibleForEquipment Equipment[]            @relation("EquipmentResponsible")
   assignedPacklistItems  PacklistItem[]
 }
@@ -103,6 +103,22 @@ model Band {
   spotifyUrl   String?
   createdAt    DateTime @default(now())
 
+  /// Funktions-Schalter fuer optionale Module (siehe src/lib/features.ts fuer
+  /// Abhaengigkeiten - packlistsEnabled wirkt nur, wenn equipmentEnabled auch an ist).
+  equipmentEnabled Boolean @default(true)
+  packlistsEnabled Boolean @default(true)
+
+  /// Vorbelegung fuer "Zugriff bis" bei neuen Gast-Einladungen (Tage ab Einladung).
+  /// null = kein Standard, Admin traegt das Datum wie bisher manuell ein.
+  defaultGuestAccessDays Int?
+
+  /// Erlaubt Bandmitgliedern, Dateien ueber einen oeffentlichen, loginfreien Link
+  /// zu teilen. Bei false wird auch der Abruf bereits bestehender Links gesperrt
+  /// (siehe /api/band-files/public/[shareToken]) - die visibility der Dateien
+  /// selbst bleibt dabei unangetastet, damit ein Wiedereinschalten sie sofort
+  /// wieder freigibt.
+  publicFileLinksEnabled Boolean @default(true)
+
   memberships Membership[]
   events      Event[]
   songs       Song[]
@@ -110,7 +126,7 @@ model Band {
   absences    Absence[]
   invitations Invitation[]
   files       BandFile[]
-  equipment   Equipment[]
+  ownedEquipment Equipment[] @relation("EquipmentOwnerBand")
   packlists   Packlist[]
 }
 
@@ -412,8 +428,10 @@ enum EquipmentCategory {
   OTHER
 }
 
-/// Katalogeintrag für Bandequipment. Eigentum entweder bei der Band (ownerId = null)
-/// oder bei einem einzelnen Mitglied (persönliches Equipment).
+/// Katalogeintrag für Equipment. Eigentum entweder bei einer Band (Band-Equipment,
+/// nur innerhalb dieser Band nutzbar) oder bei einer Person (persönliches Equipment,
+/// nutzbar in jeder Band, in der die Person aktuell Mitglied ist) - genau eines von
+/// ownerUserId/ownerBandId ist gesetzt, durchgesetzt in equipment/actions.ts.
 model Equipment {
   id          String            @id @default(cuid())
   name        String
@@ -423,11 +441,11 @@ model Equipment {
   location    String?
   createdAt   DateTime          @default(now())
 
-  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
-  bandId String
+  ownerUser   User?   @relation("EquipmentOwnerUser", fields: [ownerUserId], references: [id], onDelete: Cascade)
+  ownerUserId String?
 
-  owner   User?   @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-  ownerId String?
+  ownerBand   Band?   @relation("EquipmentOwnerBand", fields: [ownerBandId], references: [id], onDelete: Cascade)
+  ownerBandId String?
 
   /// Für Band-Equipment optional festgelegte, für dieses Equipment zuständige Person
   /// (unabhängig vom Eigentum) - wird beim Hinzufügen zu einer Packliste als

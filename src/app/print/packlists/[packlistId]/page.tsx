@@ -1,6 +1,7 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { PrintTrigger } from "@/components/print-trigger";
 
 export default async function PacklistPrintPage({
@@ -16,7 +17,8 @@ export default async function PacklistPrintPage({
   });
   if (!packlistMeta) notFound();
 
-  await requireMembership(packlistMeta.bandId);
+  const { membership } = await requireMembership(packlistMeta.bandId);
+  if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${packlistMeta.bandId}`);
 
   const packlist = await prisma.packlist.findUnique({
     where: { id: packlistId },

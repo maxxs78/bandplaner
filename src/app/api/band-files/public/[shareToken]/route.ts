@@ -10,8 +10,11 @@ export async function GET(
 ) {
   const { shareToken } = await params;
 
-  const bandFile = await prisma.bandFile.findUnique({ where: { shareToken } });
-  if (!bandFile || bandFile.visibility !== "PUBLIC") {
+  const bandFile = await prisma.bandFile.findUnique({
+    where: { shareToken },
+    include: { band: { select: { publicFileLinksEnabled: true } } },
+  });
+  if (!bandFile || bandFile.visibility !== "PUBLIC" || !bandFile.band.publicFileLinksEnabled) {
     return new NextResponse("Not found", { status: 404 });
   }
 

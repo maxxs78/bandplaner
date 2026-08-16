@@ -1,8 +1,10 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.1 — Stand 15.08.2026
+Version 1.2 — Stand 16.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
+
+*Änderungen gegenüber Version 1.1: geplante Zukunftsfunktionen ergänzt — erleichterte Titelerfassung per automatischer Metadaten-Recherche über Spotify-/YouTube-URL sowie Musikdatenbanken wie MusicBrainz/Discogs (3.3), neues Modul Audio-/Video-Player mit Übungsfunktionen wie Tempo-/Tonart-Anpassung und Abschnitts-Loop (3.12); Abgrenzung in Abschnitt 5 entsprechend angepasst.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -51,10 +53,11 @@ Die Spezifikation beschreibt den fachlichen Funktionsumfang der Anwendung, gegli
 
 ### 3.3 Song- und Repertoireverwaltung
 
-- Zentrale, bandweit geteilte Songbibliothek mit Metadaten: Titel, Tonart, Tempo (BPM), Taktart, Dauer, Genre, Lead-Gesang/Besetzung.
+- Zentrale, bandweit geteilte Songbibliothek mit Metadaten: Titel, Tonart, Tempo (BPM), Taktart, Dauer, Genre, Lead-Gesang/Besetzung, Album und Erscheinungsjahr sowie optionalem Coverbild.
+- Erleichterte Titelerfassung (geplant): Wird beim Anlegen eines Songs eine Spotify- oder YouTube-URL angegeben, werden die Datenfelder, soweit sinnvoll recherchierbar, automatisch aus den Online-Informationen befüllt; ergänzend kann die Suche auch in Musikdatenbanken wie MusicBrainz oder Discogs erfolgen. Übernommen werden dabei u. a. Coverbild, Erscheinungsjahr und Album, sofern verfügbar. Bei mehreren Suchtreffern wird eine Auswahlliste zur Bestätigung angezeigt; sämtliche Felder bleiben zusätzlich vollständig manuell erfassbar bzw. änderbar.
 - Persönliche Notizen einzelner Mitglieder je Song (z. B. eigene Spielhinweise), getrennt von bandweiten Informationen. Diese persönliche Notiz kann zusätzlich eine kurze Bühnennotiz, eine Farbe sowie Hinweis-Icons enthalten, die als Vorgabewert übernommen werden, sobald der Song einer Setlist hinzugefügt wird (siehe 3.4).
 - **Song-Dokumente je Song:**
-  - Audiodateien mit integriertem Player zur direkten Wiedergabe in der App (z. B. Referenzaufnahmen, Proberaum-Mitschnitte).
+  - Audiodateien mit integriertem Player zur direkten Wiedergabe in der App (z. B. Referenzaufnahmen, Proberaum-Mitschnitte); geplante Erweiterungen des Players (Streaming-Wiedergabe, Übungsfunktionen) siehe Abschnitt 3.12.
   - Songtexte inklusive Online-Suche zum Auffinden von Texten sowie Speicherung/Export als PDF.
   - Tabulaturen/Noten inklusive Verwaltung gängiger Dateiformate (z. B. Guitar-Pro-Dateien) sowie klassischer Notenblätter/Leadsheets als PDF.
   - Je Datei einstellbare Sichtbarkeit: nur für die hochladende Person oder für die gesamte Band.
@@ -129,6 +132,14 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 - Bandbild (Upload) zusätzlich zum individuellen Profilbild je Benutzerkonto (siehe Abschnitt 2).
 - Diese Stammdaten dienen aktuell der internen Organisation und Wiederverwendung (z. B. in Exporten und künftigen Kommunikationsfunktionen); eine öffentlich zugängliche Profilseite ist damit nicht verbunden (vgl. die entsprechende Abgrenzung in Abschnitt 5).
 
+### 3.12 Audio-/Video-Player und Übungsfunktionen (geplant)
+
+- Integrierter Audio-/Video-Player für am Song hinterlegte Dateien sowie für per URL verlinkte Streaming-Quellen (z. B. Spotify, YouTube), direkt innerhalb der App abspielbar.
+- Übungsfunktionen im Player, mindestens für MP3-Dateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune.
+- Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen.
+
+Diese Funktionen sind als künftige Erweiterung der bestehenden Song-Wiedergabe (siehe 3.3) vorgesehen.
+
 ## 4. Nicht-funktionale Anforderungen
 
 - **Plattformen**: Responsive Webanwendung, nutzbar auf Desktop-Browsern sowie mobilen Endgeräten; native Apps optional als spätere Ausbaustufe.
@@ -144,7 +155,7 @@ Im Rahmen der Recherche wurden weitere, bei einzelnen Anbietern vorkommende Funk
 
 - Beleg-Scanner (automatische Betragserkennung aus fotografierten Quittungen, OCR)
 - KI-gestützte Reise-/Fahrgemeinschaftsplanung
-- Bühnentechnik-Integrationen wie MIDI-/DMX-Steuerung, Playback-/Click-Track-Wiedergabe, Bluetooth-Fußschalter-Steuerung und ein dedizierter Übungsmodus mit Audio-Loop/Tempo-Verlangsamung
+- Bühnentechnik-Integrationen wie MIDI-/DMX-Steuerung, Playback-/Click-Track-Wiedergabe sowie Bluetooth-Fußschalter-Steuerung — der Übungsmodus mit Tempo-/Tonart-Anpassung und Abschnitts-Loop ist demgegenüber als geplante Funktion in Abschnitt 3.12 vorgesehen
 - Öffentliches Band-Profil („Link-in-Bio"-Seite) — zu unterscheiden von den intern gepflegten Bandprofil-Stammdaten ohne öffentliche Seite gemäß Abschnitt 3.11
 - Vertragsbaukasten mit digitaler Signatur
 - Bandübergreifende Musiker-/Vertretungssuche

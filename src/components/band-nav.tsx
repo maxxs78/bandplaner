@@ -16,13 +16,14 @@ const tabs = [
   { href: "/members", label: "Band", icon: Users },
 ];
 
-export function BandNav({ bandId }: { bandId: string }) {
+export function BandNav({ bandId, showEquipment = true }: { bandId: string; showEquipment?: boolean }) {
   const pathname = usePathname();
   const base = `/bands/${bandId}`;
+  const visibleTabs = tabs.filter((tab) => showEquipment || tab.href !== "/equipment");
 
   return (
     <nav className="flex gap-1 overflow-x-auto border-b border-border">
-      {tabs.map((tab) => {
+      {visibleTabs.map((tab) => {
         const href = `${base}${tab.href}`;
         const active =
           tab.href === "" ? pathname === base : pathname.startsWith(href);

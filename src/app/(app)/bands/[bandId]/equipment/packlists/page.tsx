@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { Card } from "@/components/ui/card";
 import { EquipmentSubNav } from "@/components/equipment-sub-nav";
 import { NewPacklistForm } from "@/components/new-packlist-form";
@@ -13,6 +15,7 @@ export default async function PacklistsPage({
 }) {
   const { bandId } = await params;
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${bandId}/equipment`);
   const canCreate = canManageContent(membership.role);
 
   const [packlists, events] = await Promise.all([

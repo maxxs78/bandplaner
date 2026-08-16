@@ -1,9 +1,12 @@
 import Link from "next/link";
+import { Settings } from "lucide-react";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { BandNav } from "@/components/band-nav";
 import { BandSwitcher } from "@/components/band-switcher";
 import { Avatar } from "@/components/avatar";
+import { Button } from "@/components/ui/button";
 
 export default async function BandLayout({
   children,
@@ -21,17 +24,16 @@ export default async function BandLayout({
     orderBy: { createdAt: "asc" },
   });
 
+  const isAdmin = canManageBand(membership.role);
+  const features = getEnabledFeatures(membership.band);
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           href={`/bands/${bandId}/members`}
           className="flex items-center gap-3 rounded-lg transition hover:opacity-80"
-          title={
-            canManageBand(membership.role)
-              ? "Band bearbeiten (Profil, Mitglieder, Einladungen)"
-              : "Band ansehen"
-          }
+          title={isAdmin ? "Band bearbeiten (Profil, Mitglieder, Einladungen)" : "Band ansehen"}
         >
           <Avatar src={membership.band.imageUrl} name={membership.band.name} size="lg" />
           <div>
@@ -43,14 +45,23 @@ export default async function BandLayout({
             </h1>
           </div>
         </Link>
-        <BandSwitcher
-          bands={memberships.map((m) => m.band)}
-          currentBandId={bandId}
-        />
+        <div className="flex items-center gap-2">
+          <BandSwitcher
+            bands={memberships.map((m) => m.band)}
+            currentBandId={bandId}
+          />
+          {isAdmin && (
+            <Link href={`/bands/${bandId}/settings`} title="Verwaltung: Funktionen für diese Band">
+              <Button variant="secondary" size="sm">
+                <Settings className="h-4 w-4" />
+              </Button>
+            </Link>
+          )}
+        </div>
       </div>
 
       <div className="mt-6">
-        <BandNav bandId={bandId} />
+        <BandNav bandId={bandId} showEquipment={features.equipment} />
       </div>
 
       <div className="mt-6">{children}</div>

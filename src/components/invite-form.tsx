@@ -16,7 +16,7 @@ const roleOptions: { value: Role; label: string }[] = [
   { value: "GUEST", label: "Gast" },
 ];
 
-export function InviteForm({ bandId }: { bandId: string }) {
+export function InviteForm({ bandId, defaultGuestUntil }: { bandId: string; defaultGuestUntil?: string }) {
   const boundAction = inviteAction.bind(null, bandId);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     boundAction,
@@ -48,7 +48,7 @@ export function InviteForm({ bandId }: { bandId: string }) {
       {role === "GUEST" && (
         <div>
           <Label htmlFor="invite-guestUntil">Zugriff bis (optional)</Label>
-          <Input id="invite-guestUntil" name="guestUntil" type="date" />
+          <Input id="invite-guestUntil" name="guestUntil" type="date" defaultValue={defaultGuestUntil} />
         </div>
       )}
       <Button type="submit" disabled={pending}>
@@ -60,7 +60,9 @@ export function InviteForm({ bandId }: { bandId: string }) {
         {state?.success && <p className="mt-1 text-sm text-success">{state.success}</p>}
         {role === "GUEST" && (
           <p className="mt-1 text-xs text-muted">
-            Ohne Datum hat der Gast unbegrenzten Zugriff.
+            {defaultGuestUntil
+              ? "Datum wurde nach dem Band-Standard vorbelegt, aber frei änderbar. Leeren für unbegrenzten Zugriff."
+              : "Ohne Datum hat der Gast unbegrenzten Zugriff."}
           </p>
         )}
       </div>

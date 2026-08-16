@@ -78,11 +78,18 @@ export function FileList({
   files,
   currentUserId,
   isAdmin,
+  equipmentEnabled = true,
+  publicLinksEnabled = true,
 }: {
   files: FileListItem[];
   currentUserId: string;
   isAdmin: boolean;
+  equipmentEnabled?: boolean;
+  publicLinksEnabled?: boolean;
 }) {
+  const bandVisibilityOptions = publicLinksEnabled
+    ? BAND_VISIBILITY_OPTIONS
+    : BAND_VISIBILITY_OPTIONS.filter((v) => v.value !== "PUBLIC");
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
 
@@ -140,7 +147,7 @@ export function FileList({
             category={file.kind === "band" ? file.category : undefined}
             categoryOptions={file.kind === "band" ? BAND_CATEGORY_OPTIONS : undefined}
             visibility={file.rawVisibility}
-            visibilityOptions={file.kind === "band" ? BAND_VISIBILITY_OPTIONS : SONG_VISIBILITY_OPTIONS}
+            visibilityOptions={file.kind === "band" ? bandVisibilityOptions : SONG_VISIBILITY_OPTIONS}
             action={file.updateAction}
           />
         )}
@@ -151,7 +158,7 @@ export function FileList({
           <VisibilityIcon className="h-3 w-3" />
           {visibility.label}
         </span>
-        {file.visibility === "PUBLIC" && file.shareToken && (
+        {publicLinksEnabled && file.visibility === "PUBLIC" && file.shareToken && (
           <CopyLinkButton path={`/api/band-files/public/${file.shareToken}`} />
         )}
         {canDelete && (
@@ -180,7 +187,7 @@ export function FileList({
               <option value="none">Keine</option>
               <option value="song">Song</option>
               <option value="event">Termin</option>
-              <option value="equipment">Equipment</option>
+              {equipmentEnabled && <option value="equipment">Equipment</option>}
             </Select>
           </div>
         </div>

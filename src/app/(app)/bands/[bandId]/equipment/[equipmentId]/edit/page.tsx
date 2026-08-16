@@ -1,6 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { updateEquipmentAction, uploadEquipmentFileAction } from "../../actions";
 import { deleteBandFileAction, updateBandFileAction } from "../../../files/actions";
 import { EquipmentForm } from "@/components/equipment-form";
@@ -15,9 +17,10 @@ export default async function EditEquipmentPage({
 }) {
   const { bandId, equipmentId } = await params;
   const { user, membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).equipment) redirect(`/bands/${bandId}`);
 
-  const equipment = await prisma.equipment.findUnique({
-    where: { id: equipmentId, bandId },
+  const equipment = await prisma.equipment.findFirst({
+    where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
     include: {
       files: {
         orderBy: { createdAt: "desc" },
@@ -27,9 +30,11 @@ export default async function EditEquipmentPage({
   });
   if (!equipment) notFound();
 
-  const canEdit =
-    canManageBand(membership.role) ||
-    (canManageContent(membership.role) && (equipment.ownerId === null || equipment.ownerId === user.id));
+  // Band-Equipment darf jede inhalte-berechtigte Person dieser Band bearbeiten;
+  // persönliches Equipment ausschließlich die besitzende Person selbst.
+  const canEdit = equipment.ownerUserId
+    ? equipment.ownerUserId === user.id
+    : canManageContent(membership.role);
   if (!canEdit) {
     redirect(`/bands/${bandId}/equipment`);
   }
@@ -73,7 +78,7 @@ export default async function EditEquipmentPage({
               name: equipment.name,
               description: equipment.description ?? "",
               location: equipment.location ?? "",
-              ownerId: equipment.ownerId ?? "",
+              ownerId: equipment.ownerUserId ?? "",
               responsibleId: equipment.responsibleId ?? "",
               category: equipment.category,
             }}
@@ -87,10 +92,18 @@ export default async function EditEquipmentPage({
           Z. B. Bedienungsanleitungen, Kaufbelege oder Fotos zu diesem Equipment.
         </p>
         <div className="mt-3">
-          <MinimalFileUpload action={uploadEquipmentFileAction.bind(null, bandId, equipmentId)} />
+          <MinimalFileUpload
+            action={uploadEquipmentFileAction.bind(null, bandId, equipmentId)}
+            publicLinksEnabled={membership.band.publicFileLinksEnabled}
+          />
         </div>
         <div className="mt-3">
-          <FileList files={files} currentUserId={user.id} isAdmin={isAdmin} />
+          <FileList
+            files={files}
+            currentUserId={user.id}
+            isAdmin={isAdmin}
+            publicLinksEnabled={membership.band.publicFileLinksEnabled}
+          />
         </div>
       </Card>
     </div>

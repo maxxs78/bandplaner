@@ -44,6 +44,11 @@ export default async function MembersPage({
   ]);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  const defaultGuestUntil = membership.band.defaultGuestAccessDays
+    ? new Date(new Date().getTime() + membership.band.defaultGuestAccessDays * 24 * 60 * 60 * 1000)
+        .toISOString()
+        .slice(0, 10)
+    : undefined;
 
   return (
     <div className="space-y-8">
@@ -105,7 +110,7 @@ export default async function MembersPage({
         <div>
           <h2 className="font-semibold text-foreground">Person einladen</h2>
           <Card className="mt-3">
-            <InviteForm bandId={bandId} />
+            <InviteForm bandId={bandId} defaultGuestUntil={defaultGuestUntil} />
           </Card>
         </div>
       )}

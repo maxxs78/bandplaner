@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, FileDown } from "lucide-react";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/delete-button";
 import { PacklistBuilder } from "@/components/packlist-builder";
@@ -22,6 +24,7 @@ export default async function PacklistDetailPage({
 }) {
   const { bandId, packlistId } = await params;
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${bandId}`);
   const canManage = canManageContent(membership.role);
 
   const packlist = await prisma.packlist.findUnique({
@@ -36,7 +39,7 @@ export default async function PacklistDetailPage({
               id: true,
               name: true,
               location: true,
-              owner: { select: { id: true, name: true } },
+              ownerUser: { select: { id: true, name: true } },
             },
           },
           assignedTo: { select: { id: true, name: true } },
@@ -48,9 +51,9 @@ export default async function PacklistDetailPage({
 
   const [catalog, memberships] = await Promise.all([
     prisma.equipment.findMany({
-      where: { bandId },
+      where: equipmentVisibleInBand(bandId),
       orderBy: { name: "asc" },
-      include: { owner: { select: { id: true, name: true } } },
+      include: { ownerUser: { select: { id: true, name: true } } },
     }),
     prisma.membership.findMany({
       where: { bandId },
@@ -64,7 +67,18 @@ export default async function PacklistDetailPage({
     id: e.id,
     name: e.name,
     location: e.location,
-    owner: e.owner ? { id: e.owner.id, name: e.owner.name } : null,
+    owner: e.ownerUser ? { id: e.ownerUser.id, name: e.ownerUser.name } : null,
+  }));
+  const items = packlist.items.map((item) => ({
+    ...item,
+    equipment: item.equipment
+      ? {
+          id: item.equipment.id,
+          name: item.equipment.name,
+          location: item.equipment.location,
+          owner: item.equipment.ownerUser,
+        }
+      : null,
   }));
 
   return (
@@ -105,8 +119,8 @@ export default async function PacklistDetailPage({
 
       <div className="mt-6">
         <PacklistBuilder
-          key={packlist.items.map((i) => i.id).join(",")}
-          initialItems={packlist.items}
+          key={items.map((i) => i.id).join(",")}
+          initialItems={items}
           catalogEquipment={catalogEquipment}
           members={members}
           readOnly={!canManage}

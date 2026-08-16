@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { Card } from "@/components/ui/card";
 import { BandFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
@@ -40,6 +42,7 @@ export default async function FilesPage({
   const { user, membership } = await requireMembership(bandId);
   const canUpload = canManageContent(membership.role);
   const isAdmin = canManageBand(membership.role);
+  const features = getEnabledFeatures(membership.band);
   const { category } = await searchParams;
 
   const [bandFiles, songFiles, events, songs, equipment, usedBytes] = await Promise.all([
@@ -76,7 +79,7 @@ export default async function FilesPage({
       select: { id: true, title: true },
     }),
     prisma.equipment.findMany({
-      where: { bandId },
+      where: equipmentVisibleInBand(bandId),
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
@@ -160,7 +163,8 @@ export default async function FilesPage({
               action={uploadBandFileAction.bind(null, bandId)}
               events={events}
               songs={songs}
-              equipment={equipment}
+              equipment={features.equipment ? equipment : undefined}
+              publicLinksEnabled={membership.band.publicFileLinksEnabled}
             />
           </div>
         </Card>
@@ -185,7 +189,13 @@ export default async function FilesPage({
       </div>
 
       <div className="mt-4">
-        <FileList files={files} currentUserId={user.id} isAdmin={isAdmin} />
+        <FileList
+          files={files}
+          currentUserId={user.id}
+          isAdmin={isAdmin}
+          equipmentEnabled={features.equipment}
+          publicLinksEnabled={membership.band.publicFileLinksEnabled}
+        />
       </div>
     </div>
   );

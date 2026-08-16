@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
 import { saveBandFile, deleteStoredFile, BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
 import { bandFileCategoryLabels } from "@/lib/band-file-categories";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { revalidatePath } from "next/cache";
 import type { BandFileCategory, BandFileVisibility } from "@/generated/prisma/client";
 
@@ -43,7 +44,8 @@ export async function uploadBandFileAction(
 
   const categoryRaw = formData.get("category");
   const category = (CATEGORIES.includes(categoryRaw as string) ? categoryRaw : "OTHER") as BandFileCategory;
-  const visibility = formData.get("visibility") === "PUBLIC" ? "PUBLIC" : "INTERNAL";
+  const wantsPublic = formData.get("visibility") === "PUBLIC";
+  const visibility = wantsPublic && membership.band.publicFileLinksEnabled ? "PUBLIC" : "INTERNAL";
 
   const eventId = (formData.get("eventId") as string) || null;
   const songId = (formData.get("songId") as string) || null;
@@ -57,7 +59,10 @@ export async function uploadBandFileAction(
     if (!song) return { error: "Ungültiger Song" };
   }
   if (equipmentId) {
-    const equipment = await prisma.equipment.findUnique({ where: { id: equipmentId, bandId }, select: { id: true } });
+    const equipment = await prisma.equipment.findFirst({
+      where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
+      select: { id: true },
+    });
     if (!equipment) return { error: "Ungültiges Equipment" };
   }
 
@@ -95,6 +100,7 @@ export async function updateBandFileAction(
   if (!filename) return;
   if (!CATEGORIES.includes(data.category as string)) return;
   if (data.visibility !== "INTERNAL" && data.visibility !== "PUBLIC") return;
+  const visibility = data.visibility === "PUBLIC" && membership.band.publicFileLinksEnabled ? "PUBLIC" : "INTERNAL";
 
   const file = await prisma.bandFile.findUnique({ where: { id: fileId } });
   if (!file || file.bandId !== bandId) return;
@@ -104,7 +110,7 @@ export async function updateBandFileAction(
 
   await prisma.bandFile.update({
     where: { id: fileId },
-    data: { filename, category: data.category as BandFileCategory, visibility: data.visibility as BandFileVisibility },
+    data: { filename, category: data.category as BandFileCategory, visibility: visibility as BandFileVisibility },
   });
   revalidatePath(`/bands/${bandId}/files`);
 }

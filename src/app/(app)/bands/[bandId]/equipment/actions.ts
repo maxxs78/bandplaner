@@ -1,7 +1,9 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireMembership, canManageBand, canManageContent } from "@/lib/access";
+import { requireMembership, canManageContent } from "@/lib/access";
+import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { equipmentSchema, packlistSchema } from "@/lib/validation";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
@@ -10,18 +12,23 @@ import type { Role } from "@/generated/prisma/client";
 
 export type FormState = { error?: string } | undefined;
 
+/**
+ * Band-Equipment darf von jeder inhalte-berechtigten Person dieser Band gepflegt
+ * werden. Persönliches Equipment gehört einer Person und ist bandunabhängig -
+ * es darf ausschließlich diese Person selbst bearbeiten, unabhängig davon, in
+ * welcher Band man sich gerade befindet (kein Admin-Override, da das Item nicht
+ * "der Band" gehört).
+ */
 async function canEditEquipment(bandId: string, equipmentId: string, userId: string, role: Role) {
-  if (canManageBand(role)) return true;
-  if (!canManageContent(role)) return false;
-
   const equipment = await prisma.equipment.findUnique({
-    where: { id: equipmentId, bandId },
-    select: { ownerId: true },
+    where: { id: equipmentId },
+    select: { ownerBandId: true, ownerUserId: true },
   });
   if (!equipment) return false;
-  // Band-Eigentum (kein ownerId) darf jede:r Inhalte-Berechtigte pflegen;
-  // persönliches Equipment nur die besitzende Person selbst oder ein Admin.
-  return equipment.ownerId === null || equipment.ownerId === userId;
+
+  if (equipment.ownerUserId) return equipment.ownerUserId === userId;
+  if (equipment.ownerBandId !== bandId) return false;
+  return canManageContent(role);
 }
 
 export async function createEquipmentAction(
@@ -30,6 +37,9 @@ export async function createEquipmentAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).equipment) {
+    return { error: "Equipment ist für diese Band deaktiviert" };
+  }
   if (!canManageContent(membership.role)) {
     return { error: "Gäste können kein Equipment anlegen" };
   }
@@ -46,21 +56,21 @@ export async function createEquipmentAction(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  const ownerId = parsed.data.ownerId || null;
+  const ownerUserId = parsed.data.ownerId || null;
   const responsibleId = parsed.data.responsibleId || null;
-  for (const userId of [ownerId, responsibleId].filter((id): id is string => Boolean(id))) {
+  for (const userId of [ownerUserId, responsibleId].filter((id): id is string => Boolean(id))) {
     const member = await prisma.membership.findUnique({ where: { userId_bandId: { userId, bandId } } });
     if (!member) return { error: "Ungültiges Mitglied" };
   }
 
   await prisma.equipment.create({
     data: {
-      bandId,
       name: parsed.data.name,
       description: parsed.data.description || null,
       location: parsed.data.location || null,
       category: parsed.data.category,
-      ownerId,
+      ownerUserId,
+      ownerBandId: ownerUserId ? null : bandId,
       responsibleId,
     },
   });
@@ -76,6 +86,9 @@ export async function updateEquipmentAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).equipment) {
+    return { error: "Equipment ist für diese Band deaktiviert" };
+  }
   if (!(await canEditEquipment(bandId, equipmentId, user.id, membership.role))) {
     return { error: "Keine Berechtigung, dieses Equipment zu bearbeiten" };
   }
@@ -92,21 +105,22 @@ export async function updateEquipmentAction(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  const ownerId = parsed.data.ownerId || null;
+  const ownerUserId = parsed.data.ownerId || null;
   const responsibleId = parsed.data.responsibleId || null;
-  for (const userId of [ownerId, responsibleId].filter((id): id is string => Boolean(id))) {
+  for (const userId of [ownerUserId, responsibleId].filter((id): id is string => Boolean(id))) {
     const member = await prisma.membership.findUnique({ where: { userId_bandId: { userId, bandId } } });
     if (!member) return { error: "Ungültiges Mitglied" };
   }
 
   await prisma.equipment.update({
-    where: { id: equipmentId, bandId },
+    where: { id: equipmentId },
     data: {
       name: parsed.data.name,
       description: parsed.data.description || null,
       location: parsed.data.location || null,
       category: parsed.data.category,
-      ownerId,
+      ownerUserId,
+      ownerBandId: ownerUserId ? null : bandId,
       responsibleId,
     },
   });
@@ -117,9 +131,10 @@ export async function updateEquipmentAction(
 
 export async function deleteEquipmentAction(bandId: string, equipmentId: string) {
   const { user, membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).equipment) return;
   if (!(await canEditEquipment(bandId, equipmentId, user.id, membership.role))) return;
 
-  await prisma.equipment.delete({ where: { id: equipmentId, bandId } });
+  await prisma.equipment.delete({ where: { id: equipmentId } });
   revalidatePath(`/bands/${bandId}/equipment`);
 }
 
@@ -129,6 +144,9 @@ export async function createPacklistAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) {
+    return { error: "Packlisten sind für diese Band deaktiviert" };
+  }
   if (!canManageContent(membership.role)) {
     return { error: "Gäste können keine Packlisten erstellen" };
   }
@@ -155,6 +173,7 @@ export async function createPacklistAction(
 
 export async function deletePacklistAction(bandId: string, packlistId: string) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   await prisma.packlist.delete({ where: { id: packlistId, bandId } });
@@ -164,20 +183,21 @@ export async function deletePacklistAction(bandId: string, packlistId: string) {
 
 export async function addPacklistEquipmentAction(bandId: string, packlistId: string, equipmentId: string) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   const [maxOrder, equipment] = await Promise.all([
     prisma.packlistItem.aggregate({ where: { packlistId }, _max: { order: true } }),
-    prisma.equipment.findUnique({
-      where: { id: equipmentId, bandId },
-      select: { responsibleId: true, ownerId: true },
+    prisma.equipment.findFirst({
+      where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
+      select: { responsibleId: true, ownerUserId: true },
     }),
   ]);
   if (!equipment) return;
 
   // Verantwortliche:r wird vorbelegt (bleibt danach frei änderbar): zuerst das
   // fest hinterlegte Equipment-Verantwortlichkeit, sonst der/die Eigentümer:in.
-  const assignedToId = equipment.responsibleId ?? equipment.ownerId ?? null;
+  const assignedToId = equipment.responsibleId ?? equipment.ownerUserId ?? null;
 
   await prisma.packlistItem.create({
     data: {
@@ -193,6 +213,7 @@ export async function addPacklistEquipmentAction(bandId: string, packlistId: str
 
 export async function addPacklistCustomItemAction(bandId: string, packlistId: string, formData: FormData) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   const customName = (formData.get("customName") as string)?.trim();
@@ -216,6 +237,7 @@ export async function addPacklistCustomItemAction(bandId: string, packlistId: st
 
 export async function removePacklistItemAction(bandId: string, packlistId: string, itemId: string) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   await prisma.packlistItem.delete({ where: { id: itemId, packlistId } });
@@ -229,6 +251,7 @@ export async function togglePacklistItemAction(
   checked: boolean
 ) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   await prisma.packlistItem.update({
@@ -245,6 +268,7 @@ export async function assignPacklistItemAction(
   assignedToId: string
 ) {
   const { membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
   await prisma.packlistItem.update({
@@ -261,6 +285,9 @@ export async function uploadEquipmentFileAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  if (!getEnabledFeatures(membership.band).equipment) {
+    return { error: "Equipment ist für diese Band deaktiviert" };
+  }
   if (!(await canEditEquipment(bandId, equipmentId, user.id, membership.role))) {
     return { error: "Keine Berechtigung, Dateien für dieses Equipment hochzuladen" };
   }

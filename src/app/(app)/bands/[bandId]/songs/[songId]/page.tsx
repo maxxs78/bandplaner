@@ -113,7 +113,9 @@ export default async function SongDetailPage({
           </div>
         </div>
         {song.proposedBy && (
-          <p className="mt-1 text-sm text-muted">Vorgeschlagen von {song.proposedBy.name}</p>
+          <p className="mt-1 text-sm text-muted">
+            {song.status === "PROPOSED" ? "Vorgeschlagen" : "Erstellt"} von {song.proposedBy.name}
+          </p>
         )}
         {canManage && (
           <div className="mt-4 flex flex-wrap items-center gap-2">
