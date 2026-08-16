@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { UserMinus, X } from "lucide-react";
+import { UserMinus, X, KeyRound, Copy } from "lucide-react";
 import {
   updateRoleAction,
   updateGuestAccessAction,
   removeMemberAction,
+  resetMemberPasswordAction,
 } from "@/app/(app)/bands/[bandId]/members/actions";
 import { Select, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -37,6 +38,7 @@ export function MemberRowActions({
   const [currentRole, setCurrentRole] = useState(role);
   const [currentGuestUntil, setCurrentGuestUntil] = useState(toDateInputValue(guestUntil));
   const [error, setError] = useState<string | null>(null);
+  const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   function handleRoleChange(newRole: Role) {
@@ -73,6 +75,22 @@ export function MemberRowActions({
       const result = await removeMemberAction(bandId, membershipId);
       if (result?.error) {
         setError(result.error);
+      }
+    });
+  }
+
+  function handleResetPassword() {
+    if (!confirm("Neues initiales Passwort für diese Person vergeben? Das bisherige Passwort wird ungültig.")) {
+      return;
+    }
+    setError(null);
+    setTempPassword(null);
+    startTransition(async () => {
+      const result = await resetMemberPasswordAction(bandId, membershipId);
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.tempPassword) {
+        setTempPassword(result.tempPassword);
       }
     });
   }
@@ -116,6 +134,10 @@ export function MemberRowActions({
             </option>
           ))}
         </Select>
+        <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={handleResetPassword}>
+          <KeyRound className="h-4 w-4" />
+          Passwort zurücksetzen
+        </Button>
         <Button
           type="button"
           variant="ghost"
@@ -128,6 +150,24 @@ export function MemberRowActions({
         </Button>
       </div>
       {error && <p className="max-w-[220px] text-right text-xs text-danger">{error}</p>}
+      {tempPassword && (
+        <div className="max-w-[280px] rounded-lg border border-warning/40 bg-warning/10 p-2 text-right text-xs text-foreground">
+          <p>Neues Passwort (nur jetzt sichtbar, sicher weitergeben):</p>
+          <div className="mt-1 flex items-center justify-end gap-1.5">
+            <code className="select-all rounded bg-surface px-1.5 py-0.5 font-mono text-sm">{tempPassword}</code>
+            <button
+              type="button"
+              aria-label="Passwort kopieren"
+              title="Passwort kopieren"
+              onClick={() => navigator.clipboard.writeText(tempPassword)}
+              className="text-muted hover:text-foreground"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
+          </div>
+          <p className="mt-1">Muss beim nächsten Login geändert werden.</p>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { requireUser } from "@/lib/access";
+import { requireActiveUser } from "@/lib/access";
 import { bandCreateSchema } from "@/lib/validation";
 import { redirect } from "next/navigation";
 
@@ -11,7 +11,7 @@ export async function createBandAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const user = await requireUser();
+  const user = await requireActiveUser();
 
   const parsed = bandCreateSchema.safeParse({ name: formData.get("name") });
   if (!parsed.success) {

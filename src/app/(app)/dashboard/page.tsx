@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { requireUser, isGuestAccessExpired } from "@/lib/access";
+import { requireActiveUser, isGuestAccessExpired } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ export default async function DashboardPage({
 }: {
   searchParams: Promise<{ accessExpired?: string }>;
 }) {
-  const user = await requireUser();
+  const user = await requireActiveUser();
   const { accessExpired } = await searchParams;
 
   const memberships = await prisma.membership.findMany({

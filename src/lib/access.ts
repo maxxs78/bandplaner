@@ -11,6 +11,25 @@ export async function requireUser() {
   return session.user;
 }
 
+/**
+ * Wie requireUser(), erzwingt aber zusaetzlich eine ausstehende Passwortaenderung
+ * (siehe User.mustChangePassword, z. B. nach einem Admin-Reset) - schickt die
+ * Person auf /profile, bevor sie sonst irgendetwas in der App tun kann. Wird
+ * bewusst nicht in requireUser() selbst oder im (app)-Layout geprueft, damit
+ * /profile weiterhin erreichbar bleibt, ohne eine Redirect-Schleife zu bauen.
+ */
+export async function requireActiveUser() {
+  const user = await requireUser();
+  const dbUser = await prisma.user.findUniqueOrThrow({
+    where: { id: user.id },
+    select: { mustChangePassword: true },
+  });
+  if (dbUser.mustChangePassword) {
+    redirect("/profile?passwordReset=1");
+  }
+  return user;
+}
+
 export function isGuestAccessExpired(membership: Pick<Membership, "role" | "guestUntil">) {
   return (
     membership.role === "GUEST" &&
@@ -20,7 +39,7 @@ export function isGuestAccessExpired(membership: Pick<Membership, "role" | "gues
 }
 
 export async function requireMembership(bandId: string) {
-  const user = await requireUser();
+  const user = await requireActiveUser();
   const [membership, financeAdmin] = await Promise.all([
     prisma.membership.findUnique({
       where: { userId_bandId: { userId: user.id, bandId } },

@@ -1,5 +1,7 @@
 "use server";
 
+import bcrypt from "bcryptjs";
+import { randomInt } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { inviteSchema, bandProfileSchema, guestAccessSchema } from "@/lib/validation";
@@ -9,6 +11,17 @@ import type { Role } from "@/generated/prisma/client";
 import type { ImageFormState } from "@/components/image-upload-form";
 
 export type FormState = { error?: string; success?: string } | undefined;
+export type PasswordResetState = { error?: string; success?: string; tempPassword?: string } | undefined;
+
+/** Vermeidet leicht verwechselbare Zeichen (0/O, 1/l/I), damit das Passwort sich mündlich/schriftlich sauber weitergeben laesst. */
+function generateTempPassword() {
+  const chars = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+  let password = "";
+  for (let i = 0; i < 12; i++) {
+    password += chars[randomInt(chars.length)];
+  }
+  return password;
+}
 
 export async function inviteAction(
   bandId: string,
@@ -188,6 +201,42 @@ export async function removeMemberAction(
     prisma.membership.delete({ where: { id: membershipId, bandId } }),
   ]);
   revalidatePath(`/bands/${bandId}/members`);
+}
+
+/**
+ * Vergibt ein neues initiales Passwort fuer ein Mitglied (z. B. wenn jemand sein
+ * Passwort vergessen hat - es gibt noch keinen Self-Service-Reset, siehe
+ * requireActiveUser()). Das Klartext-Passwort wird nur in dieser Antwort
+ * zurueckgegeben, nirgends gespeichert, und muss von der Person beim naechsten
+ * Login geaendert werden (mustChangePassword).
+ */
+export async function resetMemberPasswordAction(
+  bandId: string,
+  membershipId: string
+): Promise<PasswordResetState> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageBand(membership.role)) {
+    return { error: "Keine Berechtigung" };
+  }
+
+  const target = await prisma.membership.findUnique({
+    where: { id: membershipId, bandId },
+    include: { user: { select: { id: true, name: true } } },
+  });
+  if (!target) return { error: "Mitglied nicht gefunden" };
+
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 10);
+
+  await prisma.user.update({
+    where: { id: target.userId },
+    data: { passwordHash, mustChangePassword: true },
+  });
+
+  return {
+    success: `Neues Passwort für ${target.user.name} gesetzt.`,
+    tempPassword,
+  };
 }
 
 export async function updateBandProfileAction(

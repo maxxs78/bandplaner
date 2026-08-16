@@ -6,6 +6,12 @@ export const registerSchema = z.object({
   password: z.string().min(8, "Passwort muss mindestens 8 Zeichen haben"),
 });
 
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Bitte aktuelles Passwort eingeben"),
+  newPassword: z.string().min(8, "Neues Passwort muss mindestens 8 Zeichen haben"),
+  confirmPassword: z.string().min(1, "Bitte neues Passwort bestätigen"),
+});
+
 export const bandCreateSchema = z.object({
   name: z.string().min(2, "Bandname muss mindestens 2 Zeichen haben"),
 });
