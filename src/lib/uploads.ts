@@ -11,7 +11,7 @@ const ALLOWED_IMAGE_TYPES: Record<string, string> = {
 
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 
-export type ImageSubdir = "avatars" | "bands";
+export type ImageSubdir = "avatars" | "bands" | "songs";
 
 export async function saveUploadedImage(
   file: File,
@@ -143,6 +143,37 @@ export async function saveBandFile(
     mimeType: file.type || "application/octet-stream",
     size: file.size,
   };
+}
+
+/**
+ * Liest ein eingebettetes Coverbild aus den Metadaten einer Audiodatei (ID3v2
+ * APIC bei MP3, entsprechende Felder bei M4A/OGG/FLAC) und legt es als Bild ab.
+ * Gibt null zurueck, wenn die Datei kein Bild enthaelt oder nicht lesbar ist -
+ * ein fehlendes Cover ist kein Fehler, der den Upload scheitern lassen darf.
+ */
+export async function extractEmbeddedCover(storageKey: string): Promise<string | null> {
+  try {
+    // Dynamisch geladen: music-metadata ist ein reines ESM-Paket.
+    const { parseFile } = await import("music-metadata");
+    const metadata = await parseFile(resolveStoredFilePath(storageKey));
+
+    const picture = metadata.common.picture?.find((p) => /front/i.test(p.type ?? "")) ??
+      metadata.common.picture?.[0];
+    if (!picture) return null;
+
+    const extension = ALLOWED_IMAGE_TYPES[picture.format];
+    if (!extension) return null;
+    if (picture.data.length > MAX_IMAGE_SIZE_BYTES) return null;
+
+    const filename = `${randomUUID()}.${extension}`;
+    const dir = path.join(process.cwd(), "public", "uploads", "songs");
+    await mkdir(dir, { recursive: true });
+    await writeFile(path.join(dir, filename), Buffer.from(picture.data));
+
+    return `/uploads/songs/${filename}`;
+  } catch {
+    return null;
+  }
 }
 
 export function resolveStoredFilePath(storageKey: string) {

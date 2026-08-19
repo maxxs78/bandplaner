@@ -123,6 +123,12 @@ model Band {
   /// Standard aus. Die persoenlichen Benachrichtigungs-Einstellungen je
   /// Mitglied (siehe Membership) bleiben beim Abschalten erhalten.
   communicationEnabled Boolean @default(false)
+  /// Medienplayer: Abspielen hinterlegter Audiodateien inkl. Uebungsmodus
+  /// (Tempo, Transponieren, Abschnitts-Loop) sowie Einbettung verlinkter
+  /// Streaming-Quellen. Steuert ausschliesslich die Player-Oberflaeche -
+  /// Up- und Download der Dateien gehoeren zur Songbibliothek und bleiben
+  /// davon unberuehrt.
+  mediaPlayerEnabled Boolean @default(false)
   /// Abrechnungsmodus fuer das Finanzmodul: NO_BALANCE = kein Bandkonto, Zu-/Abfluesse
   /// muessen immer zu 100% auf Mitglieder verteilt werden (durchgesetzt in
   /// finance/actions.ts). BAND_BALANCE = die Band darf ein eigenes Kapital halten,
@@ -360,6 +366,8 @@ model Song {
   genre         String?
   /// Original-Interpret bei Coversongs
   artist        String?
+  /// Coverbild des Songs, wird u. a. bei reiner Audiowiedergabe im Player angezeigt.
+  coverUrl      String?
   status        SongStatus @default(NEW)
   /// Bei automatischer Ablehnung durch einstimmiges Downvoting gesetzt (Status ARCHIVED)
   rejected      Boolean    @default(false)

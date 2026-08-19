@@ -38,6 +38,7 @@ async function dispatch(options: {
         packlistsEnabled: true,
         financeEnabled: true,
         communicationEnabled: true,
+        mediaPlayerEnabled: true,
       },
     });
     if (!band || !getEnabledFeatures(band).communication) return;

@@ -53,8 +53,13 @@ next-env.d.ts
 # user-uploaded images
 /public/uploads/avatars/*
 /public/uploads/bands/*
+/public/uploads/songs/*
 !/public/uploads/avatars/.gitkeep
 !/public/uploads/bands/.gitkeep
+!/public/uploads/songs/.gitkeep
+
+# vom postinstall aus node_modules kopiert (siehe scripts/copy-audio-worklet.mjs)
+/public/audio-worklet/
 
 # private file storage (song files - access-controlled, not public)
 /storage/

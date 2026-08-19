@@ -1,12 +1,20 @@
-import { readFile } from "fs/promises";
+import { createReadStream } from "fs";
+import { stat } from "fs/promises";
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isGuestAccessExpired, canManageBand } from "@/lib/access";
 import { resolveStoredFilePath } from "@/lib/uploads";
 
+/**
+ * Liefert eine Song-Datei aus. Unterstuetzt HTTP-Range-Requests (206), damit im
+ * Medienplayer gesprungen werden kann - ohne das laedt der Browser bei jedem
+ * Sprung die komplette Datei neu oder kann gar nicht erst spulen. Ausgeliefert
+ * wird gestreamt statt komplett in den Speicher geladen, damit auch grosse
+ * Audiodateien den Server nicht belasten.
+ */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ fileId: string }> }
 ) {
   const { fileId } = await params;
@@ -36,19 +44,58 @@ export async function GET(
     return new NextResponse("Forbidden", { status: 403 });
   }
 
-  let buffer: Buffer;
+  const filePath = resolveStoredFilePath(songFile.storageKey);
+  let fileSize: number;
   try {
-    buffer = await readFile(resolveStoredFilePath(songFile.storageKey));
+    fileSize = (await stat(filePath)).size;
   } catch {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  return new NextResponse(new Uint8Array(buffer), {
-    headers: {
-      "Content-Type": songFile.mimeType,
-      "Content-Disposition": `inline; filename="${encodeURIComponent(songFile.filename)}"`,
-      "Content-Length": String(songFile.size),
-      "Cache-Control": "private, no-store",
-    },
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": songFile.mimeType,
+    "Content-Disposition": `inline; filename="${encodeURIComponent(songFile.filename)}"`,
+    "Accept-Ranges": "bytes",
+    // Privat, aber im Browser-Cache erlaubt: sonst laedt der Player die Datei
+    // bei jedem Spulvorgang komplett neu.
+    "Cache-Control": "private, max-age=3600",
+  };
+
+  const range = request.headers.get("range");
+  if (range) {
+    const match = /^bytes=(\d*)-(\d*)$/.exec(range.trim());
+    if (!match || (match[1] === "" && match[2] === "")) {
+      return new NextResponse("Range Not Satisfiable", {
+        status: 416,
+        headers: { "Content-Range": `bytes */${fileSize}` },
+      });
+    }
+
+    // Suffix-Form ("bytes=-500") liefert die letzten n Bytes.
+    const start = match[1] === "" ? Math.max(fileSize - Number(match[2]), 0) : Number(match[1]);
+    const end = match[1] === "" || match[2] === "" ? fileSize - 1 : Number(match[2]);
+
+    if (start >= fileSize || end < start) {
+      return new NextResponse("Range Not Satisfiable", {
+        status: 416,
+        headers: { "Content-Range": `bytes */${fileSize}` },
+      });
+    }
+
+    const cappedEnd = Math.min(end, fileSize - 1);
+    const stream = createReadStream(filePath, { start, end: cappedEnd });
+    return new NextResponse(stream as unknown as ReadableStream, {
+      status: 206,
+      headers: {
+        ...baseHeaders,
+        "Content-Range": `bytes ${start}-${cappedEnd}/${fileSize}`,
+        "Content-Length": String(cappedEnd - start + 1),
+      },
+    });
+  }
+
+  const stream = createReadStream(filePath);
+  return new NextResponse(stream as unknown as ReadableStream, {
+    headers: { ...baseHeaders, "Content-Length": String(fileSize) },
   });
 }

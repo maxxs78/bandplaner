@@ -7,7 +7,7 @@ Diese Anleitung beschreibt die Installation von Bandplaner mit Schwerpunkt auf *
 3. [Synology DiskStation mit Container Manager](#3-installation-auf-synology-diskstation-container-manager) (detailliert)
 4. [Proxmox VE](#4-installation-auf-proxmox-ve) (detailliert)
 
-Technischer Hintergrund: Bandplaner ist eine Next.js-App mit Prisma/SQLite als Datenbank und NextAuth (Auth.js) für den Login. Persistiert werden drei Dinge: die SQLite-Datenbankdatei, hochgeladene Song-/Band-Dateien und Profil-/Bandbilder.
+Technischer Hintergrund: Bandplaner ist eine Next.js-App mit Prisma/SQLite als Datenbank und NextAuth (Auth.js) für den Login. Persistiert werden drei Dinge: die SQLite-Datenbankdatei, hochgeladene Song-/Band-Dateien sowie Profil-, Band- und Song-Coverbilder.
 
 ---
 
@@ -40,7 +40,7 @@ Dieser Abschnitt gilt unabhängig davon, ob Sie auf einer Synology DiskStation, 
 |---|---|---|
 | `bandplaner_data` | SQLite-Datenbankdatei | `/data` |
 | `bandplaner_storage` | Song-/Band-Dateien | `/app/storage` |
-| `bandplaner_uploads` | Profil-/Bandbilder | `/app/public/uploads` |
+| `bandplaner_uploads` | Profil-/Band-/Song-Coverbilder | `/app/public/uploads` |
 
 Diese drei Docker-Volumes überleben `docker compose up -d --build` (Updates) und Container-Neustarts. **`docker compose down -v` löscht sie unwiderruflich** – nur bewusst verwenden, und vorher ein Backup ziehen (siehe unten).
 
@@ -79,7 +79,16 @@ Falls `openssl` nicht verfügbar ist (z. B. auf Windows ohne Git Bash), alternat
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-### 2.4 Erststart-Ablauf
+### 2.4 Medienplayer
+
+Der Medienplayer benötigt **keine** zusätzliche Konfiguration – er wird lediglich je Band unter *Verwaltung → Funktionen* eingeschaltet (standardmäßig aus). Zwei Punkte sind für den Betrieb dennoch relevant:
+
+- **Übungsmodus und Arbeitsspeicher:** Für Tempo-, Tonart- und Loop-Funktionen wird die Audiodatei vollständig dekodiert im Arbeitsspeicher gehalten – grob 20 MB je Minute Stereo, ein Vier-Minuten-Song also rund 85 MB. Das passiert ausschließlich **im Browser des jeweiligen Geräts**, nicht auf dem Server, und auch nur, wenn jemand den Übungsmodus aktiv startet. Auf älteren Mobilgeräten kann das spürbar sein; das normale Abspielen ist davon nicht betroffen.
+- **Audio-Worklet-Datei:** Für das Transponieren wird `public/audio-worklet/soundtouch-processor.js` benötigt. Diese Datei wird beim `npm install` automatisch aus den Abhängigkeiten kopiert (`scripts/copy-audio-worklet.mjs`) und liegt deshalb bewusst nicht im Repository. Im Docker-Build passiert das automatisch – bei einer manuellen Installation ohne `npm install` würde lediglich der Übungsmodus mit einer Fehlermeldung starten, alles andere bliebe nutzbar.
+
+Der Player streamt Dateien über HTTP-Range-Requests, damit im Titel gesprungen werden kann. Wird Bandplaner hinter einem Reverse Proxy betrieben, sollte dieser Range-Requests unverändert durchreichen – die in Abschnitt 3.8 beschriebene DSM-Konfiguration tut das bereits.
+
+### 2.5 Erststart-Ablauf
 
 Beim `docker compose up -d --build` passiert:
 
@@ -88,14 +97,14 @@ Beim `docker compose up -d --build` passiert:
 3. `npx prisma migrate deploy` wendet ausstehende Datenbank-Migrationen an (auch bei jedem späteren Neustart – das ist ungefährlich, bei bereits aktueller DB passiert nichts).
 4. Der eigentliche Next.js-Server startet als unprivilegierter Benutzer `nextjs`, lauscht auf Port 3000.
 
-### 2.5 Updates einspielen (generisch)
+### 2.6 Updates einspielen (generisch)
 
 ```bash
 git pull   # oder: neue Dateien ins Projektverzeichnis kopieren
 docker compose up -d --build
 ```
 
-### 2.6 Backup (generisch)
+### 2.7 Backup (generisch)
 
 Die drei Volumes enthalten alle produktiven Daten. Einfachster Weg für ein Ad-hoc-Backup:
 
@@ -158,7 +167,7 @@ Ohne SSH-Zugriff: `.env`-Datei lokal am PC erstellen und über File Station in d
 2. Projektname vergeben, z. B. `bandplaner`.
 3. Pfad: den Ordner wählen, in dem `docker-compose.yml` und `.env` liegen.
 4. Container Manager erkennt die `docker-compose.yml` automatisch und zeigt deren Inhalt an.
-5. **Build starten**. Je nach DiskStation-Modell kann das mehrere Minuten dauern (native Kompilierung von `better-sqlite3`, siehe [2.4](#24-erststart-ablauf)) – nicht abbrechen, auch wenn es lange „hängt“.
+5. **Build starten**. Je nach DiskStation-Modell kann das mehrere Minuten dauern (native Kompilierung von `better-sqlite3`, siehe [2.5](#25-erststart-ablauf)) – nicht abbrechen, auch wenn es lange „hängt“.
 
 ### 3.6 Port & Firewall
 
@@ -211,7 +220,7 @@ Ohne SSH: neue Dateien über File Station hochladen (bestehende überschreiben),
 
 Die drei benannten Volumes liegen physisch unterhalb des Docker-Datenverzeichnisses (meist `/volume1/@docker` bzw. je nach DSM-Version im „docker“-Systemordner) und sind damit für Synologys **Hyper Backup** nicht ohne Weiteres als eigener Freigabeordner sichtbar. Zwei praktikable Wege:
 
-- **Einfach:** Regelmäßig den Befehl aus [2.6](#26-backup-generisch) per Task-Planer (Systemsteuerung → Aufgabenplaner → geplante Aufgabe → Benutzerdefiniertes Skript) auf der DiskStation ausführen lassen; das Ergebnis-Archiv landet in einem normalen Freigabeordner, den Hyper Backup dann ganz regulär sichert.
+- **Einfach:** Regelmäßig den Befehl aus [2.7](#27-backup-generisch) per Task-Planer (Systemsteuerung → Aufgabenplaner → geplante Aufgabe → Benutzerdefiniertes Skript) auf der DiskStation ausführen lassen; das Ergebnis-Archiv landet in einem normalen Freigabeordner, den Hyper Backup dann ganz regulär sichert.
 - **Alternativ (mehr Kontrolle):** In `docker-compose.yml` statt benannter Volumes Bind-Mounts auf einen Freigabeordner verwenden (z. B. `/volume1/docker/bandplaner-data:/data`), den Hyper Backup dann direkt sichert. Das ist ein bewusster Eingriff in die mitgelieferte `docker-compose.yml` – vor der Umstellung ein Backup der bestehenden Volumes ziehen.
 
 ---
@@ -318,7 +327,7 @@ Da bei einem LXC-Container die Docker-Volumes Teil des Container-Dateisystems si
 - **Datacenter → Backup** → geplanten Backup-Job für den `bandplaner`-Container anlegen (Ziel: lokaler Storage oder Proxmox Backup Server).
 - Vor größeren Updates zusätzlich manuell: Container auswählen → **Backup** → **Backup jetzt**.
 
-Das ist der empfohlene Weg unter Proxmox – deutlich einfacher als das volume-basierte Backup aus [2.6](#26-backup-generisch), da gleich der komplette Container gesichert wird.
+Das ist der empfohlene Weg unter Proxmox – deutlich einfacher als das volume-basierte Backup aus [2.7](#27-backup-generisch), da gleich der komplette Container gesichert wird.
 
 ---
 
@@ -338,7 +347,8 @@ Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von
 | Container startet, aber Seite nicht erreichbar | Firewall (DSM-Firewall bzw. Proxmox-/`ufw`-Firewall) prüfen, ob der gewählte Port freigegeben ist |
 | „Permission denied“ auf Datenbank/Uploads | Wird bei jedem Start automatisch durch `docker-entrypoint.sh` repariert (`chown`) – tritt in der Regel nur bei manuell veränderten Bind-Mounts mit exotischen Host-Rechten auf |
 | Es kommen keine Benachrichtigungs-E-Mails an | Der Reihe nach prüfen: (1) `SMTP_*` in der `.env` gesetzt und Projekt danach neu gestartet? (2) Modul **Kommunikation** in der Band-Verwaltung eingeschaltet? (3) Im eigenen Profil der passende Ereignistyp aktiviert? (4) Container-Log auf `[mail] Versand fehlgeschlagen` prüfen. Hinweis: Über eigene Aktionen wird man bewusst nicht selbst benachrichtigt – zum Testen die Aktion von einem zweiten Konto aus auslösen. |
-| Nach Update Migrationsfehler | Vor dem Update ein Backup ziehen (siehe [2.6](#26-backup-generisch) bzw. [4.6](#46-backup)), Log per `docker compose logs -f` bzw. Container Manager prüfen |
+| Kein Ton / „Übungsmodus konnte nicht geladen werden“ | Modul **Medienplayer** in der Band-Verwaltung eingeschaltet? Fehlt `public/audio-worklet/soundtouch-processor.js` (siehe [2.4](#24-medienplayer)), lässt sich nur der Übungsmodus nicht starten – normales Abspielen bleibt nutzbar. Springen im Titel setzt voraus, dass ein vorgeschalteter Reverse Proxy HTTP-Range-Requests durchreicht. |
+| Nach Update Migrationsfehler | Vor dem Update ein Backup ziehen (siehe [2.7](#27-backup-generisch) bzw. [4.6](#46-backup)), Log per `docker compose logs -f` bzw. Container Manager prüfen |
 
 ---
 

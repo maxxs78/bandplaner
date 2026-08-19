@@ -1,4 +1,6 @@
 import { FileAudio, FileMusic, FileText, Lock, Users } from "lucide-react";
+import { SongAudioPlayer } from "@/components/song-audio-player";
+import { isPlayableAudio } from "@/lib/media";
 import { DeleteButton } from "@/components/delete-button";
 import { FileEditButton } from "@/components/file-edit-button";
 import { deleteSongFileAction, updateSongFileAction } from "@/app/(app)/bands/[bandId]/songs/actions";
@@ -32,12 +34,14 @@ export function SongFileList({
   files,
   currentUserId,
   isAdmin,
+  playerEnabled,
 }: {
   bandId: string;
   songId: string;
   files: SongFileItem[];
   currentUserId: string;
   isAdmin: boolean;
+  playerEnabled: boolean;
 }) {
   if (files.length === 0) {
     return <p className="text-sm text-muted">Noch keine Dateien hochgeladen.</p>;
@@ -48,11 +52,10 @@ export function SongFileList({
       {files.map((file) => {
         const Icon = fileIcon(file.filename);
         const canDelete = isAdmin || file.uploadedById === currentUserId;
+        const showPlayer = playerEnabled && isPlayableAudio(file.filename, file.mimeType);
         return (
-          <div
-            key={file.id}
-            className="flex flex-wrap items-center gap-3 rounded-lg border border-border px-3 py-2"
-          >
+          <div key={file.id} className="rounded-lg border border-border px-3 py-2">
+          <div className="flex flex-wrap items-center gap-3">
             <Icon className="h-5 w-5 shrink-0 text-muted" />
             <a
               href={`/api/song-files/${file.id}`}
@@ -68,7 +71,7 @@ export function SongFileList({
                 filename={file.filename}
                 visibility={file.visibility}
                 visibilityOptions={SONG_VISIBILITY_OPTIONS}
-                action={(data) => updateSongFileAction(bandId, songId, file.id, data)}
+                action={updateSongFileAction.bind(null, bandId, songId, file.id)}
               />
             )}
             <span
@@ -93,6 +96,12 @@ export function SongFileList({
                 confirmMessage="Datei wirklich löschen?"
               />
             )}
+          </div>
+          {showPlayer && (
+            <div className="mt-2">
+              <SongAudioPlayer src={`/api/song-files/${file.id}`} filename={file.filename} />
+            </div>
+          )}
           </div>
         );
       })}

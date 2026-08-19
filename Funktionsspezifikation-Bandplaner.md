@@ -1,10 +1,12 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.2 — Stand 16.08.2026
+Version 1.3 — Stand 19.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
 *Änderungen gegenüber Version 1.1: geplante Zukunftsfunktionen ergänzt — erleichterte Titelerfassung per automatischer Metadaten-Recherche über Spotify-/YouTube-URL sowie Musikdatenbanken wie MusicBrainz/Discogs (3.3), neues Modul Audio-/Video-Player mit Übungsfunktionen wie Tempo-/Tonart-Anpassung und Abschnitts-Loop (3.12); Abgrenzung in Abschnitt 5 entsprechend angepasst.*
+
+*Änderungen gegenüber Version 1.2: Umsetzungsstand nachgeführt — Finanzverwaltung (3.8) inkl. Abrechnungsmodi umgesetzt, Kommunikation (3.6) teilweise umgesetzt (E-Mail-Benachrichtigungen und WhatsApp-Teilen), Audio-Player mit Übungsfunktionen (3.12) umgesetzt; Rollenmodell an die tatsächliche Umsetzung angepasst (Finanzadmin ist keine Rolle, sondern eine rollenunabhängige Kennzeichnung, Abschnitt 2); Coverbild-Übernahme aus Datei-Metadaten präzisiert (3.3); neuer Abschnitt 2.1 zu abschaltbaren Modulen; Grenzen der Streaming-Einbettung dokumentiert (3.12).*
 
 ## 1. Zweck und Zielgruppe
 
@@ -23,12 +25,26 @@ Die Spezifikation beschreibt den fachlichen Funktionsumfang der Anwendung, gegli
 - **Mehrere Bands pro Konto**: Ein Benutzerkonto kann Mitglied in mehreren Bands/Gruppen sein und zwischen diesen wechseln.
 - **Rollenmodell** pro Band, mindestens:
   - Administrator (volle Rechte inkl. Mitglieder- und Rollenverwaltung)
-  - Finanz-Administrator (zusätzliche Rechte für den Finanzbereich, ggf. mit eingeschränkter Sichtbarkeit für andere)
   - Mitglied (Standardrechte: einsehen, mitwirken, eigene Verfügbarkeit pflegen)
   - Gast/Aushilfe (zeitlich oder inhaltlich eingeschränkter Zugriff, z. B. nur auf einen Termin oder eine Setlist)
+- **Finanzberechtigung** als eigenständige, von der Rolle unabhängige Kennzeichnung: Beliebig viele Personen einer Band können als Finanzadmin:in markiert werden, zusätzlich zu ihrer Rolle. Dadurch kann dieselbe Person gleichzeitig Administrator:in und Finanzadmin:in sein (Personalunion) und die Finanzverantwortung auf mehrere Personen verteilt werden. Finanzadmin:innen sehen als Einzige die vollständige Finanzübersicht und erhalten zusätzlich admin-gleiche Rechte bei Songs, Equipment, Dateien und Terminen — ausdrücklich jedoch keinen Zugriff auf Mitgliederverwaltung oder die Verwaltung der Band-Funktionen.
 - **Einladungssystem** per E-Mail/Link mit Bestätigung, um neue Mitglieder oder Gäste hinzuzufügen.
 - Granulare Sichtbarkeitseinstellungen für einzelne Bereiche (z. B. Finanzen nur für Administration sichtbar).
 - **Persönliches Benutzerprofil**: eigener Anzeigename, E-Mail-Adresse und Profilbild (Avatar-Upload), kontobezogen und unabhängig von der jeweiligen Bandzugehörigkeit.
+
+### 2.1 Abschaltbare Module
+
+Nicht jede Gruppe benötigt jeden Funktionsbereich. Umfangreichere Module lassen sich deshalb je Band von der Administration ein- und ausschalten, damit die Oberfläche auf das tatsächlich Genutzte beschränkt bleibt:
+
+| Modul | Standard | Hinweis |
+|---|---|---|
+| Equipment | ein | — |
+| Packlisten | ein | benötigt Equipment; ohne dieses nicht aktivierbar |
+| Finanzen | aus | beim Aktivieren wird die aktivierende Person automatisch Finanzadmin:in, sofern die Band noch keine hat |
+| Kommunikation | aus | E-Mail-Versand erfordert zusätzlich einen konfigurierten Mailserver |
+| Medienplayer | aus | steuert nur die Wiedergabe-Oberfläche; Dateien und Links bleiben unabhängig davon nutzbar |
+
+Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **löscht aber keine Daten**. Bereits erfasste Inhalte und persönliche Einstellungen bleiben erhalten und stehen unverändert wieder zur Verfügung, sobald das Modul erneut eingeschaltet wird. Einzige bewusste Ausnahme ist die Freigabe öffentlicher Datei-Links (3.7): Da sie als Sicherheitsschranke wirkt, sperrt ihre Deaktivierung auch bereits bestehende Links.
 
 ## 3. Kernmodule
 
@@ -54,7 +70,8 @@ Die Spezifikation beschreibt den fachlichen Funktionsumfang der Anwendung, gegli
 ### 3.3 Song- und Repertoireverwaltung
 
 - Zentrale, bandweit geteilte Songbibliothek mit Metadaten: Titel, Tonart, Tempo (BPM), Taktart, Dauer, Genre, Lead-Gesang/Besetzung, Album und Erscheinungsjahr sowie optionalem Coverbild.
-- Erleichterte Titelerfassung (geplant): Wird beim Anlegen eines Songs eine Spotify- oder YouTube-URL angegeben, werden die Datenfelder, soweit sinnvoll recherchierbar, automatisch aus den Online-Informationen befüllt; ergänzend kann die Suche auch in Musikdatenbanken wie MusicBrainz oder Discogs erfolgen. Übernommen werden dabei u. a. Coverbild, Erscheinungsjahr und Album, sofern verfügbar. Bei mehreren Suchtreffern wird eine Auswahlliste zur Bestätigung angezeigt; sämtliche Felder bleiben zusätzlich vollständig manuell erfassbar bzw. änderbar.
+- Coverbild-Übernahme aus Datei-Metadaten: Enthält eine hochgeladene Audiodatei ein eingebettetes Coverbild (ID3v2 bei MP3, entsprechende Felder bei M4A/OGG/FLAC), wird dieses automatisch als Coverbild des Songs übernommen, sofern noch keines hinterlegt ist. Ein bereits vorhandenes Cover wird nicht überschrieben. Das Coverbild gehört zu den Song-Stammdaten und wird unabhängig davon angezeigt, ob der Medienplayer (3.12) aktiviert ist.
+- Erleichterte Titelerfassung (geplant): Wird beim Anlegen eines Songs eine Spotify- oder YouTube-URL angegeben, werden die Datenfelder, soweit sinnvoll recherchierbar, automatisch aus den Online-Informationen befüllt; ergänzend kann die Suche auch in Musikdatenbanken wie MusicBrainz oder Discogs erfolgen. Übernommen werden dabei u. a. Coverbild, Erscheinungsjahr und Album, sofern verfügbar. Bei mehreren Suchtreffern wird eine Auswahlliste zur Bestätigung angezeigt; sämtliche Felder bleiben zusätzlich vollständig manuell erfassbar bzw. änderbar. Ergänzend zur bereits umgesetzten Übernahme aus Datei-Metadaten (siehe oben) lassen sich damit auch Songs befüllen, zu denen keine Datei, sondern nur ein Link vorliegt.
 - Persönliche Notizen einzelner Mitglieder je Song (z. B. eigene Spielhinweise), getrennt von bandweiten Informationen. Diese persönliche Notiz kann zusätzlich eine kurze Bühnennotiz, eine Farbe sowie Hinweis-Icons enthalten, die als Vorgabewert übernommen werden, sobald der Song einer Setlist hinzugefügt wird (siehe 3.4).
 - **Song-Dokumente je Song:**
   - Audiodateien mit integriertem Player zur direkten Wiedergabe in der App (z. B. Referenzaufnahmen, Proberaum-Mitschnitte); geplante Erweiterungen des Players (Streaming-Wiedergabe, Übungsfunktionen) siehe Abschnitt 3.12.
@@ -91,8 +108,9 @@ Die Spezifikation beschreibt den fachlichen Funktionsumfang der Anwendung, gegli
 - Band-interner Chat, sowohl bandweit als auch in themen- oder terminbezogenen Gruppen.
 - Umfragen/Abstimmungen für Bandentscheidungen (z. B. Terminfindung, Repertoire-Auswahl, sonstige Beschlüsse).
 - Aufgaben-/To-Do-Listen mit Zuweisung an einzelne Mitglieder und Fälligkeitsdatum.
-- Benachrichtigungen per Push und E-Mail, konfigurierbar je Ereignistyp.
-- Möglichkeit, Inhalte (Termine, Songs, Dateien) gezielt per Link mit einzelnen Mitgliedern oder extern zu teilen.
+- Benachrichtigungen per E-Mail, konfigurierbar je Ereignistyp und Person (neuer Termin, Terminänderung/-absage, neuer Songvorschlag, neue Datei, eigene Gagen und Kostenanteile). Über eigene Aktionen wird bewusst nicht benachrichtigt; bei Rundmails stehen die Empfänger im BCC, damit keine Adressen offengelegt werden. Der Versand setzt einen konfigurierten Mailserver voraus — fehlt dieser, bleibt die Anwendung uneingeschränkt nutzbar und überspringt lediglich den Versand. Push-Benachrichtigungen sind bislang nicht umgesetzt.
+- Möglichkeit, Inhalte (Termine, Songs, Dateien) gezielt per Link mit einzelnen Mitgliedern oder extern zu teilen, ergänzt um Teilen-Schaltflächen für WhatsApp bei Terminen und Setlisten (vorbefüllte Nachricht zum manuellen Versenden).
+- Automatisch verschickte WhatsApp-Nachrichten sind bewusst nicht vorgesehen: Sie setzen zwingend ein WhatsApp-Business-Konto samt vorab genehmigter Nachrichtenvorlagen und laufender Kosten voraus. WhatsApp-Kanäle („Channels") bieten keine Programmierschnittstelle und lassen sich nicht automatisiert bespielen.
 
 ### 3.7 Dateiverwaltung
 
@@ -105,6 +123,8 @@ Die Spezifikation beschreibt den fachlichen Funktionsumfang der Anwendung, gegli
 
 - Erfassung von Einnahmen (z. B. Gagen) und Ausgaben je Band bzw. je Termin/Gig.
 - Individuelle Gagen-/Auszahlungsbeträge je Mitglied und Termin, mit hinterlegbaren Standardwerten je Person.
+- Zwei wählbare Abrechnungsmodi je Band: **ohne Bandkonto** (Einnahmen werden vollständig auf Mitglieder verteilt, Ausgaben vollständig anteilig getragen — der Saldo der Band ist immer ausgeglichen) oder **mit Bandkonto**, das nicht verteilte Restbeträge als Bandkapital hält. Im Bandkonto-Modus sind zusätzlich direkte Auszahlungen an Mitglieder und Einzahlungen von Mitgliedern möglich; ein Wechsel zurück auf „ohne Bandkonto" ist erst möglich, wenn der Saldo ausgeglichen ist.
+- Bestätigungspflicht je zugeordnetem Betrag durch die jeweils empfangende Seite: Auszahlungen bestätigt das Mitglied selbst, eingehende Zahlungen die Finanzadministration. Bis dahin gilt der Posten als offen und ist für beide Seiten als solcher sichtbar.
 - Eingeschränkte Sichtbarkeit von Finanzdaten (z. B. nur für Finanz-Administration und direkt betroffene Mitglieder).
 - Auswertungen/Berichte über Einnahmen- und Ausgabenverlauf (z. B. je Zeitraum, je Auftrittsart).
 - Export von Finanzdaten für die Steuererklärung bzw. externe Buchhaltung (z. B. als Tabellendatei).
@@ -132,13 +152,14 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 - Bandbild (Upload) zusätzlich zum individuellen Profilbild je Benutzerkonto (siehe Abschnitt 2).
 - Diese Stammdaten dienen aktuell der internen Organisation und Wiederverwendung (z. B. in Exporten und künftigen Kommunikationsfunktionen); eine öffentlich zugängliche Profilseite ist damit nicht verbunden (vgl. die entsprechende Abgrenzung in Abschnitt 5).
 
-### 3.12 Audio-/Video-Player und Übungsfunktionen (geplant)
+### 3.12 Medienplayer und Übungsfunktionen
 
-- Integrierter Audio-/Video-Player für am Song hinterlegte Dateien sowie für per URL verlinkte Streaming-Quellen (z. B. Spotify, YouTube), direkt innerhalb der App abspielbar.
-- Übungsfunktionen im Player, mindestens für MP3-Dateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune.
-- Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen.
+- Integrierter Player für am Song hinterlegte Audiodateien, direkt innerhalb der App abspielbar. Ergänzend werden per URL verlinkte Streaming-Quellen (Spotify, YouTube) über den jeweils offiziellen Player des Anbieters eingebettet; YouTube gibt dabei das Video wieder, Spotify seinen Audio-Player samt eigenem Coverbild.
+- Übungsfunktionen für hochgeladene Audiodateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune.
+- Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen, ergänzt um eine Wellenformdarstellung zur Orientierung und zum Anspringen einzelner Stellen.
+- Zweistufige Wiedergabe: Standardmäßig läuft ein schlanker, streamender Player. Der Übungsmodus wird bewusst erst auf Anforderung geladen, da er die Datei vollständig verarbeitet im Speicher hält.
 
-Diese Funktionen sind als künftige Erweiterung der bestehenden Song-Wiedergabe (siehe 3.3) vorgesehen.
+**Abgrenzung:** Die Übungsfunktionen stehen ausschließlich für hochgeladene Audiodateien zur Verfügung, nicht für eingebettete Streaming-Quellen. Das ist keine Frage des Umsetzungsaufwands, sondern eine Grenze der Anbieter: Spotify bietet über seinen Player keinerlei Tempo- oder Tonhöhensteuerung, YouTube nur feste Geschwindigkeitsstufen und kein Transponieren. Ein Zugriff auf die Audiodaten selbst wäre bei beiden Anbietern nicht zulässig.
 
 ## 4. Nicht-funktionale Anforderungen
 

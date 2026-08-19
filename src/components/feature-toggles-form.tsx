@@ -29,6 +29,7 @@ export function FeatureTogglesForm({
   initialFinanceEnabled,
   initialFinanceSettlementMode,
   initialCommunicationEnabled,
+  initialMediaPlayerEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
@@ -36,6 +37,7 @@ export function FeatureTogglesForm({
   initialFinanceEnabled: boolean;
   initialFinanceSettlementMode: "NO_BALANCE" | "BAND_BALANCE";
   initialCommunicationEnabled: boolean;
+  initialMediaPlayerEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
@@ -43,6 +45,7 @@ export function FeatureTogglesForm({
   const [financeEnabled, setFinanceEnabled] = useState(initialFinanceEnabled);
   const [financeSettlementMode, setFinanceSettlementMode] = useState(initialFinanceSettlementMode);
   const [communicationEnabled, setCommunicationEnabled] = useState(initialCommunicationEnabled);
+  const [mediaPlayerEnabled, setMediaPlayerEnabled] = useState(initialMediaPlayerEnabled);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -106,6 +109,13 @@ export function FeatureTogglesForm({
         description="E-Mail-Benachrichtigungen zu Terminen, Songvorschlägen, Dateien und Gagen sowie Teilen per WhatsApp. Jede Person legt im eigenen Profil fest, worüber sie informiert wird."
         checked={communicationEnabled}
         onChange={setCommunicationEnabled}
+      />
+      <ToggleRow
+        name="mediaPlayerEnabled"
+        label="Medienplayer"
+        description="Hinterlegte Audiodateien direkt in der App abspielen, inkl. Übungsmodus mit Tempo, Transponieren und Abschnitts-Loop. Verlinkte YouTube- und Spotify-Quellen werden eingebettet."
+        checked={mediaPlayerEnabled}
+        onChange={setMediaPlayerEnabled}
       />
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>

@@ -6,7 +6,7 @@ import { songSchema, songLinkSchema, songVoteSchema } from "@/lib/validation";
 import { notifyBand } from "@/lib/notifications";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
-import { saveSongFile, deleteStoredFile } from "@/lib/uploads";
+import { saveSongFile, deleteStoredFile, extractEmbeddedCover } from "@/lib/uploads";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { SongStatus, FileVisibility } from "@/generated/prisma/client";
@@ -244,6 +244,16 @@ export async function uploadSongFileAction(
       visibility,
     },
   });
+
+  // Coverbild aus den Datei-Metadaten uebernehmen, falls der Song noch keins hat.
+  // Bewusst nicht ueberschreiben: ein bereits gesetztes Cover gewinnt.
+  const song = await prisma.song.findUnique({ where: { id: songId }, select: { coverUrl: true } });
+  if (song && !song.coverUrl) {
+    const coverUrl = await extractEmbeddedCover(result.storageKey);
+    if (coverUrl) {
+      await prisma.song.update({ where: { id: songId }, data: { coverUrl } });
+    }
+  }
 
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   return undefined;
