@@ -21,13 +21,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: {},
       },
       authorize: async (credentials) => {
-        const email = credentials?.email as string | undefined;
+        const identifier = (credentials?.email as string | undefined)?.trim();
         const password = credentials?.password as string | undefined;
-        if (!email || !password) return null;
+        if (!identifier || !password) return null;
 
-        const user = await prisma.user.findUnique({
-          where: { email: email.toLowerCase().trim() },
-        });
+        // Login-Feld erlaubt wahlweise E-Mail oder Benutzername (Name ist nicht
+        // eindeutig - bei mehreren Treffern lehnen wir ab statt eine Person zu
+        // erraten, statt z.B. den erstbesten Treffer zu nehmen).
+        let user;
+        if (identifier.includes("@")) {
+          user = await prisma.user.findUnique({ where: { email: identifier.toLowerCase() } });
+        } else {
+          const matches = await prisma.user.findMany({ where: { name: identifier } });
+          user = matches.length === 1 ? matches[0] : null;
+        }
         if (!user) return null;
 
         const valid = await bcrypt.compare(password, user.passwordHash);

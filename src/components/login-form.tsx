@@ -19,8 +19,8 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
       <form action={formAction} className="mt-6 space-y-4">
         <input type="hidden" name="callbackUrl" value={callbackUrl} />
         <div>
-          <Label htmlFor="email">E-Mail</Label>
-          <Input id="email" name="email" type="email" autoComplete="email" required />
+          <Label htmlFor="email">E-Mail oder Benutzername</Label>
+          <Input id="email" name="email" type="text" autoComplete="username" required />
         </div>
         <div>
           <Label htmlFor="password">Passwort</Label>
