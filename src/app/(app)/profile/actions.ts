@@ -5,10 +5,41 @@ import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/access";
 import { saveUploadedImage, deleteUploadedFile } from "@/lib/uploads";
 import { changePasswordSchema } from "@/lib/validation";
+import { notificationEvents, type NotificationEvent } from "@/lib/notification-events";
 import { revalidatePath } from "next/cache";
 import type { ImageFormState } from "@/components/image-upload-form";
 
 export type PasswordFormState = { error?: string; success?: string } | undefined;
+export type NotificationFormState = { error?: string; success?: string } | undefined;
+
+export async function updateNotificationPreferencesAction(
+  bandId: string,
+  _prevState: NotificationFormState,
+  formData: FormData
+): Promise<NotificationFormState> {
+  const user = await requireUser();
+
+  const membership = await prisma.membership.findUnique({
+    where: { userId_bandId: { userId: user.id, bandId } },
+    select: { id: true, band: { select: { communicationEnabled: true } } },
+  });
+  if (!membership) return { error: "Keine Mitgliedschaft in dieser Band" };
+  if (!membership.band.communicationEnabled) {
+    return { error: "Das Kommunikationsmodul ist für diese Band deaktiviert" };
+  }
+
+  const data = Object.fromEntries(
+    (Object.keys(notificationEvents) as NotificationEvent[]).map((event) => [
+      notificationEvents[event],
+      formData.get(notificationEvents[event]) === "on",
+    ])
+  );
+
+  await prisma.membership.update({ where: { id: membership.id }, data });
+
+  revalidatePath("/profile");
+  return { success: "Benachrichtigungen gespeichert." };
+}
 
 export async function changePasswordAction(
   _prevState: PasswordFormState,

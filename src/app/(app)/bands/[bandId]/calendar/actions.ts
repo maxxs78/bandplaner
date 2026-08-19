@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { eventSchema } from "@/lib/validation";
+import { notifyBand } from "@/lib/notifications";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -10,6 +11,10 @@ import { randomUUID } from "crypto";
 import type { EventType, Role } from "@/generated/prisma/client";
 
 export type FormState = { error?: string } | undefined;
+
+function formatEventDate(date: Date) {
+  return new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(date);
+}
 
 function parseEventForm(formData: FormData) {
   return eventSchema.safeParse({
@@ -88,6 +93,20 @@ export async function createEventAction(
     return first!;
   });
 
+  const seriesNote =
+    occurrences.length > 1 ? `\nWöchentliche Serie mit ${occurrences.length} Terminen.` : "";
+  await notifyBand({
+    bandId,
+    event: "NEW_EVENT",
+    excludeUserId: user.id,
+    subject: `Neuer Termin: ${data.title}`,
+    body:
+      `${user.name} hat einen neuen Termin angelegt:\n\n` +
+      `${data.title}\n${formatEventDate(start)}` +
+      `${data.location ? `\nOrt: ${data.location}` : ""}${seriesNote}`,
+    path: `/bands/${bandId}/calendar/${firstEvent.id}`,
+  });
+
   revalidatePath(`/bands/${bandId}/calendar`);
   redirect(`/bands/${bandId}/calendar/${firstEvent.id}`);
 }
@@ -145,6 +164,18 @@ export async function updateEventAction(
     }),
   ]);
 
+  await notifyBand({
+    bandId,
+    event: "EVENT_CHANGE",
+    excludeUserId: user.id,
+    subject: `Termin geändert: ${data.title}`,
+    body:
+      `${user.name} hat einen Termin geändert:\n\n` +
+      `${data.title}\n${formatEventDate(new Date(data.startsAt))}` +
+      `${data.location ? `\nOrt: ${data.location}` : ""}`,
+    path: `/bands/${bandId}/calendar/${eventId}`,
+  });
+
   revalidatePath(`/bands/${bandId}/calendar`);
   redirect(`/bands/${bandId}/calendar/${eventId}`);
 }
@@ -153,7 +184,25 @@ export async function deleteEventAction(bandId: string, eventId: string) {
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!(await canEditEvent(bandId, eventId, user.id, membership.role, isFinanceAdmin))) return;
 
+  // Vor dem Loeschen lesen, damit die Benachrichtigung noch Titel/Datum kennt.
+  const event = await prisma.event.findUnique({
+    where: { id: eventId, bandId },
+    select: { title: true, startsAt: true },
+  });
+
   await prisma.event.delete({ where: { id: eventId, bandId } });
+
+  if (event) {
+    await notifyBand({
+      bandId,
+      event: "EVENT_CHANGE",
+      excludeUserId: user.id,
+      subject: `Termin abgesagt: ${event.title}`,
+      body: `${user.name} hat einen Termin gelöscht:\n\n${event.title}\n${formatEventDate(event.startsAt)}`,
+      path: `/bands/${bandId}/calendar`,
+    });
+  }
+
   revalidatePath(`/bands/${bandId}/calendar`);
   redirect(`/bands/${bandId}/calendar`);
 }

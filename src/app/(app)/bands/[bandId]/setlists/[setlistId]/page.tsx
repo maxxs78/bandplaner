@@ -3,9 +3,11 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Printer, Save } from "lucide-react";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { SetlistBuilder } from "@/components/setlist-builder";
 import { deleteSetlistAction, saveSetlistNoteAction } from "../actions";
 import { DeleteButton } from "@/components/delete-button";
+import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
@@ -18,6 +20,7 @@ export default async function SetlistDetailPage({
   const { bandId, setlistId } = await params;
   const { user, membership } = await requireMembership(bandId);
   const canManage = canManageContent(membership.role);
+  const features = getEnabledFeatures(membership.band);
 
   const setlist = await prisma.setlist.findUnique({
     where: { id: setlistId, bandId },
@@ -46,6 +49,15 @@ export default async function SetlistDetailPage({
     ...item,
     myAnnotation: item.annotations[0] ?? null,
   }));
+
+  const shareText = [
+    `${membership.band.name} – ${setlist.name}`,
+    setlist.event ? setlist.event.title : null,
+    "",
+    ...setlist.items.map((item, index) => `${index + 1}. ${item.song?.title ?? item.customTitle ?? ""}`),
+  ]
+    .filter((line) => line !== null)
+    .join("\n");
 
   const totalDurationSec = setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
   const formatTotalDuration = (sec: number) => {
@@ -85,7 +97,8 @@ export default async function SetlistDetailPage({
               </p>
             )}
           </div>
-          <div className="flex gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {features.communication && <WhatsAppShareButton text={shareText} label="Teilen" />}
             <Link href={`/print/setlists/${setlistId}`} target="_blank">
               <Button variant="secondary" size="sm">
                 <Printer className="h-4 w-4" />

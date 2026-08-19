@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageFinance } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { allocationNoun, isBalanceTransactionType, memberReceivesAllocation } from "@/lib/finance-entry-labels";
+import { notifyUsers } from "@/lib/notifications";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { FinanceEntryType } from "@/generated/prisma/client";
@@ -155,6 +156,26 @@ export async function saveAllocationsAction(
       });
     }),
   ]);
+
+  // Nur wer einen neuen oder geaenderten Betrag bekommen hat wird benachrichtigt -
+  // unveraenderte Zuordnungen loesen beim erneuten Speichern keine Mail aus.
+  const changedUserIds = allocations
+    .filter((a) => existingByUser.get(a.userId) !== a.amountCents)
+    .map((a) => a.userId);
+  if (changedUserIds.length > 0) {
+    const receives = memberReceivesAllocation(entry.type);
+    await notifyUsers({
+      bandId,
+      userIds: changedUserIds,
+      event: "FINANCE_ALLOCATION",
+      excludeUserId: membership.userId,
+      subject: `${noun}: ${entry.category}`,
+      body: receives
+        ? `Dir wurde ein Betrag zugeordnet (${entry.category}). Bitte bestätige den Erhalt, sobald du das Geld bekommen hast.`
+        : `Dir wurde ein Kostenanteil zugeordnet (${entry.category}). Die Finanzverwaltung bestätigt den Eingang, sobald du gezahlt hast.`,
+      path: `/bands/${bandId}/finance`,
+    });
+  }
 
   revalidatePath(`/bands/${bandId}/finance/${entryId}`);
   return undefined;

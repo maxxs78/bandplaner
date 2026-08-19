@@ -5,6 +5,7 @@ import { requireMembership, canManageBandContent, canManageContent } from "@/lib
 import { saveBandFile, deleteStoredFile, BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
 import { bandFileCategoryLabels } from "@/lib/band-file-categories";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
+import { notifyBand } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
 import type { BandFileCategory, BandFileVisibility } from "@/generated/prisma/client";
 
@@ -83,6 +84,15 @@ export async function uploadBandFileAction(
       songId,
       equipmentId,
     },
+  });
+
+  await notifyBand({
+    bandId,
+    event: "NEW_FILE",
+    excludeUserId: user.id,
+    subject: `Neue Datei: ${result.filename}`,
+    body: `${user.name} hat eine Datei hochgeladen:\n\n${result.filename}`,
+    path: `/bands/${bandId}/files`,
   });
 
   revalidatePath(`/bands/${bandId}/files`);

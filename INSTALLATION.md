@@ -52,6 +52,18 @@ Diese kommen aus einer `.env`-Datei, die **neben** der `docker-compose.yml` lieg
 |---|---|---|
 | `AUTH_SECRET` | Geheimer Schlüssel für NextAuth-Sessions. **Pflicht**, sonst startet der Login nicht sicher. | per `openssl rand -base64 32` erzeugen |
 | `NEXT_PUBLIC_APP_URL` | Öffentlich erreichbare URL der App (für Links in E-Mails, ICS-Kalenderfeed) | `http://diskstation.local:3000` bzw. `https://bandplaner.example.com` |
+| `SMTP_HOST` | Mailserver für Benachrichtigungen. **Optional** – bleibt er leer, verschickt die App keine E-Mails, funktioniert sonst aber unverändert. | `smtp.example.com` |
+| `SMTP_PORT` | Port des Mailservers (Standard 587) | `587` |
+| `SMTP_USER` / `SMTP_PASSWORD` | Zugangsdaten des Mailkontos, falls der Server Authentifizierung verlangt | `bandplaner@example.com` |
+| `SMTP_FROM` | Absenderadresse der Benachrichtigungen (leer = `SMTP_USER`) | `Bandplaner <noreply@example.com>` |
+| `SMTP_SECURE` | Nur nötig, wenn abweichend: `true` erzwingt TLS ab Verbindungsaufbau. Sonst automatisch aus dem Port abgeleitet (465 = TLS, sonst STARTTLS). | `true` |
+
+Damit tatsächlich Mails verschickt werden, müssen **beide** Bedingungen erfüllt sein:
+
+1. SMTP ist wie oben konfiguriert, **und**
+2. das Modul **Kommunikation** ist für die jeweilige Band eingeschaltet (Band → Verwaltung → Funktionen; standardmäßig aus).
+
+Ist eines von beidem nicht erfüllt, funktioniert die App normal weiter – es werden dann nur keine Benachrichtigungen versendet. Welche Benachrichtigungen jemand bekommt, stellt jede Person anschließend selbst im eigenen Profil je Band ein (neuer Termin, Terminänderung, Songvorschlag, neue Datei, eigene Gagen/Kostenanteile). Fehlt der Mailserver, weist die Profilseite ausdrücklich darauf hin.
 
 `DATABASE_URL` und `AUTH_TRUST_HOST` sind bereits fest in `docker-compose.yml` gesetzt und müssen nicht angepasst werden. `AUTH_TRUST_HOST=true` ist nötig, weil der Host (IP, Hostname, Domain) je nach Netzwerk variiert – NextAuth würde im Produktionsmodus sonst mit „There was a problem with the server configuration“ abbrechen.
 
@@ -134,6 +146,7 @@ Darin anpassen:
 
 - `AUTH_SECRET` – eigenen Zufallswert erzeugen (siehe [2.3](#23-umgebungsvariablen))
 - `NEXT_PUBLIC_APP_URL` – die später genutzte Adresse, z. B. `http://diskstation.local:3000` oder die spätere HTTPS-Domain (siehe [3.8](#38-https-über-dsm-reverse-proxy-optional))
+- `SMTP_*` – optional, nur falls E-Mail-Benachrichtigungen gewünscht sind (siehe [2.3](#23-umgebungsvariablen)); kann auch später jederzeit nachgetragen werden
 
 `DATABASE_URL` unverändert lassen – wird im Container ohnehin auf `/data` umgebogen.
 
@@ -324,6 +337,7 @@ Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von
 | Port bereits belegt | Linken Wert in `ports:` der `docker-compose.yml` ändern (z. B. `8080:3000`), Projekt neu starten |
 | Container startet, aber Seite nicht erreichbar | Firewall (DSM-Firewall bzw. Proxmox-/`ufw`-Firewall) prüfen, ob der gewählte Port freigegeben ist |
 | „Permission denied“ auf Datenbank/Uploads | Wird bei jedem Start automatisch durch `docker-entrypoint.sh` repariert (`chown`) – tritt in der Regel nur bei manuell veränderten Bind-Mounts mit exotischen Host-Rechten auf |
+| Es kommen keine Benachrichtigungs-E-Mails an | Der Reihe nach prüfen: (1) `SMTP_*` in der `.env` gesetzt und Projekt danach neu gestartet? (2) Modul **Kommunikation** in der Band-Verwaltung eingeschaltet? (3) Im eigenen Profil der passende Ereignistyp aktiviert? (4) Container-Log auf `[mail] Versand fehlgeschlagen` prüfen. Hinweis: Über eigene Aktionen wird man bewusst nicht selbst benachrichtigt – zum Testen die Aktion von einem zweiten Konto aus auslösen. |
 | Nach Update Migrationsfehler | Vor dem Update ein Backup ziehen (siehe [2.6](#26-backup-generisch) bzw. [4.6](#46-backup)), Log per `docker compose logs -f` bzw. Container Manager prüfen |
 
 ---

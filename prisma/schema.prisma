@@ -118,6 +118,11 @@ model Band {
   /// aktiv. Siehe BandFinanceAdmin fuer die separate, rollenunabhaengige Liste
   /// der finanzberechtigten Personen.
   financeEnabled Boolean @default(false)
+  /// Kommunikationsmodul: E-Mail-Benachrichtigungen zu Bandereignissen und
+  /// WhatsApp-Teilen-Buttons. Wie das Finanzmodul ein neues Feature, daher
+  /// Standard aus. Die persoenlichen Benachrichtigungs-Einstellungen je
+  /// Mitglied (siehe Membership) bleiben beim Abschalten erhalten.
+  communicationEnabled Boolean @default(false)
   /// Abrechnungsmodus fuer das Finanzmodul: NO_BALANCE = kein Bandkonto, Zu-/Abfluesse
   /// muessen immer zu 100% auf Mitglieder verteilt werden (durchgesetzt in
   /// finance/actions.ts). BAND_BALANCE = die Band darf ein eigenes Kapital halten,
@@ -250,6 +255,15 @@ model Membership {
   /// Vorbelegung fuer neue Gagen-Eintraege dieser Person (in Cent) - bleibt dort
   /// frei aenderbar. null = keine Vorbelegung.
   defaultPayoutAmountCents Int?
+
+  /// E-Mail-Benachrichtigungen je Ereignistyp, pro Person und Band einstellbar
+  /// (siehe src/lib/notifications.ts). Standardmaessig an; der Versand passiert
+  /// nur, wenn zusaetzlich SMTP konfiguriert ist (siehe src/lib/mail.ts).
+  notifyOnNewEvent          Boolean @default(true)
+  notifyOnEventChange       Boolean @default(true)
+  notifyOnSongProposal      Boolean @default(true)
+  notifyOnNewFile           Boolean @default(true)
+  notifyOnFinanceAllocation Boolean @default(true)
 
   @@unique([userId, bandId])
 }

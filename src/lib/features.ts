@@ -1,11 +1,15 @@
 import type { Band } from "@/generated/prisma/client";
 
-export type BandFeatureFlags = Pick<Band, "equipmentEnabled" | "packlistsEnabled" | "financeEnabled">;
+export type BandFeatureFlags = Pick<
+  Band,
+  "equipmentEnabled" | "packlistsEnabled" | "financeEnabled" | "communicationEnabled"
+>;
 
 export type EnabledFeatures = {
   equipment: boolean;
   packlists: boolean;
   finance: boolean;
+  communication: boolean;
 };
 
 /**
@@ -20,5 +24,6 @@ export function getEnabledFeatures(band: BandFeatureFlags): EnabledFeatures {
     equipment,
     packlists: equipment && band.packlistsEnabled,
     finance: band.financeEnabled,
+    communication: band.communicationEnabled,
   };
 }

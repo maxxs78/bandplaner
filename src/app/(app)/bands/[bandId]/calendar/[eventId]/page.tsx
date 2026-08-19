@@ -12,6 +12,7 @@ import { linkSetlistToEventAction, unlinkSetlistFromEventAction } from "../../se
 import { linkPacklistToEventAction, unlinkPacklistFromEventAction } from "../../equipment/actions";
 import { AvailabilityButtons } from "@/components/availability-buttons";
 import { DeleteButton } from "@/components/delete-button";
+import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
 import { eventTypeLabels, eventTypeBadgeVariant } from "@/lib/event-colors";
@@ -90,6 +91,14 @@ export default async function EventDetailPage({
   const canEdit = canManageBandContent(membership.role, isFinanceAdmin) || (canManage && event.createdById === user.id);
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
+  const shareText = [
+    `${membership.band.name}: ${event.title}`,
+    new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(event.startsAt),
+    event.location || null,
+  ]
+    .filter(Boolean)
+    .join("\n");
+
   const files: FileListItem[] = event.files.map((f) => ({
     id: f.id,
     filename: f.filename,
@@ -132,17 +141,20 @@ export default async function EventDetailPage({
         </div>
         {event.description && <p className="mt-3 text-sm text-foreground">{event.description}</p>}
 
-        {canEdit && (
-          <div className="mt-4 flex gap-2">
-            <Link href={`/bands/${bandId}/calendar/${eventId}/edit`}>
-              <Button variant="secondary" size="sm">
-                <Pencil className="h-4 w-4" />
-                Bearbeiten
-              </Button>
-            </Link>
-            <DeleteButton action={deleteEventAction.bind(null, bandId, eventId)} label="Termin löschen" />
-          </div>
-        )}
+        <div className="mt-4 flex flex-wrap items-center gap-2">
+          {features.communication && <WhatsAppShareButton text={shareText} />}
+          {canEdit && (
+            <>
+              <Link href={`/bands/${bandId}/calendar/${eventId}/edit`}>
+                <Button variant="secondary" size="sm">
+                  <Pencil className="h-4 w-4" />
+                  Bearbeiten
+                </Button>
+              </Link>
+              <DeleteButton action={deleteEventAction.bind(null, bandId, eventId)} label="Termin löschen" />
+            </>
+          )}
+        </div>
       </div>
 
       {myAbsence && (

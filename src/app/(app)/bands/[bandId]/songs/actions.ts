@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand, canManageBandContent, canManageContent } from "@/lib/access";
 import { songSchema, songLinkSchema, songVoteSchema } from "@/lib/validation";
+import { notifyBand } from "@/lib/notifications";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
 import { saveSongFile, deleteStoredFile } from "@/lib/uploads";
@@ -94,6 +95,19 @@ export async function createSongAction(
       proposedById: user.id,
     },
   });
+
+  if (song.status === "PROPOSED") {
+    await notifyBand({
+      bandId,
+      event: "SONG_PROPOSAL",
+      excludeUserId: user.id,
+      subject: `Neuer Songvorschlag: ${song.title}`,
+      body:
+        `${user.name} schlägt einen neuen Song vor:\n\n${song.title}` +
+        `${song.artist ? ` (${song.artist})` : ""}\n\nDu kannst darüber abstimmen.`,
+      path: `/bands/${bandId}/songs/${song.id}`,
+    });
+  }
 
   revalidatePath(`/bands/${bandId}/songs`);
   redirect(`/bands/${bandId}/songs/${song.id}`);

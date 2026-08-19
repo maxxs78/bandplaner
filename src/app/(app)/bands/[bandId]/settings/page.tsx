@@ -43,12 +43,13 @@ export default async function BandSettingsPage({
         </p>
         <Card className="mt-4">
           <FeatureTogglesForm
-            key={`${membership.band.equipmentEnabled}-${membership.band.packlistsEnabled}-${membership.band.financeEnabled}-${membership.band.financeSettlementMode}`}
+            key={`${membership.band.equipmentEnabled}-${membership.band.packlistsEnabled}-${membership.band.financeEnabled}-${membership.band.financeSettlementMode}-${membership.band.communicationEnabled}`}
             action={updateBandFeaturesAction.bind(null, bandId)}
             initialEquipmentEnabled={membership.band.equipmentEnabled}
             initialPacklistsEnabled={membership.band.packlistsEnabled}
             initialFinanceEnabled={membership.band.financeEnabled}
             initialFinanceSettlementMode={membership.band.financeSettlementMode}
+            initialCommunicationEnabled={membership.band.communicationEnabled}
           />
         </Card>
       </div>

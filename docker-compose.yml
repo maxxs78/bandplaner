@@ -17,6 +17,16 @@ services:
       # Host je nach Netzwerk/Deployment variieren kann (Hostname, IP, Domain),
       # vertrauen wir hier explizit statt eine einzelne feste URL zu erzwingen.
       AUTH_TRUST_HOST: "true"
+      # E-Mail-Benachrichtigungen (optional): Ohne SMTP_HOST/SMTP_FROM laeuft die
+      # App normal weiter, es werden dann nur keine Mails verschickt. SMTP_PORT
+      # ist standardmaessig 587, SMTP_SECURE wird aus dem Port abgeleitet
+      # (465 = implizites TLS) und kann bei Bedarf ueberschrieben werden.
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USER: "${SMTP_USER:-}"
+      SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
+      SMTP_FROM: "${SMTP_FROM:-}"
+      SMTP_SECURE: "${SMTP_SECURE:-}"
     volumes:
       # Datenbank, hochgeladene Song-/Band-Dateien sowie Profil-/Bandbilder
       # liegen in benannten Volumes und überleben damit Image-Updates/Neustarts.

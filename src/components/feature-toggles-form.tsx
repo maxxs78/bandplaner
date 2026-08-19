@@ -28,18 +28,21 @@ export function FeatureTogglesForm({
   initialPacklistsEnabled,
   initialFinanceEnabled,
   initialFinanceSettlementMode,
+  initialCommunicationEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
   initialPacklistsEnabled: boolean;
   initialFinanceEnabled: boolean;
   initialFinanceSettlementMode: "NO_BALANCE" | "BAND_BALANCE";
+  initialCommunicationEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
   const [packlistsEnabled, setPacklistsEnabled] = useState(initialPacklistsEnabled);
   const [financeEnabled, setFinanceEnabled] = useState(initialFinanceEnabled);
   const [financeSettlementMode, setFinanceSettlementMode] = useState(initialFinanceSettlementMode);
+  const [communicationEnabled, setCommunicationEnabled] = useState(initialCommunicationEnabled);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -97,6 +100,13 @@ export function FeatureTogglesForm({
           ))}
         </div>
       )}
+      <ToggleRow
+        name="communicationEnabled"
+        label="Kommunikation"
+        description="E-Mail-Benachrichtigungen zu Terminen, Songvorschlägen, Dateien und Gagen sowie Teilen per WhatsApp. Jede Person legt im eigenen Profil fest, worüber sie informiert wird."
+        checked={communicationEnabled}
+        onChange={setCommunicationEnabled}
+      />
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
