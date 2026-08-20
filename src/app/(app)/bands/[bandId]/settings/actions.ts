@@ -22,6 +22,7 @@ export async function updateBandFeaturesAction(
   const financeEnabled = formData.get("financeEnabled") === "on";
   const communicationEnabled = formData.get("communicationEnabled") === "on";
   const mediaPlayerEnabled = formData.get("mediaPlayerEnabled") === "on";
+  const keyDetectionEnabled = formData.get("keyDetectionEnabled") === "on";
   const wasFinanceEnabled = membership.band.financeEnabled;
   const settlementModeRaw = formData.get("financeSettlementMode");
   const financeSettlementMode = settlementModeRaw === "BAND_BALANCE" ? "BAND_BALANCE" : "NO_BALANCE";
@@ -38,7 +39,15 @@ export async function updateBandFeaturesAction(
 
   await prisma.band.update({
     where: { id: bandId },
-    data: { equipmentEnabled, packlistsEnabled, financeEnabled, financeSettlementMode, communicationEnabled, mediaPlayerEnabled },
+    data: {
+      equipmentEnabled,
+      packlistsEnabled,
+      financeEnabled,
+      financeSettlementMode,
+      communicationEnabled,
+      mediaPlayerEnabled,
+      keyDetectionEnabled,
+    },
   });
 
   if (financeEnabled && !wasFinanceEnabled) {

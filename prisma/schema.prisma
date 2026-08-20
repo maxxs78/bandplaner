@@ -129,6 +129,12 @@ model Band {
   /// Up- und Download der Dateien gehoeren zur Songbibliothek und bleiben
   /// davon unberuehrt.
   mediaPlayerEnabled Boolean @default(false)
+  /// Automatische Tonart-Erkennung im Uebungsmodus (Krumhansl-Schmuckler-Verfahren
+  /// auf Basis des Chromagramms, siehe src/lib/key-detection.ts) - Unterfunktion
+  /// des Medienplayers, greift daher nur, wenn dieser ebenfalls aktiv ist. Standard
+  /// an: rein informativ (nur eine Naeherung), aendert nie automatisch Songdaten -
+  /// dafuer muss die Person das Ergebnis aktiv uebernehmen.
+  keyDetectionEnabled Boolean @default(true)
   /// Abrechnungsmodus fuer das Finanzmodul: NO_BALANCE = kein Bandkonto, Zu-/Abfluesse
   /// muessen immer zu 100% auf Mitglieder verteilt werden (durchgesetzt in
   /// finance/actions.ts). BAND_BALANCE = die Band darf ein eigenes Kapital halten,

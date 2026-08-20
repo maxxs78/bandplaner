@@ -30,6 +30,7 @@ export function FeatureTogglesForm({
   initialFinanceSettlementMode,
   initialCommunicationEnabled,
   initialMediaPlayerEnabled,
+  initialKeyDetectionEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
@@ -38,6 +39,7 @@ export function FeatureTogglesForm({
   initialFinanceSettlementMode: "NO_BALANCE" | "BAND_BALANCE";
   initialCommunicationEnabled: boolean;
   initialMediaPlayerEnabled: boolean;
+  initialKeyDetectionEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
@@ -46,6 +48,7 @@ export function FeatureTogglesForm({
   const [financeSettlementMode, setFinanceSettlementMode] = useState(initialFinanceSettlementMode);
   const [communicationEnabled, setCommunicationEnabled] = useState(initialCommunicationEnabled);
   const [mediaPlayerEnabled, setMediaPlayerEnabled] = useState(initialMediaPlayerEnabled);
+  const [keyDetectionEnabled, setKeyDetectionEnabled] = useState(initialKeyDetectionEnabled);
 
   return (
     <form action={formAction} className="space-y-3">
@@ -117,6 +120,17 @@ export function FeatureTogglesForm({
         checked={mediaPlayerEnabled}
         onChange={setMediaPlayerEnabled}
       />
+      {mediaPlayerEnabled && (
+        <div className="ml-4 space-y-2 border-l-2 border-border pl-4">
+          <ToggleRow
+            name="keyDetectionEnabled"
+            label="Tonart-Erkennung"
+            description="Schätzt im Übungsmodus auf Knopfdruck die Tonart der Audiodatei (Näherungswert, nicht immer zuverlässig – Dur/Moll-Paralleltonarten lassen sich algorithmisch kaum unterscheiden). Ändert nie automatisch Songdaten, das Ergebnis muss aktiv übernommen werden."
+            checked={keyDetectionEnabled}
+            onChange={setKeyDetectionEnabled}
+          />
+        </div>
+      )}
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />

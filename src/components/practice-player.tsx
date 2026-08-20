@@ -1,19 +1,36 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Pause, Play, RotateCcw, SlidersHorizontal, X } from "lucide-react";
+import { useCallback, useEffect, useRef, useState, useTransition } from "react";
+import { Pause, Play, RotateCcw, SlidersHorizontal, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { transposeKey, keysMatch } from "@/lib/music-key";
+import { detectKey, type DetectedKey } from "@/lib/key-detection";
+import { updateSongKeyAction } from "@/app/(app)/bands/[bandId]/songs/actions";
 
 const WORKLET_URL = "/audio-worklet/soundtouch-processor.js";
 const MIN_TEMPO = 0.5;
 const MAX_TEMPO = 1.5;
 const MAX_SEMITONES = 12;
+// Deckt vom langsamen Ballad-Tempo bis zu schnellem Punk/Metal praktisch alles ab,
+// was bei einer Bandprobe realistisch vorkommt.
+const BPM_DETECTION_RANGE = { minTempo: 60, maxTempo: 200 };
+// Kleinste Ziehbewegung in der Wellenform, die noch als Loop-Auswahl statt als
+// einfacher Klick zum Springen gilt (in CSS-Pixeln der angezeigten Breite).
+const DRAG_THRESHOLD_PX = 4;
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds < 0) return "0:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
   return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+function formatTimeMs(seconds: number) {
+  const clamped = Number.isFinite(seconds) && seconds > 0 ? seconds : 0;
+  const m = Math.floor(clamped / 60);
+  const s = Math.floor(clamped % 60);
+  const ms = Math.floor((clamped - Math.floor(clamped)) * 1000);
+  return `${m}:${s.toString().padStart(2, "0")}.${ms.toString().padStart(3, "0")}`;
 }
 
 /** Reduziert den AudioBuffer auf Min/Max-Werte je Pixelspalte fuer die Wellenform. */
@@ -37,7 +54,22 @@ function computePeaks(buffer: AudioBuffer, columns: number) {
   return peaks;
 }
 
-export function PracticePlayer({ src, onClose }: { src: string; onClose: () => void }) {
+export function PracticePlayer({
+  src,
+  songKey,
+  bandId,
+  songId,
+  keyDetectionEnabled,
+  onClose,
+}: {
+  src: string;
+  /** Bandweit hinterlegte Tonart des Songs (freies Kurzschreibweise-Format, z. B. "Am"). */
+  songKey?: string | null;
+  bandId: string;
+  songId: string;
+  keyDetectionEnabled?: boolean;
+  onClose: () => void;
+}) {
   const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
   const [errorText, setErrorText] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -47,6 +79,19 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
   const [semitones, setSemitones] = useState(0);
   const [loopStart, setLoopStart] = useState<number | null>(null);
   const [loopEnd, setLoopEnd] = useState<number | null>(null);
+  // Erkanntes Grundtempo (bei 100% Wiedergabegeschwindigkeit), unabhaengig vom
+  // Tempo-Regler ermittelt - null, solange die Analyse noch laeuft oder
+  // fehlgeschlagen ist.
+  const [baseBpm, setBaseBpm] = useState<number | null>(null);
+  const [keyDetection, setKeyDetection] = useState<
+    | { status: "idle" }
+    | { status: "detecting" }
+    | { status: "done"; result: DetectedKey }
+    | { status: "error" }
+  >({ status: "idle" });
+  const [keyAdopted, setKeyAdopted] = useState(false);
+  const [keyBannerDismissed, setKeyBannerDismissed] = useState(false);
+  const [adoptPending, startAdopt] = useTransition();
 
   const contextRef = useRef<AudioContext | null>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
@@ -68,8 +113,9 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
     (async () => {
       try {
         const context = new AudioContext();
-        const [{ SoundTouchNode }, response] = await Promise.all([
+        const [{ SoundTouchNode }, { guess }, response] = await Promise.all([
           import("@soundtouchjs/audio-worklet"),
+          import("web-audio-beat-detector"),
           fetch(src),
         ]);
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -91,6 +137,17 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
         peaksRef.current = computePeaks(audioBuffer, 900);
         setDuration(audioBuffer.duration);
         setStatus("ready");
+
+        // Laeuft in einem Web Worker und blockiert den Player nicht - die
+        // BPM-Anzeige erscheint einfach etwas spaeter, sobald fertig.
+        guess(audioBuffer, BPM_DETECTION_RANGE)
+          .then(({ bpm }) => {
+            if (!cancelled) setBaseBpm(bpm);
+          })
+          .catch(() => {
+            // Tempo nicht sicher ermittelbar (z. B. sehr kurze/leise Datei) -
+            // die Anzeige bleibt dann einfach aus.
+          });
       } catch (error) {
         if (cancelled) return;
         setErrorText(error instanceof Error ? error.message : "Unbekannter Fehler");
@@ -257,6 +314,59 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
     []
   );
 
+  // Ziehauswahl des Loop-Bereichs direkt in der Wellenform (Maus oder Touch).
+  // "anchor" ist der fest bleibende Startpunkt der Geste, "current" die aktuelle
+  // Zeigerposition - der gezeichnete/uebernommene Bereich ist stets ihr Min/Max,
+  // damit auch ein Zurueckziehen ueber den Anker hinaus korrekt bleibt. Waehrend
+  // des Ziehens wird nur die Vorschau aktualisiert; erst beim Loslassen wird
+  // applyLoop() aufgerufen, damit ein einfacher Klick weiterhin nur springt.
+  const dragRef = useRef<{ anchor: number; current: number } | null>(null);
+
+  const timeFromPointer = useCallback(
+    (e: { clientX: number; currentTarget: HTMLCanvasElement }) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const ratio = rect.width > 0 ? (e.clientX - rect.left) / rect.width : 0;
+      return Math.max(0, Math.min(ratio, 1)) * duration;
+    },
+    [duration]
+  );
+
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      const time = timeFromPointer(e);
+      dragRef.current = { anchor: time, current: time };
+    },
+    [timeFromPointer]
+  );
+
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>) => {
+      if (!dragRef.current) return;
+      dragRef.current = { anchor: dragRef.current.anchor, current: timeFromPointer(e) };
+    },
+    [timeFromPointer]
+  );
+
+  const endDrag = useCallback(
+    (e: React.PointerEvent<HTMLCanvasElement>, commit: boolean) => {
+      const drag = dragRef.current;
+      dragRef.current = null;
+      if (!drag || !commit) return;
+
+      const start = Math.min(drag.anchor, drag.current);
+      const end = Math.max(drag.anchor, drag.current);
+      const rect = e.currentTarget.getBoundingClientRect();
+      const thresholdSeconds = rect.width > 0 ? (DRAG_THRESHOLD_PX / rect.width) * duration : 0;
+      if (end - start < thresholdSeconds) {
+        seek(drag.anchor);
+      } else {
+        applyLoop(start, end);
+      }
+    },
+    [applyLoop, duration, seek]
+  );
+
   // Fortschrittsanzeige und Wellenform zeichnen.
   useEffect(() => {
     if (status !== "ready") return;
@@ -277,7 +387,8 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
           const styles = getComputedStyle(canvas);
           ctx.clearRect(0, 0, width, height);
 
-          const loop = loopRef.current;
+          const drag = dragRef.current;
+          const loop = drag ? { start: Math.min(drag.anchor, drag.current), end: Math.max(drag.anchor, drag.current) } : loopRef.current;
           if (loop) {
             ctx.fillStyle = styles.getPropertyValue("--player-loop") || "rgba(139,92,246,0.18)";
             ctx.fillRect((loop.start / total) * width, 0, ((loop.end - loop.start) / total) * width, height);
@@ -306,7 +417,32 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
     return () => cancelAnimationFrame(frame);
   }, [currentPosition, status]);
 
+  const handleDetectKey = useCallback(async () => {
+    const buffer = bufferRef.current;
+    if (!buffer) return;
+    setKeyDetection({ status: "detecting" });
+    setKeyAdopted(false);
+    setKeyBannerDismissed(false);
+    try {
+      const result = await detectKey(buffer);
+      setKeyDetection(result ? { status: "done", result } : { status: "error" });
+    } catch {
+      setKeyDetection({ status: "error" });
+    }
+  }, []);
+
+  const handleAdoptKey = useCallback(
+    (label: string) => {
+      startAdopt(async () => {
+        await updateSongKeyAction(bandId, songId, label);
+        setKeyAdopted(true);
+      });
+    },
+    [bandId, songId]
+  );
+
   const loopActive = loopStart !== null && loopEnd !== null && loopEnd > loopStart;
+  const transposedKey = songKey ? transposeKey(songKey, semitones) : null;
 
   if (status === "error") {
     return (
@@ -348,11 +484,11 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
         ref={canvasRef}
         width={900}
         height={96}
-        onClick={(e) => {
-          const rect = e.currentTarget.getBoundingClientRect();
-          seek(((e.clientX - rect.left) / rect.width) * duration);
-        }}
-        className="h-24 w-full cursor-pointer rounded-md bg-surface [--player-loop:rgba(139,92,246,0.18)] [--player-played:#8b5cf6] [--player-wave:#c4b5fd]"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={(e) => endDrag(e, true)}
+        onPointerCancel={(e) => endDrag(e, false)}
+        className="h-24 w-full touch-none cursor-pointer rounded-md bg-surface [--player-loop:rgba(139,92,246,0.18)] [--player-played:#8b5cf6] [--player-wave:#c4b5fd]"
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -361,7 +497,7 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
           {playing ? "Pause" : "Abspielen"}
         </Button>
         <span className="font-mono text-sm text-muted">
-          {formatTime(position)} / {formatTime(duration)}
+          {formatTimeMs(position)} / {formatTimeMs(duration)} · −{formatTimeMs(duration - position)}
         </span>
       </div>
 
@@ -369,7 +505,10 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
         <label className="block">
           <span className="flex items-center justify-between text-xs font-medium text-foreground">
             Tempo
-            <span className="font-mono text-muted">{Math.round(tempo * 100)} %</span>
+            <span className="font-mono text-muted">
+              {Math.round(tempo * 100)} %
+              {baseBpm !== null ? ` · ${Math.round(baseBpm * tempo)} BPM` : ""}
+            </span>
           </span>
           <input
             type="range"
@@ -387,6 +526,7 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
             Tonart
             <span className="font-mono text-muted">
               {semitones > 0 ? `+${semitones}` : semitones} Halbtöne
+              {semitones !== 0 && transposedKey ? ` · ${transposedKey}` : ""}
             </span>
           </span>
           <input
@@ -422,9 +562,63 @@ export function PracticePlayer({ src, onClose }: { src: string; onClose: () => v
         )}
       </div>
 
+      {keyDetectionEnabled && (
+        <div className="border-t border-border pt-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDetectKey}
+              disabled={keyDetection.status === "detecting"}
+            >
+              <Wand2 className="h-4 w-4" />
+              {keyDetection.status === "detecting" ? "Analysiere…" : "Tonart erkennen"}
+            </Button>
+            {keyDetection.status === "done" && (
+              <span className="text-sm text-muted">
+                Erkannt: <span className="font-medium text-foreground">{keyDetection.result.label}</span>
+                {keyDetection.result.ambiguousWith && (
+                  <>
+                    {" "}
+                    (evtl. auch{" "}
+                    <span className="font-medium text-foreground">{keyDetection.result.ambiguousWith.label}</span> –
+                    Dur/Moll-Paralleltonarten sind chromatisch kaum unterscheidbar)
+                  </>
+                )}
+              </span>
+            )}
+            {keyDetection.status === "error" && (
+              <span className="text-sm text-danger">Tonart konnte nicht sicher ermittelt werden.</span>
+            )}
+          </div>
+
+          {keyDetection.status === "done" &&
+            !keyAdopted &&
+            !keyBannerDismissed &&
+            !keysMatch(songKey, keyDetection.result.label) && (
+              <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-sm">
+                <span className="text-foreground">
+                  Weicht von der hinterlegten Tonart ({songKey || "keine"}) ab. In Songdaten übernehmen?
+                </span>
+                <Button
+                  size="sm"
+                  onClick={() => handleAdoptKey(keyDetection.result.label)}
+                  disabled={adoptPending}
+                >
+                  Übernehmen
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setKeyBannerDismissed(true)}>
+                  Verwerfen
+                </Button>
+              </div>
+            )}
+          {keyAdopted && <p className="mt-2 text-xs text-muted">Tonart in den Songdaten aktualisiert.</p>}
+        </div>
+      )}
+
       <p className="text-xs text-muted">
-        Tempo und Tonart lassen sich unabhängig voneinander einstellen. Klick in die Wellenform springt
-        an die Stelle.
+        Tempo und Tonart lassen sich unabhängig voneinander einstellen. Klick in die Wellenform springt an
+        die Stelle, Ziehen (Maus oder Finger) markiert einen Loop-Bereich.
       </p>
     </div>
   );

@@ -35,6 +35,8 @@ export function SongFileList({
   currentUserId,
   isAdmin,
   playerEnabled,
+  keyDetectionEnabled,
+  songKey,
 }: {
   bandId: string;
   songId: string;
@@ -42,6 +44,8 @@ export function SongFileList({
   currentUserId: string;
   isAdmin: boolean;
   playerEnabled: boolean;
+  keyDetectionEnabled?: boolean;
+  songKey?: string | null;
 }) {
   if (files.length === 0) {
     return <p className="text-sm text-muted">Noch keine Dateien hochgeladen.</p>;
@@ -99,7 +103,14 @@ export function SongFileList({
           </div>
           {showPlayer && (
             <div className="mt-2">
-              <SongAudioPlayer src={`/api/song-files/${file.id}`} filename={file.filename} />
+              <SongAudioPlayer
+                src={`/api/song-files/${file.id}`}
+                filename={file.filename}
+                songKey={songKey}
+                bandId={bandId}
+                songId={songId}
+                keyDetectionEnabled={keyDetectionEnabled}
+              />
             </div>
           )}
           </div>

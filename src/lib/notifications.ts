@@ -39,6 +39,7 @@ async function dispatch(options: {
         financeEnabled: true,
         communicationEnabled: true,
         mediaPlayerEnabled: true,
+        keyDetectionEnabled: true,
       },
     });
     if (!band || !getEnabledFeatures(band).communication) return;

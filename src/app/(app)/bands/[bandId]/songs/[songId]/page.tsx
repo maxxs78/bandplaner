@@ -282,6 +282,8 @@ export default async function SongDetailPage({
             currentUserId={user.id}
             isAdmin={canManageSongs}
             playerEnabled={features.mediaPlayer}
+            keyDetectionEnabled={features.keyDetection}
+            songKey={song.key}
           />
         </div>
         {canManage && (

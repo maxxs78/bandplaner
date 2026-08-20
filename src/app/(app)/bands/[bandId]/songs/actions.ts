@@ -339,6 +339,22 @@ export async function deleteSongLinkAction(bandId: string, songId: string, linkI
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
 }
 
+/** Übernimmt eine im Übungsmodus erkannte Tonart in die Songdaten (nach Bestätigung durch die Person). */
+export async function updateSongKeyAction(
+  bandId: string,
+  songId: string,
+  key: string
+): Promise<{ error?: string } | undefined> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) {
+    return { error: "Gäste können die Tonart nicht ändern" };
+  }
+
+  await prisma.song.update({ where: { id: songId, bandId }, data: { key } });
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  return undefined;
+}
+
 /**
  * Wertet die Stimmen zu einem Vorschlag aus, sobald alle stimmberechtigten Mitglieder
  * (alle Rollen außer Gast) abgestimmt haben: einstimmig dafür -> "Neu", einstimmig

@@ -2,7 +2,12 @@ import type { Band } from "@/generated/prisma/client";
 
 export type BandFeatureFlags = Pick<
   Band,
-  "equipmentEnabled" | "packlistsEnabled" | "financeEnabled" | "communicationEnabled" | "mediaPlayerEnabled"
+  | "equipmentEnabled"
+  | "packlistsEnabled"
+  | "financeEnabled"
+  | "communicationEnabled"
+  | "mediaPlayerEnabled"
+  | "keyDetectionEnabled"
 >;
 
 export type EnabledFeatures = {
@@ -11,6 +16,7 @@ export type EnabledFeatures = {
   finance: boolean;
   communication: boolean;
   mediaPlayer: boolean;
+  keyDetection: boolean;
 };
 
 /**
@@ -21,11 +27,13 @@ export type EnabledFeatures = {
  */
 export function getEnabledFeatures(band: BandFeatureFlags): EnabledFeatures {
   const equipment = band.equipmentEnabled;
+  const mediaPlayer = band.mediaPlayerEnabled;
   return {
     equipment,
     packlists: equipment && band.packlistsEnabled,
     finance: band.financeEnabled,
     communication: band.communicationEnabled,
-    mediaPlayer: band.mediaPlayerEnabled,
+    mediaPlayer,
+    keyDetection: mediaPlayer && band.keyDetectionEnabled,
   };
 }

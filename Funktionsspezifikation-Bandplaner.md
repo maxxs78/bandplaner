@@ -1,12 +1,14 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.3 — Stand 19.08.2026
+Version 1.4 — Stand 20.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
 *Änderungen gegenüber Version 1.1: geplante Zukunftsfunktionen ergänzt — erleichterte Titelerfassung per automatischer Metadaten-Recherche über Spotify-/YouTube-URL sowie Musikdatenbanken wie MusicBrainz/Discogs (3.3), neues Modul Audio-/Video-Player mit Übungsfunktionen wie Tempo-/Tonart-Anpassung und Abschnitts-Loop (3.12); Abgrenzung in Abschnitt 5 entsprechend angepasst.*
 
 *Änderungen gegenüber Version 1.2: Umsetzungsstand nachgeführt — Finanzverwaltung (3.8) inkl. Abrechnungsmodi umgesetzt, Kommunikation (3.6) teilweise umgesetzt (E-Mail-Benachrichtigungen und WhatsApp-Teilen), Audio-Player mit Übungsfunktionen (3.12) umgesetzt; Rollenmodell an die tatsächliche Umsetzung angepasst (Finanzadmin ist keine Rolle, sondern eine rollenunabhängige Kennzeichnung, Abschnitt 2); Coverbild-Übernahme aus Datei-Metadaten präzisiert (3.3); neuer Abschnitt 2.1 zu abschaltbaren Modulen; Grenzen der Streaming-Einbettung dokumentiert (3.12).*
+
+*Änderungen gegenüber Version 1.3: Übungsmodus (3.12) erweitert — Loop-Bereich per Ziehen mit Maus/Finger direkt in der Wellenform markierbar (zusätzlich zu den bestehenden Buttons), Zeit-/Restzeitanzeige inkl. Millisekunden, automatische Tempoerkennung (BPM) inkl. Live-Anpassung bei Tempoänderung sowie auf Knopfdruck ausgelöste Tonart-Erkennung mit Übernahme-Rückfrage bei Abweichung von der hinterlegten Tonart; Tonart-Erkennung als eigener, granularer Unterschalter in Abschnitt 2.1 ergänzt.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -43,6 +45,7 @@ Nicht jede Gruppe benötigt jeden Funktionsbereich. Umfangreichere Module lassen
 | Finanzen | aus | beim Aktivieren wird die aktivierende Person automatisch Finanzadmin:in, sofern die Band noch keine hat |
 | Kommunikation | aus | E-Mail-Versand erfordert zusätzlich einen konfigurierten Mailserver |
 | Medienplayer | aus | steuert nur die Wiedergabe-Oberfläche; Dateien und Links bleiben unabhängig davon nutzbar |
+| davon: Tonart-Erkennung | ein | granularer Unterschalter, nur wirksam bei aktiviertem Medienplayer |
 
 Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **löscht aber keine Daten**. Bereits erfasste Inhalte und persönliche Einstellungen bleiben erhalten und stehen unverändert wieder zur Verfügung, sobald das Modul erneut eingeschaltet wird. Einzige bewusste Ausnahme ist die Freigabe öffentlicher Datei-Links (3.7): Da sie als Sicherheitsschranke wirkt, sperrt ihre Deaktivierung auch bereits bestehende Links.
 
@@ -155,8 +158,11 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 ### 3.12 Medienplayer und Übungsfunktionen
 
 - Integrierter Player für am Song hinterlegte Audiodateien, direkt innerhalb der App abspielbar. Ergänzend werden per URL verlinkte Streaming-Quellen (Spotify, YouTube) über den jeweils offiziellen Player des Anbieters eingebettet; YouTube gibt dabei das Video wieder, Spotify seinen Audio-Player samt eigenem Coverbild.
-- Übungsfunktionen für hochgeladene Audiodateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune.
-- Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen, ergänzt um eine Wellenformdarstellung zur Orientierung und zum Anspringen einzelner Stellen.
+- Übungsfunktionen für hochgeladene Audiodateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune. Ist am Song eine Tonart hinterlegt, zeigt die App bei aktiver Transposition die sich daraus ergebende Zieltonart mit an.
+- Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen, ergänzt um eine Wellenformdarstellung zur Orientierung und zum Anspringen einzelner Stellen. Der Loop-Bereich lässt sich sowohl über Buttons ("ab hier"/"bis hier") als auch direkt per Ziehen mit Maus oder Finger in der Wellenform festlegen.
+- Anzeige von verstrichener Zeit und Restzeit inklusive Millisekunden während der Wiedergabe.
+- Automatische Tempoerkennung: Das Grundtempo (BPM) der Datei wird beim Laden ermittelt und angezeigt, die Anzeige aktualisiert sich live entsprechend der eingestellten Wiedergabegeschwindigkeit.
+- Tonart-Erkennung auf Knopfdruck (eigener, granularer Unterschalter unter dem Medienplayer-Modul, siehe Abschnitt 2.1): Schätzt die Tonart der Audiodatei per Chromagramm-Analyse. Weicht das Ergebnis von der am Song hinterlegten Tonart ab, fragt die App nach, ob es in die Songdaten übernommen werden soll — die Übernahme erfolgt ausschließlich nach aktiver Bestätigung, nie automatisch. Da sich Dur-Tonarten von ihrer parallelen Molltonart (z. B. C-Dur/a-Moll) anhand der reinen Tonhöhen kaum unterscheiden lassen, weist die App in solchen Fällen im Ergebnis auf die naheliegende Alternative hin, statt eine falsche Eindeutigkeit vorzutäuschen.
 - Zweistufige Wiedergabe: Standardmäßig läuft ein schlanker, streamender Player. Der Übungsmodus wird bewusst erst auf Anforderung geladen, da er die Datei vollständig verarbeitet im Speicher hält.
 
 **Abgrenzung:** Die Übungsfunktionen stehen ausschließlich für hochgeladene Audiodateien zur Verfügung, nicht für eingebettete Streaming-Quellen. Das ist keine Frage des Umsetzungsaufwands, sondern eine Grenze der Anbieter: Spotify bietet über seinen Player keinerlei Tempo- oder Tonhöhensteuerung, YouTube nur feste Geschwindigkeitsstufen und kein Transponieren. Ein Zugriff auf die Audiodaten selbst wäre bei beiden Anbietern nicht zulässig.

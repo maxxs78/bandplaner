@@ -11,11 +11,34 @@ import { PracticePlayer } from "@/components/practice-player";
  * Datei komplett dekodiert im Speicher halten (grob 20 MB je Minute Stereo),
  * was man nicht jeder Wiedergabe aufbuerden will.
  */
-export function SongAudioPlayer({ src, filename }: { src: string; filename: string }) {
+export function SongAudioPlayer({
+  src,
+  filename,
+  songKey,
+  bandId,
+  songId,
+  keyDetectionEnabled,
+}: {
+  src: string;
+  filename: string;
+  songKey?: string | null;
+  bandId: string;
+  songId: string;
+  keyDetectionEnabled?: boolean;
+}) {
   const [practiceMode, setPracticeMode] = useState(false);
 
   if (practiceMode) {
-    return <PracticePlayer src={src} onClose={() => setPracticeMode(false)} />;
+    return (
+      <PracticePlayer
+        src={src}
+        songKey={songKey}
+        bandId={bandId}
+        songId={songId}
+        keyDetectionEnabled={keyDetectionEnabled}
+        onClose={() => setPracticeMode(false)}
+      />
+    );
   }
 
   return (
