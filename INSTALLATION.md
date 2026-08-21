@@ -154,7 +154,7 @@ cp .env.example .env
 Darin anpassen:
 
 - `AUTH_SECRET` – eigenen Zufallswert erzeugen (siehe [2.3](#23-umgebungsvariablen))
-- `NEXT_PUBLIC_APP_URL` – die später genutzte Adresse, z. B. `http://diskstation.local:3000` oder die spätere HTTPS-Domain (siehe [3.8](#38-https-über-dsm-reverse-proxy-optional))
+- `NEXT_PUBLIC_APP_URL` – die später genutzte Adresse, z. B. `http://diskstation.local:3000` oder die spätere HTTPS-Domain (siehe [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung))
 - `SMTP_*` – optional, nur falls E-Mail-Benachrichtigungen gewünscht sind (siehe [2.3](#23-umgebungsvariablen)); kann auch später jederzeit nachgetragen werden
 
 `DATABASE_URL` unverändert lassen – wird im Container ohnehin auf `/data` umgebogen.
@@ -194,17 +194,54 @@ Bandplaner: starte Server…
 
 Anschließend `http://<diskstation-ip>:3000` (bzw. gewählter Port) im Browser öffnen und über `/register` das erste Konto anlegen.
 
-### 3.8 HTTPS über DSM Reverse-Proxy (optional)
+### 3.8 Aus dem Internet erreichbar machen (HTTPS, Reverse Proxy, Absicherung)
 
-Für eine eigene Domain mit HTTPS statt IP:Port kann der in DSM eingebaute Reverse-Proxy genutzt werden:
+Standardmäßig ist Bandplaner nur im eigenen Netz über `http://<diskstation-ip>:3000` erreichbar. Sollen Bandmitglieder auch von unterwegs zugreifen können, braucht es zwei getrennte Bausteine: Die **Router-Portfreigabe** sorgt dafür, dass Anfragen aus dem Internet überhaupt bis zur DiskStation durchgelassen werden (reiner Transportweg); die **DSM-Einrichtung** unten sorgt für Verschlüsselung (TLS-Zertifikat) und reicht die Anfrage intern an den Container weiter. Beides zusammen ist nötig – Portfreigabe allein liefert weder Verschlüsselung noch ein gültiges Zertifikat.
 
-1. Systemsteuerung → **Anmeldeportal** → **Erweitert** → **Reverse-Proxy** → Neu.
-2. Quelle: gewünschte Subdomain/Domain, Port 443, HTTPS.
-3. Ziel: `localhost`, Port 3000 (bzw. der in `docker-compose.yml` gewählte linke Port).
-4. Ein Zertifikat über Systemsteuerung → Sicherheit → Zertifikat (Let's Encrypt) der Domain zuweisen.
-5. `NEXT_PUBLIC_APP_URL` in der `.env` auf die neue `https://…`-Adresse setzen und das Projekt neu starten, damit z. B. Links im ICS-Feed korrekt sind.
+**Voraussetzung:** eine Domain oder ein DDNS-Hostname, der auf Ihre öffentliche IP zeigt (bei dynamischer IP z. B. über Synologys eigenen DDNS-Dienst oder den Ihres Domain-Anbieters aktuell gehalten).
 
-`AUTH_TRUST_HOST=true` ist bereits gesetzt, dadurch funktioniert der Login unabhängig davon, ob über IP:Port oder über die Domain zugegriffen wird.
+**1. Router-Portfreigabe**
+
+Nur Port **443** (HTTPS) an die DiskStation weiterleiten. Port 3000 (der App-Port) darf **nicht** direkt weitergeleitet werden – sonst liefe der Traffic unverschlüsselt am Reverse Proxy vorbei. Port 80 wird nur kurzzeitig gebraucht, falls DSM für die Zertifikatsausstellung die HTTP-01-Challenge nutzt; danach kann er wieder geschlossen werden.
+
+**2. Zertifikat**
+
+Systemsteuerung → **Sicherheit** → **Zertifikat** → Hinzufügen → Let's Encrypt, Domain eintragen. Kostenlos, verlängert sich automatisch.
+
+**3. Reverse-Proxy-Regel**
+
+Systemsteuerung → **Anmeldeportal** → **Erweitert** → **Reverse-Proxy-Regel** → Erstellen:
+
+| Feld | Wert |
+|---|---|
+| Beschreibung | z. B. `Bandplaner` |
+| Quelle – Protokoll | HTTPS |
+| Quelle – Hostname | `<ihre-domain>` |
+| Quelle – Port | 443 |
+| Quelle – HSTS | optional, sobald alles läuft empfehlenswert |
+| Ziel – Protokoll | HTTP |
+| Ziel – Hostname | `localhost` |
+| Ziel – Port | 3000 (bzw. der in `docker-compose.yml` gewählte linke Port) |
+
+Die Header `X-Forwarded-For`, `X-Forwarded-Proto` sowie der ursprüngliche `Host`-Header werden von DSMs Reverse Proxy bereits standardmäßig durchgereicht – dafür ist **keine** zusätzliche Einstellung im Reiter „Benutzerdefinierter Header" nötig. Das ist wichtig, weil `AUTH_TRUST_HOST=true` (bereits in `docker-compose.yml` gesetzt) NextAuth genau darauf verlässt, um zu erkennen, dass die Verbindung verschlüsselt ist.
+
+**4. App-Konfiguration**
+
+`NEXT_PUBLIC_APP_URL` in der `.env` auf die neue `https://…`-Adresse setzen und das Projekt neu starten, damit z. B. Links im ICS-Kalenderfeed, in WhatsApp-Teilen-Buttons und in Benachrichtigungs-Mails korrekt sind.
+
+**5. Verifizieren**
+
+Nach dem Umstellen einloggen und in den Browser-Entwicklertools unter *Application → Cookies* prüfen, ob der Session-Cookie mit `__Secure-` beginnt (`__Secure-authjs.session-token`). Ist das Präfix da, hat NextAuth HTTPS korrekt erkannt. Fehlt es, kommt der `X-Forwarded-Proto`-Header nicht an – typisches Symptom ist dann eine Login-Redirect-Schleife (siehe Fehlerbehebung unten). Anschließend auch von außerhalb des eigenen Netzes testen (z. B. Mobilfunknetz statt Heim-WLAN), da lokale Auflösung/Firewall-Effekte einen falschen Erfolg vortäuschen können.
+
+**6. Absicherung, weil jetzt öffentlich erreichbar**
+
+Sobald ein Port aus dem Internet erreichbar ist, gehört mehr zur Grundabsicherung als nur das Zertifikat:
+
+- **Nur den nötigen Port exponieren:** Router leitet ausschließlich 443 weiter – nicht die DSM-Weboberfläche (5000/5001) und nicht SSH (22). SSH bleibt separat davon eine eigene Entscheidung; für reinen App-Zugriff wird es nicht gebraucht.
+- **DSM Auto Block aktivieren:** Systemsteuerung → Sicherheit → Schutz – sperrt IP-Adressen automatisch nach mehreren Fehlversuchen gegen DSM selbst.
+- **2FA für den DSM-Admin-Account** aktivieren, das Standardkonto „admin" deaktivieren oder umbenennen.
+- **Login-Schutz auf App-Ebene ist bereits eingebaut:** Bandplaner sperrt ein Konto nach 5 fehlgeschlagenen Loginversuchen automatisch für 2 Tage (siehe [README](README.md)) – dafür ist keine zusätzliche Konfiguration nötig.
+- **Backup vor der Umstellung** einmal gegenprüfen (siehe [3.10](#310-backup)), bevor der Server öffentlich erreichbar wird.
 
 ### 3.9 Updates
 
@@ -333,7 +370,7 @@ Das ist der empfohlene Weg unter Proxmox – deutlich einfacher als das volume-b
 
 ## 5. Reverse Proxy & HTTPS (plattformübergreifend, optional)
 
-Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von der Plattform mehrere gängige Optionen: Synologys eingebauter Reverse-Proxy (siehe [3.8](#38-https-über-dsm-reverse-proxy-optional)), oder – z. B. bei Proxmox – ein zusätzlicher Reverse Proxy wie **Nginx Proxy Manager**, **Caddy** oder **Traefik** in einem eigenen Container/LXC, der Let's-Encrypt-Zertifikate verwaltet und Anfragen an `bandplaner:3000` weiterleitet. `AUTH_TRUST_HOST=true` ist bereits in der `docker-compose.yml` gesetzt, wodurch der Login unabhängig vom verwendeten Host funktioniert. `NEXT_PUBLIC_APP_URL` sollte nach Einrichtung auf die finale `https://…`-Adresse gesetzt werden, damit Links (z. B. im ICS-Kalenderfeed) korrekt sind.
+Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von der Plattform mehrere gängige Optionen: Synologys eingebauter Reverse-Proxy (siehe [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung), inkl. Absicherungs-Checkliste, die sinngemäß auch auf anderen Plattformen gilt), oder – z. B. bei Proxmox – ein zusätzlicher Reverse Proxy wie **Nginx Proxy Manager**, **Caddy** oder **Traefik** in einem eigenen Container/LXC, der Let's-Encrypt-Zertifikate verwaltet und Anfragen an `bandplaner:3000` weiterleitet. `AUTH_TRUST_HOST=true` ist bereits in der `docker-compose.yml` gesetzt, wodurch der Login unabhängig vom verwendeten Host funktioniert. `NEXT_PUBLIC_APP_URL` sollte nach Einrichtung auf die finale `https://…`-Adresse gesetzt werden, damit Links (z. B. im ICS-Kalenderfeed) korrekt sind.
 
 ---
 
@@ -348,6 +385,8 @@ Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von
 | „Permission denied“ auf Datenbank/Uploads | Wird bei jedem Start automatisch durch `docker-entrypoint.sh` repariert (`chown`) – tritt in der Regel nur bei manuell veränderten Bind-Mounts mit exotischen Host-Rechten auf |
 | Es kommen keine Benachrichtigungs-E-Mails an | Der Reihe nach prüfen: (1) `SMTP_*` in der `.env` gesetzt und Projekt danach neu gestartet? (2) Modul **Kommunikation** in der Band-Verwaltung eingeschaltet? (3) Im eigenen Profil der passende Ereignistyp aktiviert? (4) Container-Log auf `[mail] Versand fehlgeschlagen` prüfen. Hinweis: Über eigene Aktionen wird man bewusst nicht selbst benachrichtigt – zum Testen die Aktion von einem zweiten Konto aus auslösen. |
 | Kein Ton / „Übungsmodus konnte nicht geladen werden“ | Modul **Medienplayer** in der Band-Verwaltung eingeschaltet? Fehlt `public/audio-worklet/soundtouch-processor.js` (siehe [2.4](#24-medienplayer)), lässt sich nur der Übungsmodus nicht starten – normales Abspielen bleibt nutzbar. Springen im Titel setzt voraus, dass ein vorgeschalteter Reverse Proxy HTTP-Range-Requests durchreicht. |
+| Login-Redirect-Schleife bzw. Session hält nicht (hinter Reverse Proxy) | `X-Forwarded-Proto` kommt nicht beim Server an, NextAuth erkennt HTTPS nicht. Prüfen wie in [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung) Schritt 5 beschrieben (Cookie-Präfix `__Secure-` in den Browser-Entwicklertools). |
+| „Zu viele fehlgeschlagene Loginversuche“ trotz korrektem Passwort | Konto wurde nach 5 Fehlversuchen für 2 Tage automatisch gesperrt (Brute-Force-Schutz). Läuft von selbst ab, oder ein Admin setzt über Band → Mitglieder ein neues Initialpasswort – das hebt die Sperre sofort auf. |
 | Nach Update Migrationsfehler | Vor dem Update ein Backup ziehen (siehe [2.7](#27-backup-generisch) bzw. [4.6](#46-backup)), Log per `docker compose logs -f` bzw. Container Manager prüfen |
 
 ---
