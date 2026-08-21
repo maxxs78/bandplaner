@@ -1,7 +1,20 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import { CredentialsSignin } from "next-auth";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+
+// Nach so vielen fehlgeschlagenen Versuchen in Folge wird das Konto gesperrt.
+const MAX_FAILED_LOGIN_ATTEMPTS = 5;
+// Sperrdauer - danach ist ohne weiteres Zutun (kein Hintergrundjob) wieder
+// ein Loginversuch moeglich, da lockedUntil einfach in der Vergangenheit liegt.
+const LOCKOUT_DURATION_MS = 2 * 24 * 60 * 60 * 1000;
+
+/** Eigener Fehlertyp, damit die Login-Seite eine klare Meldung statt der generischen "falsches Passwort" zeigen kann. */
+export class AccountLockedError extends CredentialsSignin {
+  static type = "AccountLockedError";
+  code = "account_locked";
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Fest im Code statt nur per AUTH_TRUST_HOST-Umgebungsvariable, da sich
@@ -37,8 +50,31 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
         if (!user) return null;
 
+        if (user.lockedUntil && user.lockedUntil > new Date()) {
+          throw new AccountLockedError();
+        }
+
         const valid = await bcrypt.compare(password, user.passwordHash);
-        if (!valid) return null;
+        if (!valid) {
+          const attempts = user.failedLoginAttempts + 1;
+          const lockedOut = attempts >= MAX_FAILED_LOGIN_ATTEMPTS;
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              failedLoginAttempts: lockedOut ? 0 : attempts,
+              lockedUntil: lockedOut ? new Date(Date.now() + LOCKOUT_DURATION_MS) : null,
+            },
+          });
+          if (lockedOut) throw new AccountLockedError();
+          return null;
+        }
+
+        if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+          await prisma.user.update({
+            where: { id: user.id },
+            data: { failedLoginAttempts: 0, lockedUntil: null },
+          });
+        }
 
         return { id: user.id, name: user.name, email: user.email };
       },

@@ -74,6 +74,15 @@ model User {
   avatarUrl    String?
   createdAt    DateTime @default(now())
 
+  /// Zaehler fehlgeschlagener Login-Versuche in Folge - wird bei jedem
+  /// erfolgreichen Login zurueckgesetzt. Siehe lockedUntil.
+  failedLoginAttempts Int       @default(0)
+  /// Gesetzt, sobald failedLoginAttempts den Schwellenwert erreicht hat;
+  /// bis zu diesem Zeitpunkt wird jeder Loginversuch abgelehnt, unabhaengig
+  /// vom Passwort. Kein Hintergrundjob noetig - die Sperre laeuft einfach
+  /// ab, sobald dieser Zeitpunkt in der Vergangenheit liegt.
+  lockedUntil         DateTime?
+
   memberships    Membership[]
   availabilities Availability[]
   absences       Absence[]

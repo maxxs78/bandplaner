@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.4 — Stand 20.08.2026
+Version 1.5 — Stand 21.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -9,6 +9,8 @@ Version 1.4 — Stand 20.08.2026
 *Änderungen gegenüber Version 1.2: Umsetzungsstand nachgeführt — Finanzverwaltung (3.8) inkl. Abrechnungsmodi umgesetzt, Kommunikation (3.6) teilweise umgesetzt (E-Mail-Benachrichtigungen und WhatsApp-Teilen), Audio-Player mit Übungsfunktionen (3.12) umgesetzt; Rollenmodell an die tatsächliche Umsetzung angepasst (Finanzadmin ist keine Rolle, sondern eine rollenunabhängige Kennzeichnung, Abschnitt 2); Coverbild-Übernahme aus Datei-Metadaten präzisiert (3.3); neuer Abschnitt 2.1 zu abschaltbaren Modulen; Grenzen der Streaming-Einbettung dokumentiert (3.12).*
 
 *Änderungen gegenüber Version 1.3: Übungsmodus (3.12) erweitert — Loop-Bereich per Ziehen mit Maus/Finger direkt in der Wellenform markierbar (zusätzlich zu den bestehenden Buttons), Zeit-/Restzeitanzeige inkl. Millisekunden, automatische Tempoerkennung (BPM) inkl. Live-Anpassung bei Tempoänderung sowie auf Knopfdruck ausgelöste Tonart-Erkennung mit Übernahme-Rückfrage bei Abweichung von der hinterlegten Tonart; Tonart-Erkennung als eigener, granularer Unterschalter in Abschnitt 2.1 ergänzt.*
+
+*Änderungen gegenüber Version 1.4: Schutz vor Brute-Force-Login-Versuchen ergänzt (Abschnitt 4) — Konten werden nach 5 fehlgeschlagenen Loginversuchen für 2 Tage automatisch gesperrt, als Vorbereitung darauf, den Server künftig auch aus dem Internet erreichbar zu machen.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -173,6 +175,7 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 - **Darstellung**: Hell- und Dunkelmodus.
 - **Mehrsprachigkeit**: mindestens Deutsch und Englisch, Architektur so ausgelegt, dass weitere Sprachen ergänzt werden können.
 - **Datenschutz**: DSGVO-konforme Datenhaltung (Serverstandort/Datenverarbeitung innerhalb der EU), transparente Datenschutzerklärung, Exportmöglichkeit der eigenen Daten.
+- **Schutz vor Brute-Force-Login-Versuchen**: Nach 5 fehlgeschlagenen Loginversuchen in Folge wird das betroffene Konto für 2 Tage gesperrt, unabhängig davon, von welcher IP-Adresse die Versuche stammen. Die Sperre läuft danach automatisch ab; ein Admin-Passwort-Reset hebt sie zusätzlich sofort auf.
 - **Zuverlässigkeit**: nachvollziehbare Benachrichtigungslogik, keine automatische kostenpflichtige Verlängerung ohne ausdrückliche Zustimmung, falls ein Testzeitraum angeboten wird.
 - **Skalierbarkeit der Bandgröße**: Unterstützung unterschiedlich großer Gruppen, von kleinen Bands bis zu größeren Ensembles/Orchestern.
 

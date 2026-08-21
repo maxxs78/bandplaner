@@ -230,7 +230,7 @@ export async function resetMemberPasswordAction(
 
   await prisma.user.update({
     where: { id: target.userId },
-    data: { passwordHash, mustChangePassword: true },
+    data: { passwordHash, mustChangePassword: true, failedLoginAttempts: 0, lockedUntil: null },
   });
 
   return {
