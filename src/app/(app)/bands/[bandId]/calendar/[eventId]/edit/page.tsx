@@ -3,6 +3,7 @@ import { format } from "date-fns";
 import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
+import { getEnabledFeatures } from "@/lib/features";
 import { updateEventAction } from "../../actions";
 import { EventForm } from "@/components/event-form";
 import { Card } from "@/components/ui/card";
@@ -29,12 +30,18 @@ export default async function EditEventPage({
   }
 
   const boundAction = updateEventAction.bind(null, bandId, eventId);
+  const features = getEnabledFeatures(membership.band);
 
-  const memberships = await prisma.membership.findMany({
-    where: { bandId },
-    include: { user: { select: { id: true, name: true } } },
-    orderBy: { createdAt: "asc" },
-  });
+  const [memberships, locations] = await Promise.all([
+    prisma.membership.findMany({
+      where: { bandId },
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    features.locations
+      ? prisma.location.findMany({ where: { bandId }, orderBy: { name: "asc" } })
+      : Promise.resolve([]),
+  ]);
   const members = memberships.map((m) => m.user);
   const t = await getTranslations("calendar");
 
@@ -47,12 +54,14 @@ export default async function EditEventPage({
           submitLabel={t("editSubmit")}
           members={members}
           currentUserId={user.id}
+          locations={features.locations ? locations : undefined}
           defaultValues={{
             title: event.title,
             type: event.type,
             startsAt: format(event.startsAt, "yyyy-MM-dd'T'HH:mm"),
             endsAt: format(event.endsAt, "yyyy-MM-dd'T'HH:mm"),
             location: event.location ?? "",
+            locationId: event.locationId ?? undefined,
             description: event.description ?? "",
             participantIds: event.participants.map((p) => p.userId),
           }}

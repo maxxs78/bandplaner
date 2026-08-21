@@ -49,6 +49,7 @@ async function dispatch(options: {
         communicationEnabled: true,
         mediaPlayerEnabled: true,
         keyDetectionEnabled: true,
+        locationsEnabled: true,
       },
     });
     if (!band || !getEnabledFeatures(band).communication) return;

@@ -147,3 +147,20 @@ export function getPacklistSchema(t: (key: string) => string) {
     eventId: z.string().optional(),
   });
 }
+
+export function getLocationSchema(t: (key: string) => string) {
+  return z.object({
+    name: z.string().min(1, t("nameRequired")),
+    address: z.string().optional(),
+    latitude: z.coerce.number().optional().or(z.literal("")),
+    longitude: z.coerce.number().optional().or(z.literal("")),
+    contactName: z.string().optional(),
+    contactPhone: z.string().optional(),
+    contactEmail: z.string().email(t("invalidEmail")).optional().or(z.literal("")),
+    website: z.string().url(t("invalidUrl")).optional().or(z.literal("")),
+    capacity: z.coerce.number().int().positive().optional().or(z.literal("")),
+    stageAndTechNotes: z.string().optional(),
+    loadingAndParkingNotes: z.string().optional(),
+    notes: z.string().optional(),
+  });
+}

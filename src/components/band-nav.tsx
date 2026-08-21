@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users } from "lucide-react";
+import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users, MapPin } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 
@@ -10,10 +10,12 @@ export function BandNav({
   bandId,
   showEquipment = true,
   showFinance = false,
+  showLocations = false,
 }: {
   bandId: string;
   showEquipment?: boolean;
   showFinance?: boolean;
+  showLocations?: boolean;
 }) {
   const pathname = usePathname();
   const t = useTranslations("bandNav");
@@ -25,12 +27,16 @@ export function BandNav({
     { href: "/setlists", label: t("setlists"), icon: ListMusic },
     { href: "/files", label: t("files"), icon: Folder },
     { href: "/equipment", label: t("equipment"), icon: Package },
+    { href: "/locations", label: t("locations"), icon: MapPin },
     { href: "/finance", label: t("finance"), icon: Wallet },
     { href: "/members", label: t("band"), icon: Users },
   ];
   const base = `/bands/${bandId}`;
   const visibleTabs = tabs.filter(
-    (tab) => (showEquipment || tab.href !== "/equipment") && (showFinance || tab.href !== "/finance")
+    (tab) =>
+      (showEquipment || tab.href !== "/equipment") &&
+      (showFinance || tab.href !== "/finance") &&
+      (showLocations || tab.href !== "/locations")
   );
 
   return (

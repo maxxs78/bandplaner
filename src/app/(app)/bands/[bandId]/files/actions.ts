@@ -53,6 +53,7 @@ export async function uploadBandFileAction(
   const eventId = (formData.get("eventId") as string) || null;
   const songId = (formData.get("songId") as string) || null;
   const equipmentId = (formData.get("equipmentId") as string) || null;
+  const locationId = (formData.get("locationId") as string) || null;
   if (eventId) {
     const event = await prisma.event.findUnique({ where: { id: eventId, bandId }, select: { id: true } });
     if (!event) return { error: t("invalidEvent") };
@@ -67,6 +68,10 @@ export async function uploadBandFileAction(
       select: { id: true },
     });
     if (!equipment) return { error: t("invalidEquipment") };
+  }
+  if (locationId) {
+    const location = await prisma.location.findUnique({ where: { id: locationId, bandId }, select: { id: true } });
+    if (!location) return { error: t("invalidLocation") };
   }
 
   const result = await saveBandFile(file);
@@ -85,6 +90,7 @@ export async function uploadBandFileAction(
       eventId,
       songId,
       equipmentId,
+      locationId,
     },
   });
 

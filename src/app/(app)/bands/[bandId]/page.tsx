@@ -9,6 +9,7 @@ import {
   eventTypeBadgeVariant,
   eventTypeColor,
   isEventFullyConfirmed,
+  eventLocationLabel,
 } from "@/lib/event-colors";
 import clsx from "clsx";
 
@@ -33,6 +34,7 @@ export default async function BandOverviewPage({
       include: {
         participants: { select: { userId: true } },
         availabilities: { select: { userId: true, status: true } },
+        place: { select: { name: true } },
       },
     }),
     prisma.song.count({ where: { bandId, status: { not: "ARCHIVED" } } }),
@@ -77,7 +79,7 @@ export default async function BandOverviewPage({
                     <p className="font-medium text-foreground">{event.title}</p>
                     <p className="text-sm text-muted">
                       {format.dateTime(event.startsAt, { dateStyle: "medium", timeStyle: "short" })}
-                      {event.location ? ` · ${event.location}` : ""}
+                      {eventLocationLabel(event) ? ` · ${eventLocationLabel(event)}` : ""}
                     </p>
                   </div>
                   <Badge variant={eventTypeBadgeVariant[event.type]}>

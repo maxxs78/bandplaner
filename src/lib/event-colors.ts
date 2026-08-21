@@ -68,6 +68,14 @@ export function eventPillClasses(type: string, allConfirmed: boolean) {
     : clsx("bg-transparent", c.text, c.border, "border-2");
 }
 
+/**
+ * EIN Ortsfeld nach außen: verknüpfter Ort (place) hat Vorrang vor der
+ * Freitext-Ortsangabe (location) - siehe Kommentar am Event-Modell in schema.prisma.
+ */
+export function eventLocationLabel(event: { location: string | null; place?: { name: string } | null }) {
+  return event.place?.name ?? event.location ?? null;
+}
+
 export function isEventFullyConfirmed(
   participantUserIds: string[],
   availabilities: { userId: string; status: string }[]

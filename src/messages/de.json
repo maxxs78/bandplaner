@@ -20,6 +20,7 @@
     "setlists": "Setlisten",
     "files": "Dateien",
     "equipment": "Equipment",
+    "locations": "Orte",
     "finance": "Finanzen",
     "band": "Band"
   },
@@ -155,7 +156,8 @@
       },
       "communication": { "label": "Kommunikation", "description": "E-Mail-Benachrichtigungen zu Terminen, Songvorschlägen, Dateien und Gagen sowie Teilen per WhatsApp. Jede Person legt im eigenen Profil fest, worüber sie informiert wird." },
       "mediaPlayer": { "label": "Medienplayer", "description": "Hinterlegte Audiodateien direkt in der App abspielen, inkl. Übungsmodus mit Tempo, Transponieren und Abschnitts-Loop. Verlinkte YouTube- und Spotify-Quellen werden eingebettet." },
-      "keyDetection": { "label": "Tonart-Erkennung", "description": "Schätzt im Übungsmodus auf Knopfdruck die Tonart der Audiodatei (Näherungswert, nicht immer zuverlässig – Dur/Moll-Paralleltonarten lassen sich algorithmisch kaum unterscheiden). Ändert nie automatisch Songdaten, das Ergebnis muss aktiv übernommen werden." }
+      "keyDetection": { "label": "Tonart-Erkennung", "description": "Schätzt im Übungsmodus auf Knopfdruck die Tonart der Audiodatei (Näherungswert, nicht immer zuverlässig – Dur/Moll-Paralleltonarten lassen sich algorithmisch kaum unterscheiden). Ändert nie automatisch Songdaten, das Ergebnis muss aktiv übernommen werden." },
+      "locations": { "label": "Orte", "description": "Katalog von Auftrittsorten mit Adresse, Karte, Kontakt- und Technik-Infos sowie Dateien – verknüpfbar mit Terminen." }
     },
     "settlementModes": {
       "title": "Abrechnungsmodus",
@@ -435,6 +437,8 @@
       "noEvent": "– keiner –",
       "linkedEquipment": "Verknüpftes Equipment",
       "noEquipment": "– keines –",
+      "linkedLocation": "Verknüpfter Ort",
+      "noLocation": "– keiner –",
       "uploading": "Wird hochgeladen…",
       "upload": "Hochladen"
     },
@@ -446,14 +450,17 @@
       "song": "Song",
       "event": "Termin",
       "equipment": "Equipment",
+      "location": "Ort",
       "noFilesFound": "Keine Dateien gefunden.",
       "noMatchSearch": "Kein Eintrag entspricht der Suche.",
       "songSuffix": " · Song: {title}",
       "eventSuffix": " · Termin: {title}",
       "equipmentSuffix": " · Equipment: {name}",
+      "locationSuffix": " · Ort: {name}",
       "noSongLink": "Ohne Song-Verknüpfung",
       "noEventLink": "Ohne Termin-Verknüpfung",
       "noEquipmentLink": "Ohne Equipment-Verknüpfung",
+      "noLocationLink": "Ohne Ort-Verknüpfung",
       "deleteConfirm": "Datei wirklich löschen?",
       "visibilityPrivate": "Privat",
       "visibilityPrivateTitle": "Nur für die hochladende Person (und Admins) sichtbar",
@@ -469,6 +476,7 @@
       "invalidEvent": "Ungültiger Termin",
       "invalidSong": "Ungültiger Song",
       "invalidEquipment": "Ungültiges Equipment",
+      "invalidLocation": "Ungültiger Ort",
       "newFileSubject": "Neue Datei: {filename}",
       "newFileBody": "{name} hat eine Datei hochgeladen:\n\n{filename}"
     }
@@ -493,7 +501,8 @@
     "endTimeRequired": "Endzeit ist erforderlich",
     "endAfterStart": "Ende muss nach dem Start liegen",
     "endNotBeforeStart": "Ende darf nicht vor dem Start liegen",
-    "commentTooLong": "Kommentar darf maximal 280 Zeichen haben"
+    "commentTooLong": "Kommentar darf maximal 280 Zeichen haben",
+    "invalidLocation": "Der gewählte Ort wurde nicht gefunden"
   },
   "cues": {
     "retune": "Umstimmen",
@@ -587,6 +596,11 @@
     "title": "Titel",
     "type": "Art",
     "location": "Ort",
+    "locationModeText": "Freitext",
+    "locationModeNew": "+ Neuen Ort anlegen",
+    "locationPlaceholder": "z. B. Proberaum, Adresse…",
+    "newLocationNamePlaceholder": "Name des neuen Orts",
+    "newLocationAddressPlaceholder": "Adresse (optional)",
     "start": "Start",
     "end": "Ende",
     "description": "Beschreibung",
@@ -851,6 +865,48 @@
       "noPermissionToUpload": "Keine Berechtigung, Dateien für dieses Equipment hochzuladen",
       "packlistsDisabled": "Packlisten sind für diese Band deaktiviert",
       "guestsCannotCreatePacklist": "Gäste können keine Packlisten erstellen"
+    }
+  },
+  "locations": {
+    "title": "Orte",
+    "addTitle": "Ort hinzufügen",
+    "addSubmit": "Hinzufügen",
+    "noneFound": "Keine Orte gefunden.",
+    "noFurtherInfo": "Keine weiteren Angaben",
+    "capacitySummary": "{capacity} Plätze",
+    "deleteConfirm": "Ort wirklich entfernen?",
+    "editTitle": "Ort bearbeiten",
+    "editSubmit": "Änderungen speichern",
+    "files": "Dateien",
+    "filesDescription": "Z. B. Raumpläne, Technik-Rider oder Fotos zu diesem Ort.",
+    "form": {
+      "name": "Name",
+      "address": "Adresse",
+      "addressPlaceholder": "Straße, PLZ, Ort",
+      "search": "Suchen",
+      "searching": "Suche…",
+      "noResults": "Keine Treffer gefunden.",
+      "locating": "Adresse wird ermittelt…",
+      "mapHint": "Auf die Karte klicken oder den Stift ziehen, um den Punkt zu setzen.",
+      "mapPinAlt": "Markierter Ort auf der Karte",
+      "coordinates": "Koordinaten: {lat}, {lng}",
+      "contactName": "Ansprechpartner:in",
+      "contactPhone": "Telefon",
+      "contactEmail": "E-Mail",
+      "website": "Website",
+      "capacity": "Fassungsvermögen",
+      "stageAndTechNotes": "Bühne & Technik",
+      "stageAndTechNotesPlaceholder": "z. B. Bühnenmaße, PA/Technik vorhanden, Stromanschluss…",
+      "loadingAndParkingNotes": "Anfahrt & Parken",
+      "loadingAndParkingNotesPlaceholder": "z. B. Lademöglichkeit, Parkplätze, Zufahrtsbeschränkungen…",
+      "notes": "Notizen",
+      "saving": "Wird gespeichert…"
+    },
+    "actions": {
+      "disabledForBand": "Orte sind für diese Band deaktiviert",
+      "guestsCannotCreate": "Gäste können keine Orte anlegen",
+      "guestsCannotEdit": "Gäste können Orte nicht bearbeiten",
+      "noPermissionToUpload": "Keine Berechtigung, Dateien für diesen Ort hochzuladen"
     }
   },
   "packlists": {

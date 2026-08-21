@@ -16,7 +16,8 @@ import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
-import { getEventTypeLabels, eventTypeBadgeVariant } from "@/lib/event-colors";
+import { AddressMap } from "@/components/address-map";
+import { getEventTypeLabels, eventTypeBadgeVariant, eventLocationLabel } from "@/lib/event-colors";
 
 const statusVariant: Record<string, "success" | "danger" | "warning"> = {
   YES: "success",
@@ -32,6 +33,7 @@ export default async function EventDetailPage({
   const { bandId, eventId } = await params;
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   const t = await getTranslations("calendar.detail");
+  const tLocationForm = await getTranslations("locations.form");
   const tAvailability = await getTranslations("calendar.availability");
   const tEventTypes = await getTranslations("calendar.eventTypes");
   const eventTypeLabels = getEventTypeLabels(tEventTypes);
@@ -45,6 +47,7 @@ export default async function EventDetailPage({
       setlists: true,
       packlists: true,
       createdBy: true,
+      place: { select: { id: true, name: true, address: true, latitude: true, longitude: true } },
       files: {
         orderBy: { createdAt: "desc" },
         include: { uploadedBy: { select: { name: true } } },
@@ -52,6 +55,8 @@ export default async function EventDetailPage({
     },
   });
   if (!event) notFound();
+
+  const locationLabel = eventLocationLabel(event);
 
   const members = await prisma.membership.findMany({
     where: { bandId },
@@ -99,7 +104,7 @@ export default async function EventDetailPage({
   const shareText = [
     `${membership.band.name}: ${event.title}`,
     format.dateTime(event.startsAt, { dateStyle: "full", timeStyle: "short" }),
-    event.location || null,
+    locationLabel,
   ]
     .filter(Boolean)
     .join("\n");
@@ -131,16 +136,44 @@ export default async function EventDetailPage({
           {t("backToCalendar")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
-          <div>
+          <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-semibold text-foreground">{event.title}</h1>
             <p className="mt-1 text-sm text-muted">
               {format.dateTime(event.startsAt, { dateStyle: "full", timeStyle: "short" })}{" "}
               –{" "}
               {format.dateTime(event.endsAt, { timeStyle: "short" })}
-              {event.location ? ` · ${event.location}` : ""}
+              {locationLabel && (
+                <>
+                  {" · "}
+                  {event.place && canManage ? (
+                    <Link
+                      href={`/bands/${bandId}/locations/${event.place.id}/edit`}
+                      className="text-foreground hover:text-primary hover:underline"
+                    >
+                      {locationLabel}
+                    </Link>
+                  ) : (
+                    locationLabel
+                  )}
+                </>
+              )}
             </p>
+            {event.place?.address && <p className="text-sm text-muted">{event.place.address}</p>}
+            {event.place?.latitude != null && event.place?.longitude != null && (
+              <div className="mt-2 w-full max-w-xl">
+                <AddressMap
+                  latitude={event.place.latitude}
+                  longitude={event.place.longitude}
+                  interactive={false}
+                  heightClassName="h-56"
+                  pinAlt={tLocationForm("mapPinAlt")}
+                />
+              </div>
+            )}
           </div>
-          <Badge variant={eventTypeBadgeVariant[event.type]}>{eventTypeLabels[event.type]}</Badge>
+          <Badge variant={eventTypeBadgeVariant[event.type]} className="shrink-0">
+            {eventTypeLabels[event.type]}
+          </Badge>
         </div>
         {event.description && <p className="mt-3 text-sm text-foreground">{event.description}</p>}
 

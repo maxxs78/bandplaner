@@ -43,7 +43,7 @@ export default async function FilesPage({
     ...BAND_FILE_CATEGORIES.map((value) => ({ value, label: categoryLabels[value] })),
   ];
 
-  const [bandFiles, songFiles, events, songs, equipment, usedBytes] = await Promise.all([
+  const [bandFiles, songFiles, events, songs, equipment, locations, usedBytes] = await Promise.all([
     prisma.bandFile.findMany({
       where: { bandId, ...(category ? { category: category as BandFileCategory } : {}) },
       orderBy: { createdAt: "desc" },
@@ -52,6 +52,7 @@ export default async function FilesPage({
         event: { select: { id: true, title: true } },
         song: { select: { id: true, title: true } },
         equipment: { select: { id: true, name: true } },
+        location: { select: { id: true, name: true } },
       },
     }),
     prisma.songFile.findMany({
@@ -81,6 +82,9 @@ export default async function FilesPage({
       orderBy: { name: "asc" },
       select: { id: true, name: true },
     }),
+    features.locations
+      ? prisma.location.findMany({ where: { bandId }, orderBy: { name: "asc" }, select: { id: true, name: true } })
+      : Promise.resolve([]),
     bandFileStorageUsage(bandId),
   ]);
 
@@ -98,6 +102,7 @@ export default async function FilesPage({
     songTitle: f.song?.title,
     eventTitle: f.event?.title,
     equipmentName: f.equipment?.name,
+    locationName: f.location?.name,
     downloadHref: `/api/band-files/${f.id}`,
     deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
     updateAction: updateBandFileAction.bind(null, bandId, f.id),
@@ -159,6 +164,7 @@ export default async function FilesPage({
               events={events}
               songs={songs}
               equipment={features.equipment ? equipment : undefined}
+              locations={features.locations ? locations : undefined}
               publicLinksEnabled={membership.band.publicFileLinksEnabled}
             />
           </div>
@@ -189,6 +195,7 @@ export default async function FilesPage({
           currentUserId={user.id}
           isAdmin={isAdmin}
           equipmentEnabled={features.equipment}
+          locationsEnabled={features.locations}
           publicLinksEnabled={membership.band.publicFileLinksEnabled}
         />
       </div>

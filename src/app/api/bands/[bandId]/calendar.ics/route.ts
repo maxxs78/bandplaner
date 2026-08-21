@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { eventLocationLabel } from "@/lib/event-colors";
 
 function toICSDate(date: Date) {
   return date.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
@@ -29,7 +30,11 @@ export async function GET(
 
   const [band, events] = await Promise.all([
     prisma.band.findUnique({ where: { id: bandId } }),
-    prisma.event.findMany({ where: { bandId }, orderBy: { startsAt: "asc" } }),
+    prisma.event.findMany({
+      where: { bandId },
+      orderBy: { startsAt: "asc" },
+      include: { place: { select: { name: true, address: true } } },
+    }),
   ]);
 
   const lines = [
@@ -41,6 +46,9 @@ export async function GET(
   ];
 
   for (const event of events) {
+    const icsLocation = event.place
+      ? [event.place.name, event.place.address].filter(Boolean).join(", ")
+      : eventLocationLabel(event);
     lines.push(
       "BEGIN:VEVENT",
       `UID:${event.id}@bandplaner`,
@@ -48,7 +56,7 @@ export async function GET(
       `DTSTART:${toICSDate(event.startsAt)}`,
       `DTEND:${toICSDate(event.endsAt)}`,
       `SUMMARY:${escapeText(event.title)}`,
-      ...(event.location ? [`LOCATION:${escapeText(event.location)}`] : []),
+      ...(icsLocation ? [`LOCATION:${escapeText(icsLocation)}`] : []),
       ...(event.description ? [`DESCRIPTION:${escapeText(event.description)}`] : []),
       "END:VEVENT"
     );

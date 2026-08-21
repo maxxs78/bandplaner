@@ -9,6 +9,9 @@ import type { FormState } from "@/app/(app)/bands/[bandId]/calendar/actions";
 
 const typeValues = ["REHEARSAL", "GIG", "MEETING", "OTHER"] as const;
 
+const TEXT_LOCATION = "";
+const NEW_LOCATION = "__new_location__";
+
 /** Probe/Auftritt betreffen standardmäßig alle Mitglieder, alle anderen Terminarten nur die/den Ersteller:in. */
 function defaultParticipantIds(type: string, members: { id: string }[], currentUserId: string) {
   return type === "REHEARSAL" || type === "GIG"
@@ -23,6 +26,7 @@ export function EventForm({
   allowRepeat = false,
   members,
   currentUserId,
+  locations,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   defaultValues?: {
@@ -31,6 +35,7 @@ export function EventForm({
     startsAt?: string;
     endsAt?: string;
     location?: string;
+    locationId?: string;
     description?: string;
     participantIds?: string[];
   };
@@ -38,6 +43,8 @@ export function EventForm({
   allowRepeat?: boolean;
   members: { id: string; name: string }[];
   currentUserId: string;
+  /** Nur übergeben, wenn das Orte-Feature für die Band aktiv ist - sonst bleibt es beim einfachen Freitextfeld. */
+  locations?: { id: string; name: string; address: string | null }[];
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [repeatWeekly, setRepeatWeekly] = useState(false);
@@ -48,6 +55,11 @@ export function EventForm({
   );
   const t = useTranslations("event");
   const tEventTypes = useTranslations("calendar.eventTypes");
+
+  const [locationChoice, setLocationChoice] = useState(defaultValues?.locationId ?? TEXT_LOCATION);
+  const locationMode =
+    locationChoice === NEW_LOCATION ? "new" : locationChoice === TEXT_LOCATION ? "text" : "existing";
+  const selectedLocation = locations?.find((l) => l.id === locationChoice);
 
   function handleTypeChange(newType: string) {
     setType(newType);
@@ -87,7 +99,49 @@ export function EventForm({
         </div>
         <div>
           <Label htmlFor="location">{t("location")}</Label>
-          <Input id="location" name="location" defaultValue={defaultValues?.location} />
+          {locations ? (
+            <>
+              <Select
+                id="location"
+                value={locationChoice}
+                onChange={(e) => setLocationChoice(e.target.value)}
+              >
+                <option value={TEXT_LOCATION}>{t("locationModeText")}</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+                <option value={NEW_LOCATION}>{t("locationModeNew")}</option>
+              </Select>
+              <input type="hidden" name="locationMode" value={locationMode} />
+
+              {locationMode === "text" && (
+                <Input
+                  name="location"
+                  placeholder={t("locationPlaceholder")}
+                  defaultValue={defaultValues?.location}
+                  className="mt-2"
+                />
+              )}
+              {locationMode === "existing" && (
+                <>
+                  <input type="hidden" name="locationId" value={locationChoice} />
+                  {selectedLocation?.address && (
+                    <p className="mt-1 text-xs text-muted">{selectedLocation.address}</p>
+                  )}
+                </>
+              )}
+              {locationMode === "new" && (
+                <div className="mt-2 space-y-2 rounded-lg border border-border p-2">
+                  <Input name="newLocationName" placeholder={t("newLocationNamePlaceholder")} required />
+                  <Input name="newLocationAddress" placeholder={t("newLocationAddressPlaceholder")} />
+                </div>
+              )}
+            </>
+          ) : (
+            <Input id="location" name="location" defaultValue={defaultValues?.location} />
+          )}
         </div>
       </div>
 

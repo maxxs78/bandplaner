@@ -67,6 +67,7 @@ export default async function BandLayout({
           bandId={bandId}
           showEquipment={features.equipment}
           showFinance={features.finance && canManageContent(membership.role)}
+          showLocations={features.locations}
         />
       </div>
 

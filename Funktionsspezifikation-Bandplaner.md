@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.6 — Stand 21.08.2026
+Version 1.7 — Stand 21.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -13,6 +13,8 @@ Version 1.6 — Stand 21.08.2026
 *Änderungen gegenüber Version 1.4: Schutz vor Brute-Force-Login-Versuchen ergänzt (Abschnitt 4) — Konten werden nach 5 fehlgeschlagenen Loginversuchen für 2 Tage automatisch gesperrt, als Vorbereitung darauf, den Server künftig auch aus dem Internet erreichbar zu machen.*
 
 *Änderungen gegenüber Version 1.5: Mehrsprachigkeit (Abschnitt 4) umgesetzt — Deutsch und Englisch, umschaltbar über einen Sprachwähler im Kopfbereich, dauerhaft im Benutzerprofil hinterlegt; vor dem Login wird die Sprache aus den Browser-Einstellungen erkannt. Architektur ist auf weitere Sprachen erweiterbar.*
+
+*Änderungen gegenüber Version 1.6: Veranstaltungsorte (3.5) als eigenständiges, abschaltbares Modul umgesetzt — bandweiter Ortskatalog mit Kartendarstellung (OpenStreetMap/Leaflet, Straßenkarte und Satellitenbild umschaltbar), Adress-Geokodierung sowie Punktsetzung direkt auf der Karte inklusive automatischer Rückwärts-Geokodierung, Datei-Upload je Ort und ein einziges, im Terminformular kombiniertes Ortsfeld (Freitext, Verknüpfung oder Neuanlage); neuer Unterschalter in Abschnitt 2.1. Gig-spezifische Detailinformationen und Statusverfolgung sind demgegenüber weiterhin nicht umgesetzt und als Ausbaustufe markiert.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -50,6 +52,7 @@ Nicht jede Gruppe benötigt jeden Funktionsbereich. Umfangreichere Module lassen
 | Kommunikation | aus | E-Mail-Versand erfordert zusätzlich einen konfigurierten Mailserver |
 | Medienplayer | aus | steuert nur die Wiedergabe-Oberfläche; Dateien und Links bleiben unabhängig davon nutzbar |
 | davon: Tonart-Erkennung | ein | granularer Unterschalter, nur wirksam bei aktiviertem Medienplayer |
+| Orte | aus | ohne aktiviertes Modul bleibt im Terminformular nur das bisherige Freitext-Ortsfeld erhalten |
 
 Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **löscht aber keine Daten**. Bereits erfasste Inhalte und persönliche Einstellungen bleiben erhalten und stehen unverändert wieder zur Verfügung, sobald das Modul erneut eingeschaltet wird. Einzige bewusste Ausnahme ist die Freigabe öffentlicher Datei-Links (3.7): Da sie als Sicherheitsschranke wirkt, sperrt ihre Deaktivierung auch bereits bestehende Links.
 
@@ -59,7 +62,7 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 
 - Gemeinsamer Bandkalender mit allen Terminarten (Proben, Auftritte, Meetings, private Abwesenheiten).
 - Anlegen einzelner Termine sowie Terminserien (z. B. wöchentliche Probe).
-- Termindetails: Datum/Zeit, Ort, Beschreibung, beteiligte Mitglieder, angehängte Dateien, verknüpfte Setlist.
+- Termindetails: Datum/Zeit, Ort (Freitext oder Verknüpfung zu einem katalogisierten Veranstaltungsort samt Kartenvorschau, siehe 3.5), Beschreibung, beteiligte Mitglieder, angehängte Dateien, verknüpfte Setlist.
 - Vorbelegter Teilnehmerkreis je Terminart: Proben und Auftritte schlagen standardmäßig alle Bandmitglieder als Teilnehmende vor, Meetings und sonstige Termine standardmäßig nur die erstellende Person; der Teilnehmerkreis lässt sich im Termin-Formular individuell anpassen.
 - Monats-, Jahres- und Listenansicht der Termine.
 - Synchronisation mit externen Kalendern (Google, Apple, Outlook) sowie Abonnement per iCal/ICS-Feed.
@@ -104,10 +107,12 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 
 ### 3.5 Veranstaltungsorte und Gigs
 
-- Verwaltung wiederverwendbarer Veranstaltungsorte (Adresse, Ansprechpartner, Kontaktdaten, Anfahrtshinweise).
-- Gig-spezifische Detailinformationen: Zeiten (Ankunft, Soundcheck, Beginn, Ende), Gage, Besetzung, technische Anforderungen.
-- Datei-Upload je Veranstaltungsort/Gig (z. B. Buchungsunterlagen, Technical Rider, Bühnenpläne).
-- Statusverfolgung eines Gigs von der Anfrage bis zur Durchführung und Abrechnung.
+- Bandweiter Katalog wiederverwendbarer Veranstaltungsorte mit Name, Adresse, Ansprechpartner:in, Kontakt (Telefon/E-Mail), Website, Fassungsvermögen sowie Freitextfeldern für Bühne/Technik und Anfahrt/Parken.
+- Kartendarstellung auf Basis von OpenStreetMap (Leaflet), umschaltbar zwischen Straßenkarte und Satellitenbild (Esri World Imagery, ohne zusätzlichen API-Schlüssel). Die Adresse kann eingegeben werden (automatische Geokodierung über Nominatim mit Trefferliste bei Mehrdeutigkeit) oder direkt auf der Karte gesetzt werden (Klick oder Ziehen des Markers, automatische Rückwärts-Geokodierung ins Adressfeld); die ermittelten Geokoordinaten werden zusätzlich als Text angezeigt.
+- Datei-Upload je Veranstaltungsort (z. B. Buchungsunterlagen, Technical Rider, Bühnenpläne), analog zu Songs und Equipment.
+- Verknüpfung mit Terminen: Im Terminformular steht ein einziges Ortsfeld zur Verfügung, das wahlweise Freitext, die Verknüpfung zu einem bestehenden Ort oder die Neuanlage eines Orts direkt beim Anlegen des Termins erlaubt. Ein verknüpfter Termin zeigt Ortsname, Adresse und eine kompakte Kartenvorschau.
+- Als eigenständiges, je Band abschaltbares Modul nutzbar (Abschnitt 2.1); ohne aktiviertes Modul bleibt bei Terminen das bisherige Freitext-Ortsfeld erhalten.
+- Gig-spezifische Detailinformationen wie Ankunfts-/Soundcheck-Zeiten, Besetzung und technische Anforderungen je Auftritt sowie eine durchgängige Statusverfolgung eines Gigs von der Anfrage bis zur Abrechnung sind als Ausbaustufe vorgesehen, aber noch nicht umgesetzt (Gagen selbst werden bereits über die Finanzverwaltung erfasst, siehe Abschnitt 3.8).
 
 ### 3.6 Kommunikation und Zusammenarbeit
 

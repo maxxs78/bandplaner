@@ -23,6 +23,7 @@ import {
   eventTypeColor,
   eventPillClasses,
   isEventFullyConfirmed,
+  eventLocationLabel,
 } from "@/lib/event-colors";
 import clsx from "clsx";
 
@@ -197,6 +198,7 @@ export default async function CalendarPage({
     include: {
       participants: { select: { userId: true } },
       availabilities: { select: { userId: true, status: true } },
+      place: { select: { name: true } },
     },
   });
 
@@ -304,6 +306,7 @@ function EventRow({
     type: string;
     startsAt: Date;
     location: string | null;
+    place: { name: string } | null;
     participants: { userId: string }[];
     availabilities: { userId: string; status: string }[];
   };
@@ -315,6 +318,7 @@ function EventRow({
     event.availabilities
   );
   const color = eventTypeColor(event.type);
+  const locationLabel = eventLocationLabel(event);
 
   return (
     <Link href={`/bands/${bandId}/calendar/${event.id}`}>
@@ -329,7 +333,7 @@ function EventRow({
           <p className="font-medium text-foreground">{event.title}</p>
           <p className="text-sm text-muted">
             {format.dateTime(event.startsAt, { dateStyle: "medium", timeStyle: "short" })}
-            {event.location ? ` · ${event.location}` : ""}
+            {locationLabel ? ` · ${locationLabel}` : ""}
           </p>
         </div>
         <Badge variant={eventTypeBadgeVariant[event.type]}>{eventTypeLabels[event.type]}</Badge>

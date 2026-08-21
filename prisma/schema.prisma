@@ -167,6 +167,10 @@ model Band {
   /// wieder freigibt.
   publicFileLinksEnabled Boolean @default(true)
 
+  /// Orte-Katalog (Venues) mit Adresse/Karte, Kontakt- und Technik-Infos,
+  /// verknuepfbar mit Terminen - "Advanced Feature", daher Standard aus.
+  locationsEnabled Boolean @default(false)
+
   memberships Membership[]
   events      Event[]
   songs       Song[]
@@ -178,6 +182,7 @@ model Band {
   packlists   Packlist[]
   financeAdmins BandFinanceAdmin[]
   financeEntries FinanceEntry[]
+  locations   Location[]
 }
 
 /// Finanzberechtigte Person einer Band - bewusst losgeloest von Role (Admin/Mitglied),
@@ -317,6 +322,11 @@ model Event {
   type        EventType @default(REHEARSAL)
   startsAt    DateTime
   endsAt      DateTime
+  /// Freitext-Ortsangabe - bleibt nutzbar, wenn kein katalogisierter Ort
+  /// verknuepft ist (siehe locationId) oder das Orte-Feature deaktiviert ist.
+  /// Im Terminformular EIN gemeinsames Ort-Feld: Freitext, Verknuepfung zu
+  /// einem bestehenden Ort oder Neuanlage eines Orts fuehren je nachdem zu
+  /// diesem Feld, zu locationId, oder zu beidem.
   location    String?
   description String?
   seriesId    String?
@@ -327,6 +337,9 @@ model Event {
 
   createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
   createdById String
+
+  place   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId String?
 
   availabilities Availability[]
   setlists       Setlist[]
@@ -490,6 +503,9 @@ model BandFile {
 
   equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
   equipmentId String?
+
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  locationId String?
 }
 
 model SongNote {
@@ -646,4 +662,38 @@ model PacklistItem {
 
   assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   assignedToId String?
+}
+
+/// Orte-Katalog (Venues) - Advanced Feature, siehe Band.locationsEnabled. Adresse
+/// ist bewusst ein einzelnes Freitextfeld statt Strasse/PLZ/Ort-Spalten (analog zu
+/// Band.location), da die Geocoding-Anbindung (Nominatim) ohnehin mit einem
+/// einzelnen Suchstring arbeitet. latitude/longitude bleiben leer, bis eine
+/// Adresse erfolgreich geocodiert oder ein Punkt auf der Karte gesetzt wurde.
+model Location {
+  id      String  @id @default(cuid())
+  name    String
+  address String?
+  latitude  Float?
+  longitude Float?
+
+  contactName  String?
+  contactPhone String?
+  contactEmail String?
+  website      String?
+
+  /// Fassungsvermögen (Personen)
+  capacity Int?
+  /// Bühnenmaße, PA/Technik vorhanden, Stromanschluss etc.
+  stageAndTechNotes String?
+  /// Anfahrt, Lademöglichkeit, Parkplätze
+  loadingAndParkingNotes String?
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  files  BandFile[]
+  events Event[]
 }

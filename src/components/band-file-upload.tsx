@@ -13,6 +13,7 @@ export function BandFileUpload({
   events,
   songs,
   equipment,
+  locations,
   publicLinksEnabled = true,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
@@ -20,6 +21,8 @@ export function BandFileUpload({
   songs: { id: string; title: string }[];
   /** undefined, wenn das Equipment-Modul für diese Band deaktiviert ist - blendet das Feld aus. */
   equipment?: { id: string; name: string }[];
+  /** undefined, wenn das Orte-Modul für diese Band deaktiviert ist - blendet das Feld aus. */
+  locations?: { id: string; name: string }[];
   publicLinksEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -90,6 +93,19 @@ export function BandFileUpload({
               {equipment.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.name}
+                </option>
+              ))}
+            </Select>
+          </div>
+        )}
+        {locations && (
+          <div>
+            <Label htmlFor="locationId">{tForm("linkedLocation")}</Label>
+            <Select id="locationId" name="locationId" defaultValue="">
+              <option value="">{tForm("noLocation")}</option>
+              {locations.map((l) => (
+                <option key={l.id} value={l.id}>
+                  {l.name}
                 </option>
               ))}
             </Select>

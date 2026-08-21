@@ -20,7 +20,8 @@ Aktuell umgesetzte Module:
 - **Finanzen** – Einnahmen und Ausgaben je Band bzw. Termin, anteilige Zuordnung an Mitglieder (Gagen bzw. Kostenanteile) mit Bestätigung durch die jeweils zuständige Seite, CSV-Export. Wahlweise ohne Bandkonto (alles wird zu 100 % verteilt) oder mit Bandkonto, das nicht verteilte Restbeträge hält; im Bandkonto-Modus sind zusätzlich direkte Aus- und Einzahlungen möglich. Je Band ein-/ausschaltbar.
 - **Kommunikation** – E-Mail-Benachrichtigungen zu neuen/geänderten Terminen, Songvorschlägen, neuen Dateien und eigenen Gagen/Kostenanteilen; jede Person legt im eigenen Profil je Band fest, worüber sie informiert wird. Dazu Teilen-Buttons für WhatsApp bei Terminen und Setlisten. Je Band ein-/ausschaltbar; der Mailversand benötigt zusätzlich einen konfigurierten SMTP-Server (siehe [INSTALLATION.md](INSTALLATION.md)).
 - **Medienplayer** – hinterlegte Audiodateien direkt in der App abspielen. Der zuschaltbare Übungsmodus bietet Tempo von 50–150 % bei gleichbleibender Tonhöhe, Transponieren um ±12 Halbtöne unabhängig vom Tempo (bei hinterlegter Tonart wird die transponierte Zieltonart mit angezeigt) sowie einen A/B-Abschnitts-Loop mit Wellenformdarstellung, der sich auch per Ziehen mit Maus oder Finger direkt markieren lässt. Dazu Anzeige von Spielzeit/Restzeit inklusive Millisekunden sowie automatisch erkanntes Tempo (BPM), das sich mit dem Tempo-Regler mitändert. Auf Knopfdruck lässt sich zusätzlich die Tonart der Datei schätzen (**Tonart-Erkennung**, eigener Unterschalter) – weicht das Ergebnis von der hinterlegten Tonart ab, fragt die App nach, ob sie übernommen werden soll; die Songdaten ändern sich nie automatisch. Verlinkte YouTube- und Spotify-Quellen werden über den offiziellen Player eingebettet – dort allerdings ohne Übungsfunktionen (siehe unten). Je Band ein-/ausschaltbar.
-- **Dateiverwaltung** – bandinterner Dateispeicher, verknüpfbar mit Songs und Terminen; einzelne Dateien können optional über einen nicht erratbaren Link ohne Login freigegeben werden (Funktion je Band abschaltbar).
+- **Orte** – bandweiter Katalog von Veranstaltungsorten (Adresse, Ansprechpartner:in, Kontakt, Website, Fassungsvermögen, Bühne/Technik- und Anfahrt/Parken-Notizen) mit Datei-Upload je Ort und Kartendarstellung (OpenStreetMap/Leaflet, umschaltbar zwischen Straßenkarte und Satellitenbild). Die Adresse lässt sich eingeben (automatische Geokodierung über Nominatim) oder direkt auf der Karte per Klick/Ziehen setzen (automatische Rückwärts-Geokodierung ins Adressfeld); Geokoordinaten werden zusätzlich als Text angezeigt. Termine verweisen über ein einziges Ortsfeld wahlweise per Freitext, Verknüpfung zu einem bestehenden Ort oder Neuanlage eines Orts direkt beim Anlegen des Termins; verknüpfte Termine zeigen Name, Adresse und eine Kartenvorschau. Je Band ein-/ausschaltbar.
+- **Dateiverwaltung** – bandinterner Dateispeicher, verknüpfbar mit Songs, Terminen, Equipment und Orten; einzelne Dateien können optional über einen nicht erratbaren Link ohne Login freigegeben werden (Funktion je Band abschaltbar).
 - **Bandprofil** – Genre, Kurzbeschreibung, Standort, Kontakt-E-Mail, Links zu Website/Social-Media/Streaming sowie Bandbild.
 - **Benutzerprofil** – Anzeigename, E-Mail und Avatar, kontobezogen und unabhängig von der jeweiligen Bandzugehörigkeit; dazu Passwortänderung und Benachrichtigungs-Einstellungen.
 
@@ -38,8 +39,57 @@ Umfangreichere Module lassen sich je Band unter **Band → Verwaltung** ein- und
 | Kommunikation | aus | E-Mail-Versand braucht zusätzlich SMTP (siehe [INSTALLATION.md](INSTALLATION.md)) |
 | Medienplayer | aus | steuert nur die Wiedergabe; Dateien und Links bleiben unabhängig davon nutzbar |
 | davon: Tonart-Erkennung | ein | Unterschalter, nur wirksam wenn Medienplayer aktiv ist |
+| Orte | aus | ohne aktiviertes Modul bleibt bei Terminen nur ein Freitext-Ortsfeld, wie zuvor |
 
 Ausgeschaltete Module verschwinden aus der Navigation, **löschen aber keine Daten** – alles steht unverändert wieder zur Verfügung, sobald das Modul erneut eingeschaltet wird. Einzige bewusste Ausnahme: Das Deaktivieren öffentlicher Datei-Links sperrt auch bereits bestehende Links, da es als Sicherheitsschranke gedacht ist.
+
+## Wie die Objekte zusammenhängen
+
+Eine Band ist der zentrale Ausgangspunkt: Fast jedes andere Objekt gehört zu genau einer Band.
+
+```mermaid
+erDiagram
+    BAND }o--o{ MITGLIED : "Mitgliedschaft (Rolle)"
+    BAND ||--o{ TERMIN : hat
+    BAND ||--o{ SONG : hat
+    BAND ||--o{ SETLISTE : hat
+    BAND ||--o{ PACKLISTE : hat
+    BAND ||--o{ ORT : hat
+    BAND ||--o{ FINANZEINTRAG : hat
+    BAND ||--o{ DATEI : hat
+    BAND |o--o{ EQUIPMENT : "Band-Eigentum"
+
+    MITGLIED |o--o{ EQUIPMENT : "persönliches Eigentum"
+    MITGLIED }o--o{ TERMIN : "Verfügbarkeit"
+    MITGLIED }o--o{ SONG : "Abstimmung & Notizen"
+    MITGLIED }o--o{ FINANZEINTRAG : "Gage / Kostenanteil"
+
+    TERMIN |o--o| ORT : "findet statt an"
+    TERMIN ||--o{ SETLISTE : nutzt
+    TERMIN ||--o{ PACKLISTE : nutzt
+    TERMIN ||--o{ FINANZEINTRAG : verursacht
+    TERMIN ||--o{ DATEI : hat
+
+    SETLISTE }o--o{ SONG : "enthält (mit Reihenfolge)"
+
+    SONG ||--o{ DATEI : hat
+
+    PACKLISTE }o--o{ EQUIPMENT : enthält
+
+    EQUIPMENT ||--o{ DATEI : hat
+
+    ORT ||--o{ DATEI : hat
+```
+
+Lesehilfe:
+
+- **Dateien** sind das einzige Objekt, das an vier verschiedene Stellen andocken kann – an einen Termin, einen Song, ein Equipment-Teil oder einen Ort –, dabei aber jeweils an höchstens eine davon gleichzeitig (oder an keine, als reine bandweite Ablage).
+- **Equipment** gehört entweder der Band oder einer einzelnen Person, nie beidem.
+- Ein **Termin** kann null oder einen Ort haben; derselbe Ort lässt sich für mehrere Termine wiederverwenden.
+- **Setlisten** und **Packlisten** lassen sich optional mit einem Termin verknüpfen (müssen es aber nicht).
+- **Mitglieder** melden sich pro Termin mit ihrer Verfügbarkeit zurück, stimmen über Song-Vorschläge ab und bekommen Gagen bzw. Kostenanteile aus Finanzeinträgen zugeordnet.
+
+*(Nicht dargestellt, um die Übersicht lesbar zu halten: Einladungen, persönliche Song-Notizen, Bühnen-Hinweise auf Setlist-Einträgen, Finanzadmin-Zuordnung.)*
 
 ## Bekannte Grenzen
 

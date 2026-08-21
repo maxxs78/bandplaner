@@ -20,6 +20,7 @@
     "setlists": "Setlists",
     "files": "Files",
     "equipment": "Equipment",
+    "locations": "Locations",
     "finance": "Finance",
     "band": "Band"
   },
@@ -155,7 +156,8 @@
       },
       "communication": { "label": "Communication", "description": "Email notifications for events, song proposals, files, and fees, plus sharing via WhatsApp. Each person decides in their own profile what they're notified about." },
       "mediaPlayer": { "label": "Media player", "description": "Play stored audio files directly in the app, including practice mode with tempo, transposition, and section looping. Linked YouTube and Spotify sources are embedded." },
-      "keyDetection": { "label": "Key detection", "description": "Estimates the audio file's key at the press of a button in practice mode (an approximation, not always reliable – major/minor relative keys are hard to distinguish algorithmically). Never changes song data automatically; the result must be actively applied." }
+      "keyDetection": { "label": "Key detection", "description": "Estimates the audio file's key at the press of a button in practice mode (an approximation, not always reliable – major/minor relative keys are hard to distinguish algorithmically). Never changes song data automatically; the result must be actively applied." },
+      "locations": { "label": "Locations", "description": "Catalog of gig venues with address, map, contact and technical info, and files – can be linked to events." }
     },
     "settlementModes": {
       "title": "Settlement mode",
@@ -435,6 +437,8 @@
       "noEvent": "– none –",
       "linkedEquipment": "Linked equipment",
       "noEquipment": "– none –",
+      "linkedLocation": "Linked location",
+      "noLocation": "– none –",
       "uploading": "Uploading…",
       "upload": "Upload"
     },
@@ -446,14 +450,17 @@
       "song": "Song",
       "event": "Event",
       "equipment": "Equipment",
+      "location": "Location",
       "noFilesFound": "No files found.",
       "noMatchSearch": "No entry matches the search.",
       "songSuffix": " · Song: {title}",
       "eventSuffix": " · Event: {title}",
       "equipmentSuffix": " · Equipment: {name}",
+      "locationSuffix": " · Location: {name}",
       "noSongLink": "No song link",
       "noEventLink": "No event link",
       "noEquipmentLink": "No equipment link",
+      "noLocationLink": "No location link",
       "deleteConfirm": "Really delete this file?",
       "visibilityPrivate": "Private",
       "visibilityPrivateTitle": "Visible only to the uploader (and admins)",
@@ -469,6 +476,7 @@
       "invalidEvent": "Invalid event",
       "invalidSong": "Invalid song",
       "invalidEquipment": "Invalid equipment",
+      "invalidLocation": "Invalid location",
       "newFileSubject": "New file: {filename}",
       "newFileBody": "{name} uploaded a file:\n\n{filename}"
     }
@@ -493,7 +501,8 @@
     "endTimeRequired": "End time is required",
     "endAfterStart": "End must be after the start",
     "endNotBeforeStart": "End must not be before the start",
-    "commentTooLong": "Comment must be at most 280 characters"
+    "commentTooLong": "Comment must be at most 280 characters",
+    "invalidLocation": "The selected location was not found"
   },
   "cues": {
     "retune": "Retune",
@@ -587,6 +596,11 @@
     "title": "Title",
     "type": "Type",
     "location": "Location",
+    "locationModeText": "Free text",
+    "locationModeNew": "+ Add new location",
+    "locationPlaceholder": "e.g. rehearsal room, address…",
+    "newLocationNamePlaceholder": "Name of the new location",
+    "newLocationAddressPlaceholder": "Address (optional)",
     "start": "Start",
     "end": "End",
     "description": "Description",
@@ -851,6 +865,48 @@
       "noPermissionToUpload": "No permission to upload files for this equipment",
       "packlistsDisabled": "Packing lists are disabled for this band",
       "guestsCannotCreatePacklist": "Guests cannot create packing lists"
+    }
+  },
+  "locations": {
+    "title": "Locations",
+    "addTitle": "Add location",
+    "addSubmit": "Add",
+    "noneFound": "No locations found.",
+    "noFurtherInfo": "No further details",
+    "capacitySummary": "Capacity: {capacity}",
+    "deleteConfirm": "Really remove this location?",
+    "editTitle": "Edit location",
+    "editSubmit": "Save changes",
+    "files": "Files",
+    "filesDescription": "E.g. floor plans, technical riders, or photos of this location.",
+    "form": {
+      "name": "Name",
+      "address": "Address",
+      "addressPlaceholder": "Street, postal code, city",
+      "search": "Search",
+      "searching": "Searching…",
+      "noResults": "No results found.",
+      "locating": "Looking up address…",
+      "mapHint": "Click the map or drag the pin to set the point.",
+      "mapPinAlt": "Marked location on the map",
+      "coordinates": "Coordinates: {lat}, {lng}",
+      "contactName": "Contact person",
+      "contactPhone": "Phone",
+      "contactEmail": "Email",
+      "website": "Website",
+      "capacity": "Capacity",
+      "stageAndTechNotes": "Stage & tech",
+      "stageAndTechNotesPlaceholder": "e.g. stage dimensions, PA/gear available, power supply…",
+      "loadingAndParkingNotes": "Access & parking",
+      "loadingAndParkingNotesPlaceholder": "e.g. loading access, parking, access restrictions…",
+      "notes": "Notes",
+      "saving": "Saving…"
+    },
+    "actions": {
+      "disabledForBand": "Locations are disabled for this band",
+      "guestsCannotCreate": "Guests cannot create locations",
+      "guestsCannotEdit": "Guests cannot edit locations",
+      "noPermissionToUpload": "No permission to upload files for this location"
     }
   },
   "packlists": {

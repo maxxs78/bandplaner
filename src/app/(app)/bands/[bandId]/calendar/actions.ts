@@ -4,6 +4,7 @@ import { getTranslations, getFormatter } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { getEventSchema } from "@/lib/validation";
+import { getEnabledFeatures } from "@/lib/features";
 import { notifyBand } from "@/lib/notifications";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
@@ -15,6 +16,45 @@ export type FormState = { error?: string } | undefined;
 
 function formatEventDate(format: Awaited<ReturnType<typeof getFormatter>>, date: Date) {
   return format.dateTime(date, { dateStyle: "full", timeStyle: "short" });
+}
+
+type LocationResolution = { location: string | null; locationId: string | null; label: string | null };
+
+/**
+ * EIN Ortsfeld im Terminformular: Freitext, Verknüpfung zu einem bestehenden Ort
+ * oder Neuanlage eines Orts - je nach "locationMode" im Formular (fehlt dieses Feld,
+ * z. B. weil das Orte-Feature für die Band deaktiviert ist, gilt Freitext als Fallback).
+ */
+async function resolveEventLocation(
+  bandId: string,
+  locationsEnabled: boolean,
+  formData: FormData,
+  textLocation: string | undefined
+): Promise<LocationResolution | { error: string }> {
+  const mode = locationsEnabled ? formData.get("locationMode") : null;
+
+  if (mode === "existing") {
+    const locationId = String(formData.get("locationId") || "");
+    const location = await prisma.location.findUnique({ where: { id: locationId, bandId } });
+    if (!location) {
+      const t = await getTranslations("validation");
+      return { error: t("invalidLocation") };
+    }
+    return { location: null, locationId: location.id, label: location.name };
+  }
+
+  if (mode === "new") {
+    const name = String(formData.get("newLocationName") || "").trim();
+    if (!name) {
+      const t = await getTranslations("validation");
+      return { error: t("nameRequired") };
+    }
+    const address = String(formData.get("newLocationAddress") || "").trim() || null;
+    const created = await prisma.location.create({ data: { bandId, name, address } });
+    return { location: null, locationId: created.id, label: created.name };
+  }
+
+  return { location: textLocation || null, locationId: null, label: textLocation || null };
 }
 
 async function parseEventForm(formData: FormData) {
@@ -50,6 +90,16 @@ export async function createEventAction(
   const data = parsed.data;
   const participantIds = formData.getAll("participantIds").map(String);
 
+  const locationResult = await resolveEventLocation(
+    bandId,
+    getEnabledFeatures(membership.band).locations,
+    formData,
+    data.location
+  );
+  if ("error" in locationResult) {
+    return { error: locationResult.error };
+  }
+
   const start = new Date(data.startsAt);
   const end = new Date(data.endsAt);
   const durationMs = end.getTime() - start.getTime();
@@ -81,7 +131,8 @@ export async function createEventAction(
           type: data.type as EventType,
           startsAt: occ.startsAt,
           endsAt: occ.endsAt,
-          location: data.location || null,
+          location: locationResult.location,
+          locationId: locationResult.locationId,
           description: data.description || null,
           seriesId,
           createdById: user.id,
@@ -108,7 +159,7 @@ export async function createEventAction(
         name: user.name ?? "",
         title: data.title,
         date: formatEventDate(format, start),
-        locationSuffix: data.location ? t("locationSuffix", { location: data.location }) : "",
+        locationSuffix: locationResult.label ? t("locationSuffix", { location: locationResult.label }) : "",
         seriesNote: occurrences.length > 1 ? t("weeklySeriesNote", { count: occurrences.length }) : "",
       }),
     }),
@@ -156,6 +207,16 @@ export async function updateEventAction(
   const data = parsed.data;
   const participantIds = formData.getAll("participantIds").map(String);
 
+  const locationResult = await resolveEventLocation(
+    bandId,
+    getEnabledFeatures(membership.band).locations,
+    formData,
+    data.location
+  );
+  if ("error" in locationResult) {
+    return { error: locationResult.error };
+  }
+
   await prisma.$transaction([
     prisma.event.update({
       where: { id: eventId, bandId },
@@ -164,7 +225,8 @@ export async function updateEventAction(
         type: data.type as EventType,
         startsAt: new Date(data.startsAt),
         endsAt: new Date(data.endsAt),
-        location: data.location || null,
+        location: locationResult.location,
+        locationId: locationResult.locationId,
         description: data.description || null,
       },
     }),
@@ -185,7 +247,7 @@ export async function updateEventAction(
         name: user.name ?? "",
         title: data.title,
         date: formatEventDate(format, new Date(data.startsAt)),
-        locationSuffix: data.location ? t("locationSuffix", { location: data.location }) : "",
+        locationSuffix: locationResult.label ? t("locationSuffix", { location: locationResult.label }) : "",
       }),
     }),
     path: `/bands/${bandId}/calendar/${eventId}`,

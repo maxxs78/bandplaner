@@ -17,6 +17,7 @@ export function FeatureTogglesForm({
   initialCommunicationEnabled,
   initialMediaPlayerEnabled,
   initialKeyDetectionEnabled,
+  initialLocationsEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
@@ -26,6 +27,7 @@ export function FeatureTogglesForm({
   initialCommunicationEnabled: boolean;
   initialMediaPlayerEnabled: boolean;
   initialKeyDetectionEnabled: boolean;
+  initialLocationsEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
@@ -35,6 +37,7 @@ export function FeatureTogglesForm({
   const [communicationEnabled, setCommunicationEnabled] = useState(initialCommunicationEnabled);
   const [mediaPlayerEnabled, setMediaPlayerEnabled] = useState(initialMediaPlayerEnabled);
   const [keyDetectionEnabled, setKeyDetectionEnabled] = useState(initialKeyDetectionEnabled);
+  const [locationsEnabled, setLocationsEnabled] = useState(initialLocationsEnabled);
   const t = useTranslations("bandSettings");
 
   const settlementModes = [
@@ -131,6 +134,13 @@ export function FeatureTogglesForm({
           />
         </div>
       )}
+      <ToggleRow
+        name="locationsEnabled"
+        label={t("features.locations.label")}
+        description={t("features.locations.description")}
+        checked={locationsEnabled}
+        onChange={setLocationsEnabled}
+      />
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />

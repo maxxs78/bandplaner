@@ -29,17 +29,19 @@ export type FileListItem = {
   songTitle?: string;
   eventTitle?: string;
   equipmentName?: string;
+  locationName?: string;
   downloadHref: string;
   deleteAction: () => Promise<void>;
   updateAction?: (data: { filename: string; category?: string; visibility: string }) => Promise<void>;
 };
 
-type GroupBy = "none" | "song" | "event" | "equipment";
+type GroupBy = "none" | "song" | "event" | "equipment" | "location";
 
 function groupValue(file: FileListItem, groupBy: GroupBy): string | undefined {
   if (groupBy === "song") return file.songTitle;
   if (groupBy === "event") return file.eventTitle;
   if (groupBy === "equipment") return file.equipmentName;
+  if (groupBy === "location") return file.locationName;
   return undefined;
 }
 
@@ -64,12 +66,14 @@ export function FileList({
   currentUserId,
   isAdmin,
   equipmentEnabled = true,
+  locationsEnabled = false,
   publicLinksEnabled = true,
 }: {
   files: FileListItem[];
   currentUserId: string;
   isAdmin: boolean;
   equipmentEnabled?: boolean;
+  locationsEnabled?: boolean;
   publicLinksEnabled?: boolean;
 }) {
   const t = useTranslations("bandFiles");
@@ -93,6 +97,7 @@ export function FileList({
     song: tList("noSongLink"),
     event: tList("noEventLink"),
     equipment: tList("noEquipmentLink"),
+    location: tList("noLocationLink"),
   };
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
@@ -101,7 +106,7 @@ export function FileList({
     const query = search.trim().toLowerCase();
     if (!query) return files;
     return files.filter((f) =>
-      [f.filename, f.songTitle, f.eventTitle, f.equipmentName, f.uploadedBy.name]
+      [f.filename, f.songTitle, f.eventTitle, f.equipmentName, f.locationName, f.uploadedBy.name]
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(query))
     );
@@ -143,6 +148,7 @@ export function FileList({
             {file.songTitle && tList("songSuffix", { title: file.songTitle })}
             {file.eventTitle && tList("eventSuffix", { title: file.eventTitle })}
             {file.equipmentName && tList("equipmentSuffix", { name: file.equipmentName })}
+            {file.locationName && tList("locationSuffix", { name: file.locationName })}
           </p>
         </div>
         {canDelete && file.updateAction && (
@@ -192,6 +198,7 @@ export function FileList({
               <option value="song">{tList("song")}</option>
               <option value="event">{tList("event")}</option>
               {equipmentEnabled && <option value="equipment">{tList("equipment")}</option>}
+              {locationsEnabled && <option value="location">{tList("location")}</option>}
             </Select>
           </div>
         </div>

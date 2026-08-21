@@ -8,6 +8,7 @@ export type BandFeatureFlags = Pick<
   | "communicationEnabled"
   | "mediaPlayerEnabled"
   | "keyDetectionEnabled"
+  | "locationsEnabled"
 >;
 
 export type EnabledFeatures = {
@@ -17,6 +18,7 @@ export type EnabledFeatures = {
   communication: boolean;
   mediaPlayer: boolean;
   keyDetection: boolean;
+  locations: boolean;
 };
 
 /**
@@ -35,5 +37,6 @@ export function getEnabledFeatures(band: BandFeatureFlags): EnabledFeatures {
     communication: band.communicationEnabled,
     mediaPlayer,
     keyDetection: mediaPlayer && band.keyDetectionEnabled,
+    locations: band.locationsEnabled,
   };
 }
