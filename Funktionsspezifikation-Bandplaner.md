@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.9 — Stand 21.08.2026
+Version 1.10 — Stand 21.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -19,6 +19,8 @@ Version 1.9 — Stand 21.08.2026
 *Änderungen gegenüber Version 1.7: Umsetzungsstand des Anlageassistenten (3.3) nachgeführt und korrigiert — die zuvor als „geplant" beschriebene URL-basierte Erfassung (Spotify-/YouTube-Link) wurde nicht so umgesetzt; tatsächlich umgesetzt ist stattdessen eine ID3-/Vorbis-Tag-Vorschau aus einer ausgewählten Audiodatei (Titel, Interpret, Genre, Album, Jahr, BPM, Cover) sowie eine ergänzende Online-Recherche auf Knopfdruck anhand von Titel/Interpret (MusicBrainz primär, Discogs-Fallback, Spotify-Link), beide mit stillem Degradieren bei fehlender Konfiguration.*
 
 *Änderungen gegenüber Version 1.8: ID3-/Vorbis-Tag-Vorschau (3.3) um Spieldauer ergänzt; im Übungsmodus erkanntes Grundtempo (3.12) lässt sich analog zur Tonart-Erkennung nach Bestätigung in die Songdaten übernehmen. Größere Erweiterung: Dateien, Setlisten und Packlisten lassen sich jetzt mit mehreren Objekten bzw. Terminen gleichzeitig verknüpfen statt wie zuvor mit höchstens einem (3.4, 3.7, 3.9) — bei Setlisten/Packlisten bleibt die Song- bzw. Eintragsliste dabei geteilt, während Abhak-Status, Zuständigkeit und persönliche Hinweise je Termin getrennt geführt werden; für bereits vergangene Termine wird die Liste beim nächsten Änderungsversuch automatisch als historischer Stand eingefroren, damit spätere Bearbeitungen die Dokumentation vergangener Auftritte/Proben nicht verfälschen.*
+
+*Änderungen gegenüber Version 1.9: Setlisten-Verwaltung (3.4) um weitere Eintragsarten ergänzt — manuelle Einträge (z. B. Umbaupausen) können optional eine Dauer erhalten und lassen sich einzeln von der fortlaufenden Nummerierung ausnehmen, ohne dass dabei eine Nummer übersprungen wird; neu hinzugekommen sind zudem bandweit sichtbare, kursiv dargestellte Kommentarzeilen sowie unnummerierte Abschnittstrenner mit optionaler Beschriftung zur Gliederung der Setlist.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -109,6 +111,7 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 - Persönliche, freitextliche Anmerkung je Mitglied zur gesamten Setlist, unabhängig von den einzelnen Einträgen.
 - PDF-/Druckexport der Setlist in konfigurierbaren Layouts (z. B. für die Bühne, für Technik/FOH, als Ansage-/Cue-Liste); der Bühnen-Layout-Export ist personalisiert und berücksichtigt die individuellen Farb-, Notiz- und Hinweis-Icon-Einstellungen des jeweiligen Mitglieds.
 - Kopieren und Wiederverwenden bestehender Setlisten als Vorlage für neue Termine.
+- Neben Songs aus der Songbibliothek lassen sich weitere Eintragsarten einfügen: **manuelle Einträge** (Freitext-Titel, optional mit Dauer, z. B. „Pause – 15 Minuten“), **Kommentarzeilen** (bandweit sichtbarer Freitext, kursiv dargestellt, unabhängig von den personalisierten Einträgshinweisen) sowie **Abschnittstrenner** zur Gliederung (Trennlinie mit optionaler Beschriftung, z. B. „Teil 2“). Songs und manuelle Einträge werden fortlaufend durchnummeriert, Kommentare und Abschnittstrenner nie. Bei manuellen Einträgen lässt sich die Zählung je Eintrag gezielt abwählen (der Eintrag wird dann übersprungen, ohne dass die folgende Nummer eine Lücke aufweist).
 - **Mehrfachverknüpfung mit Terminen:** Eine Setlist kann gleichzeitig mit mehreren Terminen verknüpft sein; die Songliste ist dabei geteilt (Änderungen wirken sich auf alle verknüpften Termine aus), während persönliche Hinweise/Notizen je nach im Termin-Auswähler gewähltem Termin getrennt geführt werden — voreingestellt auf den nächsten anstehenden verknüpften Termin. Wird ein verknüpfter Termin nachträglich zu einem vergangenen (bzw. war er es bereits bei der Verknüpfung), friert die App die Songliste beim nächsten Änderungsversuch automatisch als „wie gespielt"-Stand für diesen Termin ein; die eingefrorene Fassung bleibt danach unverändert sichtbar und druckbar, unabhängig von weiteren Änderungen an der (für zukünftige Termine weiterhin geteilten) Liste.
 - Verknüpfung der Setlist mit den zugehörigen Song-Dokumenten.
 

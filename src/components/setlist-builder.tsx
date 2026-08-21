@@ -21,23 +21,32 @@ import { useTranslations } from "next-intl";
 import {
   addSongToSetlistAction,
   addCustomItemAction,
+  addCommentAction,
+  addSectionAction,
   removeSetlistItemAction,
   reorderSetlistItemsAction,
   saveItemAnnotationAction,
+  setItemNumberingAction,
 } from "@/app/(app)/bands/[bandId]/setlists/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CueAnnotationEditor, type AnnotationValues } from "@/components/cue-annotation-editor";
 import { CueBadges } from "@/components/cue-badges";
 import { parseCues } from "@/lib/setlist-cues";
+import { computeSetlistNumbers, type SetlistItemKind } from "@/lib/setlist-items";
 import clsx from "clsx";
 
 type MyAnnotation = { note: string | null; color: string | null; cues: string | null } | null;
 
 type SetlistItem = {
   id: string;
+  kind: SetlistItemKind;
   songId: string | null;
   customTitle: string | null;
+  /** Nur bei kind=CUSTOM gesetzt (z. B. Pausenlänge). */
+  durationSec: number | null;
+  /** Nur bei kind=CUSTOM relevant - siehe computeNumbers(). */
+  excludeFromNumbering: boolean;
   songDeleted: boolean;
   song: {
     id: string;
@@ -61,26 +70,28 @@ function formatDuration(sec: number | null) {
 
 function itemTitleAndMeta(item: SetlistItem, t: (key: string) => string) {
   const title = item.song?.title ?? item.customTitle ?? t("unnamed");
-  const meta = item.song
-    ? [item.song.key, item.song.bpm ? `${item.song.bpm} BPM` : null, formatDuration(item.song.durationSec)]
-        .filter(Boolean)
-        .join(" · ")
-    : item.songDeleted
-      ? t("songDeleted")
-      : t("customEntry");
+  const duration = formatDuration(item.song?.durationSec ?? item.durationSec ?? null);
+  const meta =
+    item.kind === "SONG"
+      ? item.songDeleted
+        ? t("songDeleted")
+        : [item.song?.key, item.song?.bpm ? `${item.song.bpm} BPM` : null, duration].filter(Boolean).join(" · ")
+      : [t("customEntry"), duration].filter(Boolean).join(" · ");
   return { title, meta };
 }
 
 function RowContent({
   item,
-  index,
+  number,
   isExpanded,
   onToggleExpand,
+  onSetNumbering,
 }: {
   item: SetlistItem;
-  index: number;
+  number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onSetNumbering?: (exclude: boolean) => void;
 }) {
   const t = useTranslations("setlists.builder");
   const { title, meta } = itemTitleAndMeta(item, t);
@@ -90,7 +101,7 @@ function RowContent({
 
   return (
     <>
-      <span className="w-6 shrink-0 text-sm text-muted">{index + 1}.</span>
+      <span className="w-6 shrink-0 text-sm text-muted">{number !== null ? `${number}.` : ""}</span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <p
@@ -114,6 +125,17 @@ function RowContent({
             <CueBadges cues={cues} />
           </div>
         )}
+        {item.kind === "CUSTOM" && onSetNumbering && (
+          <label className="mt-1 flex items-center gap-1.5 text-xs text-muted">
+            <input
+              type="checkbox"
+              checked={!item.excludeFromNumbering}
+              onChange={(e) => onSetNumbering(!e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-border accent-primary"
+            />
+            {t("countInNumbering")}
+          </label>
+        )}
       </div>
       <button
         type="button"
@@ -133,14 +155,58 @@ function RowContent({
   );
 }
 
+function CommentContent({ item }: { item: SetlistItem }) {
+  return <p className="flex-1 text-xs italic text-foreground">{item.customTitle}</p>;
+}
+
+function SectionContent({ item }: { item: SetlistItem }) {
+  return (
+    <div className="flex flex-1 items-center gap-3">
+      <div className="h-px flex-1 bg-border" />
+      {item.customTitle && (
+        <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">
+          {item.customTitle}
+        </span>
+      )}
+      <div className="h-px flex-1 bg-border" />
+    </div>
+  );
+}
+
+function ItemContent({
+  item,
+  number,
+  isExpanded,
+  onToggleExpand,
+  onSetNumbering,
+}: {
+  item: SetlistItem;
+  number: number | null;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onSetNumbering?: (exclude: boolean) => void;
+}) {
+  if (item.kind === "COMMENT") return <CommentContent item={item} />;
+  if (item.kind === "SECTION") return <SectionContent item={item} />;
+  return (
+    <RowContent
+      item={item}
+      number={number}
+      isExpanded={isExpanded}
+      onToggleExpand={onToggleExpand}
+      onSetNumbering={onSetNumbering}
+    />
+  );
+}
+
 function ReadOnlyRow({
   item,
-  index,
+  number,
   isExpanded,
   onToggleExpand,
 }: {
   item: SetlistItem;
-  index: number;
+  number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
@@ -152,23 +218,25 @@ function ReadOnlyRow({
       )}
       style={item.myAnnotation?.color ? { borderLeft: `4px solid ${item.myAnnotation.color}` } : undefined}
     >
-      <RowContent item={item} index={index} isExpanded={isExpanded} onToggleExpand={onToggleExpand} />
+      <ItemContent item={item} number={number} isExpanded={isExpanded} onToggleExpand={onToggleExpand} />
     </div>
   );
 }
 
 function SortableRow({
   item,
-  index,
+  number,
   isExpanded,
   onToggleExpand,
   onRemove,
+  onSetNumbering,
 }: {
   item: SetlistItem;
-  index: number;
+  number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onRemove: (id: string) => void;
+  onSetNumbering: (itemId: string, exclude: boolean) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -200,7 +268,13 @@ function SortableRow({
       >
         <GripVertical className="h-4 w-4" />
       </button>
-      <RowContent item={item} index={index} isExpanded={isExpanded} onToggleExpand={onToggleExpand} />
+      <ItemContent
+        item={item}
+        number={number}
+        isExpanded={isExpanded}
+        onToggleExpand={onToggleExpand}
+        onSetNumbering={(exclude) => onSetNumbering(item.id, exclude)}
+      />
       <button
         type="button"
         onClick={() => onRemove(item.id)}
@@ -232,6 +306,10 @@ export function SetlistBuilder({
   const [items, setItems] = useState(initialItems);
   const [search, setSearch] = useState("");
   const [customTitle, setCustomTitle] = useState("");
+  const [customDurationMin, setCustomDurationMin] = useState("");
+  const [customExcludeFromNumbering, setCustomExcludeFromNumbering] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [sectionLabel, setSectionLabel] = useState("");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const optimisticIdCounter = useRef(0);
@@ -259,14 +337,24 @@ export function SetlistBuilder({
     startTransition(() => removeSetlistItemAction(bandId, setlistId, itemId));
   }
 
+  function handleSetNumbering(itemId: string, exclude: boolean) {
+    setItems((current) =>
+      current.map((i) => (i.id === itemId ? { ...i, excludeFromNumbering: exclude } : i))
+    );
+    startTransition(() => setItemNumberingAction(bandId, setlistId, itemId, exclude));
+  }
+
   function handleAddSong(song: LibrarySong) {
     const optimisticId = `optimistic-${optimisticIdCounter.current++}`;
     setItems((current) => [
       ...current,
       {
         id: optimisticId,
+        kind: "SONG",
         songId: song.id,
         customTitle: null,
+        durationSec: null,
+        excludeFromNumbering: false,
         songDeleted: false,
         song: { ...song, durationSec: null },
       },
@@ -281,14 +369,77 @@ export function SetlistBuilder({
     if (!customTitle.trim()) return;
     const formData = new FormData();
     formData.set("customTitle", customTitle);
+    formData.set("durationMin", customDurationMin);
+    if (customExcludeFromNumbering) formData.set("excludeFromNumbering", "on");
+    const durationSec = Number(customDurationMin) > 0 ? Number(customDurationMin) * 60 : null;
     const optimisticId = `optimistic-${optimisticIdCounter.current++}`;
     setItems((current) => [
       ...current,
-      { id: optimisticId, songId: null, customTitle, songDeleted: false, song: null },
+      {
+        id: optimisticId,
+        kind: "CUSTOM",
+        songId: null,
+        customTitle,
+        durationSec,
+        excludeFromNumbering: customExcludeFromNumbering,
+        songDeleted: false,
+        song: null,
+      },
     ]);
     setCustomTitle("");
+    setCustomDurationMin("");
+    setCustomExcludeFromNumbering(false);
     startTransition(async () => {
       await addCustomItemAction(bandId, setlistId, formData);
+    });
+  }
+
+  function handleAddComment(e: React.FormEvent) {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    const formData = new FormData();
+    formData.set("text", commentText);
+    const optimisticId = `optimistic-${optimisticIdCounter.current++}`;
+    setItems((current) => [
+      ...current,
+      {
+        id: optimisticId,
+        kind: "COMMENT",
+        songId: null,
+        customTitle: commentText,
+        durationSec: null,
+        excludeFromNumbering: false,
+        songDeleted: false,
+        song: null,
+      },
+    ]);
+    setCommentText("");
+    startTransition(async () => {
+      await addCommentAction(bandId, setlistId, formData);
+    });
+  }
+
+  function handleAddSection(e: React.FormEvent) {
+    e.preventDefault();
+    const formData = new FormData();
+    formData.set("label", sectionLabel);
+    const optimisticId = `optimistic-${optimisticIdCounter.current++}`;
+    setItems((current) => [
+      ...current,
+      {
+        id: optimisticId,
+        kind: "SECTION",
+        songId: null,
+        customTitle: sectionLabel.trim() || null,
+        durationSec: null,
+        excludeFromNumbering: false,
+        songDeleted: false,
+        song: null,
+      },
+    ]);
+    setSectionLabel("");
+    startTransition(async () => {
+      await addSectionAction(bandId, setlistId, formData);
     });
   }
 
@@ -317,6 +468,7 @@ export function SetlistBuilder({
   const filteredLibrary = librarySongs.filter((s) =>
     s.title.toLowerCase().includes(search.toLowerCase())
   );
+  const numbers = computeSetlistNumbers(items);
 
   return (
     <div className={readOnly ? "" : "grid gap-6 lg:grid-cols-[1fr_320px]"}>
@@ -332,13 +484,13 @@ export function SetlistBuilder({
               <div key={item.id}>
                 <ReadOnlyRow
                   item={item}
-                  index={index}
+                  number={numbers[index]}
                   isExpanded={expandedItemId === item.id}
                   onToggleExpand={() =>
                     setExpandedItemId((current) => (current === item.id ? null : item.id))
                   }
                 />
-                {expandedItemId === item.id && (
+                {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
                   <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
                     <CueAnnotationEditor
                       defaultValues={{
@@ -362,14 +514,15 @@ export function SetlistBuilder({
                   <div key={item.id}>
                     <SortableRow
                       item={item}
-                      index={index}
+                      number={numbers[index]}
                       isExpanded={expandedItemId === item.id}
                       onToggleExpand={() =>
                         setExpandedItemId((current) => (current === item.id ? null : item.id))
                       }
                       onRemove={handleRemove}
+                      onSetNumbering={handleSetNumbering}
                     />
-                    {expandedItemId === item.id && (
+                    {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
                       <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
                         <CueAnnotationEditor
                           defaultValues={{
@@ -390,18 +543,63 @@ export function SetlistBuilder({
         )}
 
         {!readOnly && (
-          <form onSubmit={handleAddCustom} className="mt-4 flex gap-2">
-            <Input
-              value={customTitle}
-              onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder={t("customPlaceholder")}
-              className="flex-1"
-            />
-            <Button type="submit" variant="secondary" size="sm">
-              <Plus className="h-4 w-4" />
-              {t("add")}
-            </Button>
-          </form>
+          <div className="mt-4 space-y-2 rounded-lg border border-border p-3">
+            <form onSubmit={handleAddCustom} className="flex flex-wrap items-center gap-2">
+              <Input
+                value={customTitle}
+                onChange={(e) => setCustomTitle(e.target.value)}
+                placeholder={t("customPlaceholder")}
+                className="min-w-0 flex-1"
+              />
+              <Input
+                type="number"
+                min={0}
+                value={customDurationMin}
+                onChange={(e) => setCustomDurationMin(e.target.value)}
+                placeholder={t("customDurationPlaceholder")}
+                className="w-24 shrink-0"
+              />
+              <label className="flex shrink-0 items-center gap-1.5 text-xs text-muted">
+                <input
+                  type="checkbox"
+                  checked={!customExcludeFromNumbering}
+                  onChange={(e) => setCustomExcludeFromNumbering(!e.target.checked)}
+                  className="h-3.5 w-3.5 rounded border-border accent-primary"
+                />
+                {t("countInNumbering")}
+              </label>
+              <Button type="submit" variant="secondary" size="sm">
+                <Plus className="h-4 w-4" />
+                {t("add")}
+              </Button>
+            </form>
+
+            <form onSubmit={handleAddComment} className="flex gap-2">
+              <Input
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder={t("commentPlaceholder")}
+                className="min-w-0 flex-1"
+              />
+              <Button type="submit" variant="secondary" size="sm">
+                <Plus className="h-4 w-4" />
+                {t("addComment")}
+              </Button>
+            </form>
+
+            <form onSubmit={handleAddSection} className="flex gap-2">
+              <Input
+                value={sectionLabel}
+                onChange={(e) => setSectionLabel(e.target.value)}
+                placeholder={t("sectionPlaceholder")}
+                className="min-w-0 flex-1"
+              />
+              <Button type="submit" variant="secondary" size="sm">
+                <Plus className="h-4 w-4" />
+                {t("addSection")}
+              </Button>
+            </form>
+          </div>
         )}
       </div>
 

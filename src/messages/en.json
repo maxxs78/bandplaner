@@ -687,7 +687,13 @@
       "move": "Move",
       "remove": "Remove",
       "customPlaceholder": "Custom entry (e.g. break, announcement)",
+      "customDurationPlaceholder": "Min.",
+      "countInNumbering": "Count in numbering",
       "add": "Add",
+      "commentPlaceholder": "Comment (visible to everyone, e.g. a running-order note)",
+      "addComment": "Add comment",
+      "sectionPlaceholder": "Section label (optional, e.g. \"Part 2\")",
+      "addSection": "Add section",
       "library": "Song Library",
       "searchPlaceholder": "Search song…",
       "noSongsFound": "No songs found."

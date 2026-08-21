@@ -566,10 +566,36 @@ model SetlistNote {
   @@unique([setlistId, userId])
 }
 
+enum SetlistItemKind {
+  SONG
+  /// Freier Eintrag mit eigenem Titel (z. B. "Pause"), optional mit Dauer und
+  /// aus der Durchnummerierung ausblendbar (siehe excludeFromNumbering).
+  CUSTOM
+  /// Reine Textzeile, nicht userspezifisch (fuer alle Mitglieder gleich sichtbar,
+  /// im Unterschied zu den persoenlichen Notizen in SetlistItemAnnotation).
+  /// customTitle traegt den Kommentartext. Nie nummeriert.
+  COMMENT
+  /// Strukturierende Trennlinie, optional mit Label (customTitle). Nie nummeriert.
+  SECTION
+}
+
 model SetlistItem {
-  id          String  @id @default(cuid())
+  id          String          @id @default(cuid())
   order       Int
+  kind        SetlistItemKind @default(SONG)
+  /// Bedeutung je nach kind: Titel des manuellen Eintrags (CUSTOM), Kommentartext
+  /// (COMMENT) oder optionales Abschnitts-Label (SECTION) - sowie weiterhin der
+  /// Fallback-Titel, wenn der urspruenglich verknuepfte Song geloescht wurde
+  /// (SONG, siehe songDeleted).
   customTitle String?
+  /// Nur bei kind=CUSTOM gesetzt: Dauer in Sekunden (z. B. eine Pause), zaehlt
+  /// mit in die Gesamtspieldauer der Setlist ein.
+  durationSec Int?
+  /// Nur bei kind=CUSTOM relevant: true = wird beim Durchnummerieren
+  /// uebersprungen (kein eigener Zaehler-Wert), die Nummerierung setzt sich beim
+  /// naechsten zaehlenden Eintrag ohne Luecke fort. SONG zaehlt immer,
+  /// COMMENT/SECTION nie - dort ist dieses Feld ohne Bedeutung.
+  excludeFromNumbering Boolean @default(false)
   /// Gesetzt, wenn der ursprünglich verknüpfte Song aus der Bibliothek gelöscht wurde;
   /// customTitle enthält dann dessen früheren Titel als Fallback-Anzeige.
   songDeleted Boolean @default(false)

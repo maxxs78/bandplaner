@@ -105,10 +105,12 @@ async function freezePastSetlistSnapshotsIfNeeded(setlistId: string) {
 
   const itemsJson = JSON.stringify(
     setlist.items.map((item) => ({
+      kind: item.kind,
       title: item.song?.title ?? item.customTitle ?? "",
       key: item.song?.key ?? null,
       bpm: item.song?.bpm ?? null,
-      durationSec: item.song?.durationSec ?? null,
+      durationSec: item.song?.durationSec ?? item.durationSec ?? null,
+      excludeFromNumbering: item.excludeFromNumbering,
     }))
   );
 
@@ -156,8 +158,11 @@ export async function createSetlistAction(
       await prisma.setlistItem.createMany({
         data: sourceItems.map((item) => ({
           setlistId: setlist.id,
+          kind: item.kind,
           songId: item.songId,
           customTitle: item.customTitle,
+          durationSec: item.durationSec,
+          excludeFromNumbering: item.excludeFromNumbering,
           songDeleted: item.songDeleted,
           order: item.order,
         })),
@@ -253,6 +258,8 @@ export async function addCustomItemAction(bandId: string, setlistId: string, for
 
   const customTitle = (formData.get("customTitle") as string)?.trim();
   if (!customTitle) return;
+  const durationMin = Number(formData.get("durationMin") || 0);
+  const excludeFromNumbering = formData.get("excludeFromNumbering") === "on";
   await freezePastSetlistSnapshotsIfNeeded(setlistId);
 
   const maxOrder = await prisma.setlistItem.aggregate({
@@ -263,11 +270,71 @@ export async function addCustomItemAction(bandId: string, setlistId: string, for
   await prisma.setlistItem.create({
     data: {
       setlistId,
+      kind: "CUSTOM",
       customTitle,
+      durationSec: durationMin > 0 ? durationMin * 60 : null,
+      excludeFromNumbering,
       order: (maxOrder._max.order ?? -1) + 1,
     },
   });
 
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+}
+
+export async function addCommentAction(bandId: string, setlistId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const text = (formData.get("text") as string)?.trim();
+  if (!text) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
+
+  const maxOrder = await prisma.setlistItem.aggregate({ where: { setlistId }, _max: { order: true } });
+  await prisma.setlistItem.create({
+    data: {
+      setlistId,
+      kind: "COMMENT",
+      customTitle: text,
+      order: (maxOrder._max.order ?? -1) + 1,
+    },
+  });
+
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+}
+
+export async function addSectionAction(bandId: string, setlistId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
+
+  const label = (formData.get("label") as string)?.trim() || null;
+  const maxOrder = await prisma.setlistItem.aggregate({ where: { setlistId }, _max: { order: true } });
+  await prisma.setlistItem.create({
+    data: {
+      setlistId,
+      kind: "SECTION",
+      customTitle: label,
+      order: (maxOrder._max.order ?? -1) + 1,
+    },
+  });
+
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+}
+
+export async function setItemNumberingAction(
+  bandId: string,
+  setlistId: string,
+  itemId: string,
+  excludeFromNumbering: boolean
+) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
+
+  await prisma.setlistItem.update({
+    where: { id: itemId, setlistId },
+    data: { excludeFromNumbering },
+  });
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
 }
 

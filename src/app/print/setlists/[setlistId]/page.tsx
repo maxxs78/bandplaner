@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { PrintTrigger } from "@/components/print-trigger";
 import { CueBadges } from "@/components/cue-badges";
 import { parseCues } from "@/lib/setlist-cues";
+import { computeSetlistNumbers, totalSetlistDurationSec, type SetlistDisplayItem } from "@/lib/setlist-items";
 
 export default async function SetlistPrintPage({
   params,
@@ -45,13 +46,17 @@ export default async function SetlistPrintPage({
   // Fuer bereits eingefrorene vergangene Termine den historischen Stand
   // drucken statt der (moeglicherweise seither veraenderten) Live-Liste.
   const frozenSnapshot = setlist.eventSnapshots?.[0];
-  const frozenItems: { title: string; key: string | null; bpm: number | null; durationSec: number | null }[] | null =
-    frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
+  const frozenItems: SetlistDisplayItem[] | null = frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
+  const numbers = computeSetlistNumbers(
+    frozenItems ?? setlist.items.map((item) => ({ kind: item.kind, excludeFromNumbering: item.excludeFromNumbering }))
+  );
 
   const t = await getTranslations("setlists.detail");
   const totalDurationSec = frozenItems
-    ? frozenItems.reduce((sum, item) => sum + (item.durationSec ?? 0), 0)
-    : setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
+    ? totalSetlistDurationSec(frozenItems)
+    : totalSetlistDurationSec(
+        setlist.items.map((item) => ({ durationSec: item.song?.durationSec ?? item.durationSec ?? null }))
+      );
   const formatTotalDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -95,32 +100,75 @@ export default async function SetlistPrintPage({
 
       <ol className="space-y-1">
         {frozenItems
-          ? frozenItems.map((item, index) => (
-              <li
-                key={index}
-                className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
-                style={{ paddingLeft: "26px" }}
-              >
-                <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">{index + 1}.</span>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <span className="text-4xl font-extrabold leading-tight break-words">{item.title}</span>
-                    {item.key && (
-                      <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
-                        {item.key}
-                      </span>
-                    )}
-                    {item.bpm && (
-                      <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
-                        {item.bpm}
-                        <span className="ml-1 text-base font-medium">BPM</span>
-                      </span>
-                    )}
+          ? frozenItems.map((item, index) => {
+              if (item.kind === "SECTION") {
+                return (
+                  <li key={index} className="flex items-center gap-4 py-4 break-inside-avoid">
+                    <div className="h-0.5 flex-1 bg-black" />
+                    {item.title && <span className="shrink-0 text-2xl font-bold uppercase tracking-wide">{item.title}</span>}
+                    <div className="h-0.5 flex-1 bg-black" />
+                  </li>
+                );
+              }
+              if (item.kind === "COMMENT") {
+                return (
+                  <li key={index} className="py-1 text-xl italic text-gray-700 break-inside-avoid">
+                    {item.title}
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={index}
+                  className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
+                  style={{ paddingLeft: "26px" }}
+                >
+                  <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
+                    {numbers[index] !== null ? `${numbers[index]}.` : ""}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-4xl font-extrabold leading-tight break-words">{item.title}</span>
+                      {item.key && (
+                        <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                          {item.key}
+                        </span>
+                      )}
+                      {item.bpm && (
+                        <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                          {item.bpm}
+                          <span className="ml-1 text-base font-medium">BPM</span>
+                        </span>
+                      )}
+                      {item.kind === "CUSTOM" && item.durationSec && (
+                        <span className="text-xl font-medium text-gray-600">
+                          {Math.round(item.durationSec / 60)} Min.
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </li>
-            ))
+                </li>
+              );
+            })
           : setlist.items.map((item, index) => {
+              if (item.kind === "SECTION") {
+                return (
+                  <li key={item.id} className="flex items-center gap-4 py-4 break-inside-avoid">
+                    <div className="h-0.5 flex-1 bg-black" />
+                    {item.customTitle && (
+                      <span className="shrink-0 text-2xl font-bold uppercase tracking-wide">{item.customTitle}</span>
+                    )}
+                    <div className="h-0.5 flex-1 bg-black" />
+                  </li>
+                );
+              }
+              if (item.kind === "COMMENT") {
+                return (
+                  <li key={item.id} className="py-1 text-xl italic text-gray-700 break-inside-avoid">
+                    {item.customTitle}
+                  </li>
+                );
+              }
               const annotation = eventId ? item.eventAnnotations?.[0] : item.annotations[0];
               const cues = parseCues(annotation?.cues);
               return (
@@ -134,7 +182,7 @@ export default async function SetlistPrintPage({
                   }
                 >
                   <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
-                    {index + 1}.
+                    {numbers[index] !== null ? `${numbers[index]}.` : ""}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
@@ -150,6 +198,11 @@ export default async function SetlistPrintPage({
                         <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
                           {item.song.bpm}
                           <span className="ml-1 text-base font-medium">BPM</span>
+                        </span>
+                      )}
+                      {item.kind === "CUSTOM" && item.durationSec && (
+                        <span className="text-xl font-medium text-gray-600">
+                          {Math.round(item.durationSec / 60)} Min.
                         </span>
                       )}
                     </div>

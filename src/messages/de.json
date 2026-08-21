@@ -687,7 +687,13 @@
       "move": "Verschieben",
       "remove": "Entfernen",
       "customPlaceholder": "Eigener Eintrag (z. B. Pause, Ansage)",
+      "customDurationPlaceholder": "Min.",
+      "countInNumbering": "Durchnummerieren",
       "add": "Hinzufügen",
+      "commentPlaceholder": "Kommentar (für alle sichtbar, z. B. Ablaufhinweis)",
+      "addComment": "Kommentar hinzufügen",
+      "sectionPlaceholder": "Abschnitts-Bezeichnung (optional, z. B. „Teil 2“)",
+      "addSection": "Abschnitt hinzufügen",
       "library": "Songbibliothek",
       "searchPlaceholder": "Song suchen…",
       "noSongsFound": "Keine Songs gefunden."

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { SetlistBuilder } from "@/components/setlist-builder";
 import { EventContextSelector } from "@/components/event-context-selector";
+import { computeSetlistNumbers, totalSetlistDurationSec, formatSetlistAsText, type SetlistDisplayItem } from "@/lib/setlist-items";
 import { deleteSetlistAction, saveSetlistNoteAction } from "../actions";
 import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
@@ -75,8 +76,8 @@ export default async function SetlistDetailPage({
   const frozenSnapshot = activeEventId
     ? setlist.eventSnapshots.find((s) => s.eventId === activeEventId)
     : undefined;
-  const frozenItems: { title: string; key: string | null; bpm: number | null; durationSec: number | null }[] | null =
-    frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
+  const frozenItems: SetlistDisplayItem[] | null = frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
+  const frozenNumbers = frozenItems ? computeSetlistNumbers(frozenItems) : [];
 
   const myNote = activeEventId
     ? (setlist.eventNotes.find((n) => n.eventId === activeEventId)?.content ?? "")
@@ -88,20 +89,27 @@ export default async function SetlistDetailPage({
       : (item.annotations[0] ?? null),
   }));
 
+  const displayItems: SetlistDisplayItem[] =
+    frozenItems ??
+    setlist.items.map((item) => ({
+      kind: item.kind,
+      title: item.song?.title ?? item.customTitle ?? "",
+      key: item.song?.key ?? null,
+      bpm: item.song?.bpm ?? null,
+      durationSec: item.song?.durationSec ?? item.durationSec ?? null,
+      excludeFromNumbering: item.excludeFromNumbering,
+    }));
+
   const shareText = [
     `${membership.band.name} – ${setlist.name}`,
     activeEvent ? activeEvent.title : null,
     "",
-    ...(frozenItems ?? setlist.items).map(
-      (item, index) => `${index + 1}. ${"title" in item ? item.title : (item.song?.title ?? item.customTitle ?? "")}`
-    ),
+    ...formatSetlistAsText(displayItems),
   ]
     .filter((line) => line !== null)
     .join("\n");
 
-  const totalDurationSec = frozenItems
-    ? frozenItems.reduce((sum, item) => sum + (item.durationSec ?? 0), 0)
-    : setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
+  const totalDurationSec = totalSetlistDurationSec(displayItems);
   const formatTotalDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -188,14 +196,38 @@ export default async function SetlistDetailPage({
             </div>
             <p className="mt-1 text-sm text-muted">{t("frozenHint")}</p>
             <ol className="mt-3 space-y-1.5">
-              {frozenItems.map((item, index) => (
-                <li key={index} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
-                  <span className="w-6 shrink-0 text-muted">{index + 1}.</span>
-                  <span className="min-w-0 flex-1 truncate text-foreground">{item.title}</span>
-                  {item.key && <span className="shrink-0 text-xs text-muted">{item.key}</span>}
-                  {item.bpm && <span className="shrink-0 text-xs text-muted">{item.bpm} BPM</span>}
-                </li>
-              ))}
+              {frozenItems.map((item, index) => {
+                if (item.kind === "SECTION") {
+                  return (
+                    <li key={index} className="flex items-center gap-3 px-3 py-2">
+                      <div className="h-px flex-1 bg-border" />
+                      {item.title && (
+                        <span className="shrink-0 text-xs font-semibold uppercase tracking-wide text-muted">
+                          {item.title}
+                        </span>
+                      )}
+                      <div className="h-px flex-1 bg-border" />
+                    </li>
+                  );
+                }
+                if (item.kind === "COMMENT") {
+                  return (
+                    <li key={index} className="px-3 py-1 text-xs italic text-foreground">
+                      {item.title}
+                    </li>
+                  );
+                }
+                return (
+                  <li key={index} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                    <span className="w-6 shrink-0 text-muted">
+                      {frozenNumbers[index] !== null ? `${frozenNumbers[index]}.` : ""}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-foreground">{item.title}</span>
+                    {item.key && <span className="shrink-0 text-xs text-muted">{item.key}</span>}
+                    {item.bpm && <span className="shrink-0 text-xs text-muted">{item.bpm} BPM</span>}
+                  </li>
+                );
+              })}
               {frozenItems.length === 0 && <p className="text-sm text-muted">{t("printEmpty")}</p>}
             </ol>
           </Card>
