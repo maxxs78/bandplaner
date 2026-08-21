@@ -386,6 +386,10 @@ model Song {
   genre         String?
   /// Original-Interpret bei Coversongs
   artist        String?
+  /// Album, aus ID3-Tags oder Online-Recherche übernehmbar (siehe song-metadata-lookup.ts)
+  album         String?
+  /// Erscheinungsjahr, aus ID3-Tags oder Online-Recherche übernehmbar
+  releaseYear   Int?
   /// Coverbild des Songs, wird u. a. bei reiner Audiowiedergabe im Player angezeigt.
   coverUrl      String?
   status        SongStatus @default(NEW)

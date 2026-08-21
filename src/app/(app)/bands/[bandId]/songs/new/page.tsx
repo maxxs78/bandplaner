@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
-import { createSongAction } from "../actions";
+import { createSongAction, previewAudioMetadataAction, searchSongMetadataAction, fetchCandidateCoverAction } from "../actions";
 import { SongForm } from "@/components/song-form";
 import { Card } from "@/components/ui/card";
 
@@ -32,6 +32,9 @@ export default async function NewSongPage({
           action={boundAction}
           submitLabel={isAdmin ? t("createSubmit") : t("proposeSubmit")}
           canEditStatus={isAdmin}
+          previewMetadataAction={previewAudioMetadataAction.bind(null, bandId)}
+          searchMetadataAction={searchSongMetadataAction.bind(null, bandId)}
+          fetchCoverAction={fetchCandidateCoverAction.bind(null, bandId)}
         />
       </Card>
     </div>

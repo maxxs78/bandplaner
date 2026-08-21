@@ -92,6 +92,8 @@ export function getSongSchema(t: (key: string) => string) {
     durationSec: z.coerce.number().int().positive().optional().or(z.literal("")),
     genre: z.string().optional(),
     artist: z.string().optional(),
+    album: z.string().optional(),
+    releaseYear: z.coerce.number().int().min(1000).max(9999).optional().or(z.literal("")),
     status: z.enum(["PROPOSED", "NEW", "IN_PROGRESS", "STAGE_READY", "ACTIVE", "ARCHIVED"]),
     lyrics: z.string().optional(),
     remarks: z.string().optional(),

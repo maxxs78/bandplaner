@@ -7,7 +7,16 @@ import { getSongSchema, getSongLinkSchema, getSongVoteSchema } from "@/lib/valid
 import { notifyBand } from "@/lib/notifications";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
-import { saveSongFile, deleteStoredFile, extractEmbeddedCover } from "@/lib/uploads";
+import { saveSongFile, deleteStoredFile, extractEmbeddedCover, storeRemoteImage } from "@/lib/uploads";
+import { previewAudioMetadata, type AudioMetadataPreview } from "@/lib/audio-metadata";
+import {
+  searchMusicBrainzCandidates,
+  searchDiscogsGenre,
+  searchSpotifyLink,
+  getCoverArt,
+  fetchRemoteCoverBytes,
+  type SongMetadataCandidate,
+} from "@/lib/song-metadata-lookup";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import type { SongStatus, FileVisibility } from "@/generated/prisma/client";
@@ -56,10 +65,56 @@ async function parseSongForm(formData: FormData) {
     durationSec: totalSec > 0 ? totalSec : "",
     genre: formData.get("genre") || undefined,
     artist: formData.get("artist") || undefined,
+    album: formData.get("album") || undefined,
+    releaseYear: formData.get("releaseYear") || "",
     status: formData.get("status"),
     lyrics: formData.get("lyrics") || undefined,
     remarks: formData.get("remarks") || undefined,
   });
+}
+
+/**
+ * Speichert eine Song-Datei und übernimmt bei noch fehlendem Cover das darin
+ * eingebettete Bild - gemeinsame Logik für den nachträglichen Datei-Upload auf
+ * der Song-Detailseite (uploadSongFileAction) und den optionalen Datei-Anhang
+ * beim Anlegen eines Songs (createSongAction), statt sie zu duplizieren.
+ */
+async function saveSongFileWithCoverFallback(
+  songId: string,
+  userId: string,
+  file: File,
+  visibility: FileVisibility
+): Promise<{ error: string } | { storageKey: string }> {
+  const result = await saveSongFile(file);
+  if ("error" in result) return result;
+
+  await prisma.songFile.create({
+    data: {
+      songId,
+      uploadedById: userId,
+      filename: result.filename,
+      storageKey: result.storageKey,
+      mimeType: result.mimeType,
+      size: result.size,
+      visibility,
+    },
+  });
+
+  const song = await prisma.song.findUnique({ where: { id: songId }, select: { coverUrl: true } });
+  if (song && !song.coverUrl) {
+    const coverUrl = await extractEmbeddedCover(result.storageKey);
+    if (coverUrl) {
+      await prisma.song.update({ where: { id: songId }, data: { coverUrl } });
+    }
+  }
+
+  return { storageKey: result.storageKey };
+}
+
+function decodeDataUrl(dataUrl: string): { bytes: Uint8Array; mimeType: string } | null {
+  const match = /^data:([^;]+);base64,(.+)$/.exec(dataUrl);
+  if (!match) return null;
+  return { mimeType: match[1], bytes: new Uint8Array(Buffer.from(match[2], "base64")) };
 }
 
 export async function createSongAction(
@@ -92,12 +147,59 @@ export async function createSongAction(
       durationSec: d.durationSec === "" ? null : d.durationSec,
       genre: d.genre || null,
       artist: d.artist || null,
+      album: d.album || null,
+      releaseYear: d.releaseYear === "" ? null : d.releaseYear,
       status: isAdmin ? (d.status as SongStatus) : "PROPOSED",
       lyrics: d.lyrics || null,
       remarks: d.remarks || null,
       proposedById: user.id,
     },
   });
+
+  // Online-Recherche-Cover hat Priorität vor einem ID3-Cover aus der unten
+  // angehängten Datei, aber nur falls noch kein Cover gesetzt ist - beide
+  // Wege prüfen das jeweils frisch aus der DB, überschreiben also nie.
+  const pendingCoverDataUrl = formData.get("pendingCoverDataUrl") as string | null;
+  if (pendingCoverDataUrl) {
+    const decoded = decodeDataUrl(pendingCoverDataUrl);
+    if (decoded) {
+      const stored = await storeRemoteImage(decoded.bytes, decoded.mimeType, "songs");
+      if (!("error" in stored)) {
+        await prisma.song.update({ where: { id: song.id }, data: { coverUrl: stored.url } });
+      }
+    }
+  }
+
+  const attachedFile = formData.get("file") as File | null;
+  if (attachedFile && attachedFile.size > 0) {
+    // Fehler beim Speichern der angehängten Datei dürfen die bereits erfolgte
+    // Song-Anlage nicht rückgängig machen - rein additiver Bonus, still übersprungen.
+    const result = await saveSongFileWithCoverFallback(song.id, user.id, attachedFile, "BAND");
+    if ("error" in result) {
+      console.error("[songs] Angehängte Datei konnte nicht gespeichert werden:", result.error);
+    }
+  }
+
+  const pendingLinksRaw = formData.get("pendingLinks") as string | null;
+  if (pendingLinksRaw) {
+    try {
+      const links = JSON.parse(pendingLinksRaw) as { url: string; label?: string }[];
+      const validLinks = Array.isArray(links)
+        ? links.filter((l) => typeof l.url === "string" && l.url.trim())
+        : [];
+      if (validLinks.length > 0) {
+        await prisma.songLink.createMany({
+          data: validLinks.map((l) => ({
+            songId: song.id,
+            url: l.url.trim(),
+            label: l.label?.trim() || null,
+          })),
+        });
+      }
+    } catch {
+      // Ungültiges JSON ignorieren - Song-Anlage darf dadurch nicht scheitern.
+    }
+  }
 
   if (song.status === "PROPOSED") {
     await notifyBand({
@@ -160,6 +262,8 @@ export async function updateSongAction(
       durationSec: d.durationSec === "" ? null : d.durationSec,
       genre: d.genre || null,
       artist: d.artist || null,
+      album: d.album || null,
+      releaseYear: d.releaseYear === "" ? null : d.releaseYear,
       status,
       // "Abgelehnt"-Markierung nur relevant, solange der Song archiviert bleibt
       rejected: status === "ARCHIVED" ? undefined : false,
@@ -240,30 +344,8 @@ export async function uploadSongFileAction(
   }
   const visibility = formData.get("visibility") === "PRIVATE" ? "PRIVATE" : "BAND";
 
-  const result = await saveSongFile(file);
+  const result = await saveSongFileWithCoverFallback(songId, user.id, file, visibility);
   if ("error" in result) return { error: result.error };
-
-  await prisma.songFile.create({
-    data: {
-      songId,
-      uploadedById: user.id,
-      filename: result.filename,
-      storageKey: result.storageKey,
-      mimeType: result.mimeType,
-      size: result.size,
-      visibility,
-    },
-  });
-
-  // Coverbild aus den Datei-Metadaten uebernehmen, falls der Song noch keins hat.
-  // Bewusst nicht ueberschreiben: ein bereits gesetztes Cover gewinnt.
-  const song = await prisma.song.findUnique({ where: { id: songId }, select: { coverUrl: true } });
-  if (song && !song.coverUrl) {
-    const coverUrl = await extractEmbeddedCover(result.storageKey);
-    if (coverUrl) {
-      await prisma.song.update({ where: { id: songId }, data: { coverUrl } });
-    }
-  }
 
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   return undefined;
@@ -472,4 +554,89 @@ export async function adminDecideProposalAction(
 
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   revalidatePath(`/bands/${bandId}/songs`);
+}
+
+/**
+ * Liest ID3/Vorbis-Tags einer gerade ausgewählten (noch nicht hochgeladenen)
+ * Datei rein zur Formular-Vorschau aus - keine Datenbank-Schreibaktion, siehe
+ * previewAudioMetadata() in audio-metadata.ts.
+ */
+export async function previewAudioMetadataAction(
+  bandId: string,
+  formData: FormData
+): Promise<AudioMetadataPreview | null> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return null;
+
+  const file = formData.get("file") as File | null;
+  if (!file || file.size === 0) return null;
+
+  return previewAudioMetadata(file);
+}
+
+export type SongMetadataSearchResult = {
+  candidates: SongMetadataCandidate[];
+  spotifyUrl?: string;
+};
+
+/**
+ * Kombiniert MusicBrainz (primäre Quelle), Discogs (Fallback für Genre/Cover,
+ * falls MusicBrainz nichts liefert) und Spotify (nur der Track-Link) zu einer
+ * Kandidatenliste fürs UI. Alle drei Quellen sind einzeln optional
+ * konfiguriert und degradieren still, siehe song-metadata-lookup.ts.
+ */
+export async function searchSongMetadataAction(
+  bandId: string,
+  title: string,
+  artist?: string
+): Promise<SongMetadataSearchResult> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role) || !title.trim()) return { candidates: [] };
+
+  const [mbCandidates, spotifyUrl] = await Promise.all([
+    searchMusicBrainzCandidates(title, artist),
+    searchSpotifyLink(title, artist),
+  ]);
+
+  let candidates = mbCandidates;
+  if (candidates.length === 0) {
+    const discogsResult = await searchDiscogsGenre(title, artist);
+    if (discogsResult) {
+      candidates = [
+        {
+          title,
+          artist,
+          genre: discogsResult.genre,
+          year: discogsResult.year,
+          mbid: "discogs-fallback",
+          coverImageUrl: discogsResult.coverImageUrl,
+        },
+      ];
+    }
+  }
+
+  return { candidates, spotifyUrl: spotifyUrl ?? undefined };
+}
+
+/**
+ * Läd das Cover eines ausgewählten Kandidaten erst bei tatsächlicher Auswahl
+ * nach (nicht schon für alle Treffer der Liste), um unnötige Bild-Downloads
+ * zu vermeiden. Rückgabe als data:-URL für die sofortige Vorschau sowie zur
+ * Zwischenspeicherung im Formular bis zum Absenden (siehe createSongAction).
+ */
+export async function fetchCandidateCoverAction(
+  bandId: string,
+  candidate: { releaseMbid?: string; coverImageUrl?: string }
+): Promise<{ dataUrl: string } | null> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return null;
+
+  const result = candidate.releaseMbid
+    ? await getCoverArt(candidate.releaseMbid)
+    : candidate.coverImageUrl
+      ? await fetchRemoteCoverBytes(candidate.coverImageUrl)
+      : null;
+  if (!result) return null;
+
+  return { dataUrl: `data:${result.mimeType};base64,${Buffer.from(result.bytes).toString("base64")}` };
 }

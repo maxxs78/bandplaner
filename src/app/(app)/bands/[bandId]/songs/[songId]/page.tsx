@@ -111,12 +111,14 @@ export default async function SongDetailPage({
             {/* Bewusst unabhaengig vom Medienplayer-Schalter: das Cover ist
                 Song-Metadatum (siehe Songbibliothek), keine Player-Funktion. */}
             {song.coverUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={song.coverUrl}
-                alt=""
-                className="h-16 w-16 shrink-0 rounded-md border border-border object-cover"
-              />
+              <div className="group relative z-0 shrink-0 hover:z-10">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={song.coverUrl}
+                  alt=""
+                  className="h-16 w-16 origin-top-left rounded-md border border-border object-cover shadow-sm transition-transform duration-200 ease-out group-hover:scale-[3.5] group-hover:shadow-lg"
+                />
+              </div>
             )}
             <h1 className="text-2xl font-semibold text-foreground">{song.title}</h1>
           </div>
@@ -202,6 +204,8 @@ export default async function SongDetailPage({
           <Info label={td("duration")} value={formatDuration(song.durationSec)} noValue={td("noValue")} />
           <Info label={td("genre")} value={song.genre} noValue={td("noValue")} />
           <Info label={td("artist")} value={song.artist} noValue={td("noValue")} />
+          <Info label={td("album")} value={song.album} noValue={td("noValue")} />
+          <Info label={td("releaseYear")} value={song.releaseYear?.toString()} noValue={td("noValue")} />
         </dl>
         {song.remarks && (
           <div className="mt-4">

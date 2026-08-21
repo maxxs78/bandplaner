@@ -246,6 +246,8 @@
     "newButton": "Neuer Song",
     "proposeButton": "Song vorschlagen",
     "noSongsFound": "Keine Songs gefunden.",
+    "listView": "Listenansicht",
+    "gridView": "Kachelansicht",
     "noFurtherInfo": "Keine weiteren Angaben",
     "rejectedBadge": "Abgelehnt",
     "newTitle": "Neuer Song",
@@ -277,6 +279,8 @@
       "duration": "Dauer",
       "genre": "Genre",
       "artist": "Interpret",
+      "album": "Album",
+      "releaseYear": "Erscheinungsjahr",
       "notes": "Notizen",
       "lyrics": "Songtext",
       "links": "Links",
@@ -340,6 +344,8 @@
       "genre": "Genre",
       "artist": "Interpret",
       "artistPlaceholder": "Original-Interpret bei Coversongs",
+      "album": "Album",
+      "releaseYear": "Erscheinungsjahr",
       "status": "Status",
       "statusReadonlySuffix": "(nur Admins können den Status ändern)",
       "statusProposalHint": "Wird als Vorschlag eingereicht und muss von der Band abgestimmt werden.",
@@ -347,7 +353,16 @@
       "notes": "Notizen",
       "notesPlaceholder": "z. B. Live-Version, Sonderarrangement…",
       "notesVisibility": "Für die ganze Band sichtbar.",
-      "saving": "Wird gespeichert…"
+      "saving": "Wird gespeichert…",
+      "assistant": {
+        "uploadLabel": "Audiodatei hochladen (optional)",
+        "analyzing": "Datei wird analysiert…",
+        "researchButton": "Online-Recherche",
+        "researching": "Suche läuft…",
+        "noResults": "Keine Treffer gefunden.",
+        "spotifyLinkLabel": "Spotify",
+        "coverPreviewAlt": "Cover-Vorschau"
+      }
     },
     "actions": {
       "guestsCannotCreate": "Gäste können keine Songs anlegen",

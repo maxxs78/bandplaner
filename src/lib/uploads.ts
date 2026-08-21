@@ -35,6 +35,33 @@ export async function saveUploadedImage(
   return { url: `/uploads/${subdir}/${filename}` };
 }
 
+/**
+ * Legt ein extern beschafftes Bild (z. B. Cover Art Archive/Discogs bei der
+ * Song-Metadaten-Recherche, siehe song-metadata-lookup.ts) lokal ab, statt es
+ * per Hotlink direkt einzubinden - gleiche Validierung/Größenprüfung wie
+ * saveUploadedImage, nur mit Bytes+MIME-Type statt File als Quelle.
+ */
+export async function storeRemoteImage(
+  bytes: Uint8Array,
+  mimeType: string,
+  subdir: ImageSubdir
+): Promise<{ url: string } | { error: string }> {
+  if (!ALLOWED_IMAGE_TYPES[mimeType]) {
+    return { error: "Nur JPG, PNG, WEBP oder GIF sind erlaubt" };
+  }
+  if (bytes.length > MAX_IMAGE_SIZE_BYTES) {
+    return { error: "Datei darf maximal 5 MB groß sein" };
+  }
+
+  const extension = ALLOWED_IMAGE_TYPES[mimeType];
+  const filename = `${randomUUID()}.${extension}`;
+  const dir = path.join(process.cwd(), "public", "uploads", subdir);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, filename), Buffer.from(bytes));
+
+  return { url: `/uploads/${subdir}/${filename}` };
+}
+
 const ALLOWED_SONG_FILE_EXTENSIONS = new Set([
   ".mp3",
   ".wav",

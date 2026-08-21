@@ -246,6 +246,8 @@
     "newButton": "New Song",
     "proposeButton": "Propose Song",
     "noSongsFound": "No songs found.",
+    "listView": "List view",
+    "gridView": "Grid view",
     "noFurtherInfo": "No further details",
     "rejectedBadge": "Rejected",
     "newTitle": "New Song",
@@ -277,6 +279,8 @@
       "duration": "Duration",
       "genre": "Genre",
       "artist": "Artist",
+      "album": "Album",
+      "releaseYear": "Release year",
       "notes": "Notes",
       "lyrics": "Lyrics",
       "links": "Links",
@@ -340,6 +344,8 @@
       "genre": "Genre",
       "artist": "Artist",
       "artistPlaceholder": "Original artist for cover songs",
+      "album": "Album",
+      "releaseYear": "Release year",
       "status": "Status",
       "statusReadonlySuffix": "(only admins can change the status)",
       "statusProposalHint": "Will be submitted as a proposal and must be voted on by the band.",
@@ -347,7 +353,16 @@
       "notes": "Notes",
       "notesPlaceholder": "e.g. live version, special arrangement…",
       "notesVisibility": "Visible to the whole band.",
-      "saving": "Saving…"
+      "saving": "Saving…",
+      "assistant": {
+        "uploadLabel": "Upload audio file (optional)",
+        "analyzing": "Analyzing file…",
+        "researchButton": "Online research",
+        "researching": "Searching…",
+        "noResults": "No matches found.",
+        "spotifyLinkLabel": "Spotify",
+        "coverPreviewAlt": "Cover preview"
+      }
     },
     "actions": {
       "guestsCannotCreate": "Guests can't create songs",

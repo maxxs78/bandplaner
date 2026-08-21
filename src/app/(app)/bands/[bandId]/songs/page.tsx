@@ -3,8 +3,8 @@ import { Plus } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SongList } from "@/components/song-list";
 import clsx from "clsx";
 import type { SongStatus } from "@/generated/prisma/client";
 
@@ -80,29 +80,25 @@ export default async function SongsPage({
         )}
       </div>
 
-      <div className="mt-4 space-y-2">
-        {songs.length === 0 && <Card className="text-sm text-muted">{t("noSongsFound")}</Card>}
-        {songs.map((song) => (
-          <Link key={song.id} href={`/bands/${bandId}/songs/${song.id}`}>
-            <Card className="flex items-center justify-between transition hover:border-primary">
-              <div>
-                <p className="font-medium text-foreground">{song.title}</p>
-                <p className="text-sm text-muted">
-                  {[song.artist, song.key, song.bpm ? `${song.bpm} BPM` : null, song.genre]
-                    .filter(Boolean)
-                    .join(" · ") || t("noFurtherInfo")}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                {song.rejected && song.status === "ARCHIVED" && (
-                  <Badge variant="danger">{t("rejectedBadge")}</Badge>
-                )}
-                <Badge variant={statusVariant[song.status]}>{t(`statusLabels.${song.status}`)}</Badge>
-              </div>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      <SongList
+        bandId={bandId}
+        songs={songs.map((song) => ({
+          id: song.id,
+          title: song.title,
+          coverUrl: song.coverUrl,
+          subtitle:
+            [song.artist, song.key, song.bpm ? `${song.bpm} BPM` : null, song.genre]
+              .filter(Boolean)
+              .join(" · ") || t("noFurtherInfo"),
+          statusLabel: t(`statusLabels.${song.status}`),
+          statusVariant: statusVariant[song.status],
+          rejected: song.rejected && song.status === "ARCHIVED",
+        }))}
+        noSongsFoundText={t("noSongsFound")}
+        rejectedBadgeText={t("rejectedBadge")}
+        listViewLabel={t("listView")}
+        gridViewLabel={t("gridView")}
+      />
     </div>
   );
 }

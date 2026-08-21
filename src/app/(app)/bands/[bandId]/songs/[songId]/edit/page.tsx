@@ -40,6 +40,8 @@ export default async function EditSongPage({
             durationSec: song.durationSec?.toString() ?? "",
             genre: song.genre ?? "",
             artist: song.artist ?? "",
+            album: song.album ?? "",
+            releaseYear: song.releaseYear?.toString() ?? "",
             status: song.status,
             lyrics: song.lyrics ?? "",
             remarks: song.remarks ?? "",
