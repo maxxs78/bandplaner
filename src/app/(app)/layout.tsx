@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { LogOut } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LocaleSwitcher } from "@/components/locale-switcher";
 import { Avatar } from "@/components/avatar";
 import { signOutAction } from "./actions";
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     where: { id: sessionUser.id },
     select: { name: true, avatarUrl: true },
   });
+  const t = await getTranslations("common");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -22,18 +25,19 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
               B
             </span>
-            <span className="font-semibold text-foreground">Bandplaner</span>
+            <span className="font-semibold text-foreground">{t("appName")}</span>
           </Link>
           <div className="flex items-center gap-3">
             <Link href="/profile" className="flex items-center gap-2">
               <span className="hidden text-sm text-muted sm:inline">{user.name}</span>
               <Avatar src={user.avatarUrl} name={user.name} size="sm" />
             </Link>
+            <LocaleSwitcher />
             <ThemeToggle />
             <form action={signOutAction}>
               <Button type="submit" variant="secondary" size="sm">
                 <LogOut className="h-4 w-4" />
-                Abmelden
+                {t("signOut")}
               </Button>
             </form>
           </div>

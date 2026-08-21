@@ -2,25 +2,17 @@
 
 import { useMemo, useState } from "react";
 import { File, FileArchive, FileAudio, FileImage, FileText, FileVideo, Globe, Lock, Users } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { DeleteButton } from "@/components/delete-button";
 import { CopyLinkButton } from "@/components/copy-link-button";
 import { FileEditButton } from "@/components/file-edit-button";
 import { Input, Label, Select } from "@/components/ui/input";
 import {
-  bandFileCategoryLabels as categoryLabels,
-  bandFileCategoryOptions as BAND_CATEGORY_OPTIONS,
-  bandFileVisibilityOptions as BAND_VISIBILITY_OPTIONS,
-  songFileVisibilityOptions as SONG_VISIBILITY_OPTIONS,
+  getBandFileCategoryLabels,
+  getBandFileCategoryOptions,
+  getBandFileVisibilityOptions,
+  getSongFileVisibilityOptions,
 } from "@/lib/band-file-categories";
-
-const visibilityMeta: Record<
-  "PRIVATE" | "INTERNAL" | "PUBLIC",
-  { icon: typeof Lock; label: string; title: string }
-> = {
-  PRIVATE: { icon: Lock, label: "Privat", title: "Nur für die hochladende Person (und Admins) sichtbar" },
-  INTERNAL: { icon: Users, label: "Intern", title: "Nur bandintern sichtbar" },
-  PUBLIC: { icon: Globe, label: "Öffentlich", title: "Öffentlich abrufbar" },
-};
 
 export type FileListItem = {
   id: string;
@@ -43,13 +35,6 @@ export type FileListItem = {
 };
 
 type GroupBy = "none" | "song" | "event" | "equipment";
-
-const NO_LINK_LABEL: Record<GroupBy, string> = {
-  none: "",
-  song: "Ohne Song-Verknüpfung",
-  event: "Ohne Termin-Verknüpfung",
-  equipment: "Ohne Equipment-Verknüpfung",
-};
 
 function groupValue(file: FileListItem, groupBy: GroupBy): string | undefined {
   if (groupBy === "song") return file.songTitle;
@@ -87,9 +72,28 @@ export function FileList({
   equipmentEnabled?: boolean;
   publicLinksEnabled?: boolean;
 }) {
+  const t = useTranslations("bandFiles");
+  const tList = useTranslations("bandFiles.list");
+  const tFileUpload = useTranslations("songs.fileUpload");
+  const locale = useLocale();
+  const categoryLabels = getBandFileCategoryLabels(t);
+  const BAND_CATEGORY_OPTIONS = getBandFileCategoryOptions(t);
+  const BAND_VISIBILITY_OPTIONS = getBandFileVisibilityOptions(t);
+  const songVisibilityOptions = getSongFileVisibilityOptions(tFileUpload);
   const bandVisibilityOptions = publicLinksEnabled
     ? BAND_VISIBILITY_OPTIONS
     : BAND_VISIBILITY_OPTIONS.filter((v) => v.value !== "PUBLIC");
+  const visibilityMeta: Record<"PRIVATE" | "INTERNAL" | "PUBLIC", { icon: typeof Lock; label: string; title: string }> = {
+    PRIVATE: { icon: Lock, label: tList("visibilityPrivate"), title: tList("visibilityPrivateTitle") },
+    INTERNAL: { icon: Users, label: tList("visibilityInternal"), title: tList("visibilityInternalTitle") },
+    PUBLIC: { icon: Globe, label: tList("visibilityPublic"), title: tList("visibilityPublicTitle") },
+  };
+  const NO_LINK_LABEL: Record<GroupBy, string> = {
+    none: "",
+    song: tList("noSongLink"),
+    event: tList("noEventLink"),
+    equipment: tList("noEquipmentLink"),
+  };
   const [search, setSearch] = useState("");
   const [groupBy, setGroupBy] = useState<GroupBy>("none");
 
@@ -111,8 +115,8 @@ export function FileList({
       if (!map.has(label)) map.set(label, []);
       map.get(label)!.push(file);
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], "de"));
-  }, [filtered, groupBy]);
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], locale));
+  }, [filtered, groupBy, NO_LINK_LABEL, locale]);
 
   function renderFile(file: FileListItem) {
     const Icon = fileIcon(file.filename);
@@ -136,9 +140,9 @@ export function FileList({
           </a>
           <p className="truncate text-xs text-muted">
             {categoryLabels[file.category]} · {formatSize(file.size)} · {file.uploadedBy.name}
-            {file.songTitle && ` · Song: ${file.songTitle}`}
-            {file.eventTitle && ` · Termin: ${file.eventTitle}`}
-            {file.equipmentName && ` · Equipment: ${file.equipmentName}`}
+            {file.songTitle && tList("songSuffix", { title: file.songTitle })}
+            {file.eventTitle && tList("eventSuffix", { title: file.eventTitle })}
+            {file.equipmentName && tList("equipmentSuffix", { name: file.equipmentName })}
           </p>
         </div>
         {canDelete && file.updateAction && (
@@ -147,7 +151,7 @@ export function FileList({
             category={file.kind === "band" ? file.category : undefined}
             categoryOptions={file.kind === "band" ? BAND_CATEGORY_OPTIONS : undefined}
             visibility={file.rawVisibility}
-            visibilityOptions={file.kind === "band" ? bandVisibilityOptions : SONG_VISIBILITY_OPTIONS}
+            visibilityOptions={file.kind === "band" ? bandVisibilityOptions : songVisibilityOptions}
             action={file.updateAction}
           />
         )}
@@ -162,7 +166,7 @@ export function FileList({
           <CopyLinkButton path={`/api/band-files/public/${file.shareToken}`} />
         )}
         {canDelete && (
-          <DeleteButton action={file.deleteAction} label="" confirmMessage="Datei wirklich löschen?" />
+          <DeleteButton action={file.deleteAction} label="" confirmMessage={tList("deleteConfirm")} />
         )}
       </div>
     );
@@ -173,21 +177,21 @@ export function FileList({
       {files.length > 0 && (
         <div className="grid gap-2 sm:grid-cols-3">
           <div className="sm:col-span-2">
-            <Label htmlFor="fileSearch">Suche</Label>
+            <Label htmlFor="fileSearch">{tList("search")}</Label>
             <Input
               id="fileSearch"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Dateiname, Song, Termin, Equipment…"
+              placeholder={tList("searchPlaceholder")}
             />
           </div>
           <div>
-            <Label htmlFor="fileGroupBy">Gruppieren nach</Label>
+            <Label htmlFor="fileGroupBy">{tList("groupBy")}</Label>
             <Select id="fileGroupBy" value={groupBy} onChange={(e) => setGroupBy(e.target.value as GroupBy)}>
-              <option value="none">Keine</option>
-              <option value="song">Song</option>
-              <option value="event">Termin</option>
-              {equipmentEnabled && <option value="equipment">Equipment</option>}
+              <option value="none">{tList("none")}</option>
+              <option value="song">{tList("song")}</option>
+              <option value="event">{tList("event")}</option>
+              {equipmentEnabled && <option value="equipment">{tList("equipment")}</option>}
             </Select>
           </div>
         </div>
@@ -195,7 +199,7 @@ export function FileList({
 
       {filtered.length === 0 ? (
         <p className="mt-3 text-sm text-muted">
-          {files.length === 0 ? "Keine Dateien gefunden." : "Kein Eintrag entspricht der Suche."}
+          {files.length === 0 ? tList("noFilesFound") : tList("noMatchSearch")}
         </p>
       ) : groups ? (
         <div className="mt-3 space-y-4">

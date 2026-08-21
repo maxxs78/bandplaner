@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -9,18 +10,9 @@ import { FileList, type FileListItem } from "@/components/file-list";
 import { uploadBandFileAction, deleteBandFileAction, updateBandFileAction, bandFileStorageUsage } from "./actions";
 import { deleteSongFileAction, updateSongFileAction } from "../songs/actions";
 import { BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
+import { BAND_FILE_CATEGORIES, getBandFileCategoryLabels } from "@/lib/band-file-categories";
 import type { BandFileCategory } from "@/generated/prisma/client";
 import clsx from "clsx";
-
-const categoryFilters: { value: BandFileCategory | undefined; label: string }[] = [
-  { value: undefined, label: "Alle" },
-  { value: "NOTES", label: "Noten" },
-  { value: "CONTRACTS", label: "Verträge" },
-  { value: "PHOTOS", label: "Fotos" },
-  { value: "RECORDINGS", label: "Aufnahmen" },
-  { value: "VIDEOS", label: "Video" },
-  { value: "OTHER", label: "Sonstiges" },
-];
 
 const AUDIO_EXTENSIONS = new Set(["mp3", "wav", "ogg", "m4a"]);
 
@@ -44,6 +36,12 @@ export default async function FilesPage({
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const features = getEnabledFeatures(membership.band);
   const { category } = await searchParams;
+  const t = await getTranslations("bandFiles");
+  const categoryLabels = getBandFileCategoryLabels(t);
+  const categoryFilters: { value: BandFileCategory | undefined; label: string }[] = [
+    { value: undefined, label: t("filterAll") },
+    ...BAND_FILE_CATEGORIES.map((value) => ({ value, label: categoryLabels[value] })),
+  ];
 
   const [bandFiles, songFiles, events, songs, equipment, usedBytes] = await Promise.all([
     prisma.bandFile.findMany({
@@ -131,13 +129,13 @@ export default async function FilesPage({
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-foreground">Dateien</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
 
       <Card className="mt-4">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-foreground">Speicherplatz</span>
+          <span className="text-foreground">{t("storage")}</span>
           <span className="text-muted">
-            {usedMb.toFixed(0)} MB von {quotaMb.toFixed(0)} MB belegt
+            {t("storageUsed", { used: usedMb.toFixed(0), quota: quotaMb.toFixed(0) })}
           </span>
         </div>
         <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-muted">
@@ -153,11 +151,8 @@ export default async function FilesPage({
 
       {canUpload && (
         <Card className="mt-4">
-          <h2 className="font-semibold text-foreground">Datei hochladen</h2>
-          <p className="mt-1 text-xs text-muted">
-            Song- und Termin-spezifische Dateien lassen sich außerdem direkt auf der jeweiligen
-            Song-Seite hochladen und erscheinen dann automatisch auch hier.
-          </p>
+          <h2 className="font-semibold text-foreground">{t("uploadTitle")}</h2>
+          <p className="mt-1 text-xs text-muted">{t("uploadHint")}</p>
           <div className="mt-3">
             <BandFileUpload
               action={uploadBandFileAction.bind(null, bandId)}

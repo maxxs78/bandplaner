@@ -1,4 +1,5 @@
 import { ThumbsDown, ThumbsUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 type VoteItem = {
   id: string;
@@ -8,8 +9,9 @@ type VoteItem = {
 };
 
 export function SongVoteList({ votes }: { votes: VoteItem[] }) {
+  const t = useTranslations("songs.vote");
   if (votes.length === 0) {
-    return <p className="text-sm text-muted">Noch keine Stimmen abgegeben.</p>;
+    return <p className="text-sm text-muted">{t("noVotesYet")}</p>;
   }
 
   return (

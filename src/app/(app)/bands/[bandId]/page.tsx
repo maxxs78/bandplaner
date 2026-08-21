@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { Globe, Link2, Mail, MapPin, Music2 } from "lucide-react";
+import { getTranslations, getFormatter } from "next-intl/server";
 import { requireMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import {
-  eventTypeLabels,
+  getEventTypeLabels,
   eventTypeBadgeVariant,
   eventTypeColor,
   isEventFullyConfirmed,
@@ -19,6 +20,10 @@ export default async function BandOverviewPage({
   const { bandId } = await params;
   const { membership } = await requireMembership(bandId);
   const band = membership.band;
+  const t = await getTranslations("overview");
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const format = await getFormatter();
 
   const [upcomingEvents, songCount, setlistCount, memberCount] = await Promise.all([
     prisma.event.findMany({
@@ -48,10 +53,10 @@ export default async function BandOverviewPage({
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
-        <h2 className="font-semibold text-foreground">Anstehende Termine</h2>
+        <h2 className="font-semibold text-foreground">{t("upcomingEvents")}</h2>
         <div className="mt-3 space-y-3">
           {upcomingEvents.length === 0 && (
-            <Card className="text-sm text-muted">Keine anstehenden Termine.</Card>
+            <Card className="text-sm text-muted">{t("noUpcomingEvents")}</Card>
           )}
           {upcomingEvents.map((event) => {
             const color = eventTypeColor(event.type);
@@ -71,10 +76,7 @@ export default async function BandOverviewPage({
                   <div>
                     <p className="font-medium text-foreground">{event.title}</p>
                     <p className="text-sm text-muted">
-                      {new Intl.DateTimeFormat("de-DE", {
-                        dateStyle: "medium",
-                        timeStyle: "short",
-                      }).format(event.startsAt)}
+                      {format.dateTime(event.startsAt, { dateStyle: "medium", timeStyle: "short" })}
                       {event.location ? ` · ${event.location}` : ""}
                     </p>
                   </div>
@@ -113,7 +115,7 @@ export default async function BandOverviewPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary"
                   >
                     <Mail className="h-3.5 w-3.5" />
-                    Kontakt
+                    {t("contact")}
                   </a>
                 )}
                 {band.websiteUrl && (
@@ -124,7 +126,7 @@ export default async function BandOverviewPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary"
                   >
                     <Globe className="h-3.5 w-3.5" />
-                    Website
+                    {t("website")}
                   </a>
                 )}
                 {band.spotifyUrl && (
@@ -135,7 +137,7 @@ export default async function BandOverviewPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary"
                   >
                     <Music2 className="h-3.5 w-3.5" />
-                    Spotify
+                    {t("spotify")}
                   </a>
                 )}
                 {band.instagramUrl && (
@@ -146,7 +148,7 @@ export default async function BandOverviewPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary"
                   >
                     <Link2 className="h-3.5 w-3.5" />
-                    Instagram
+                    {t("instagram")}
                   </a>
                 )}
                 {band.facebookUrl && (
@@ -157,7 +159,7 @@ export default async function BandOverviewPage({
                     className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-foreground hover:border-primary hover:text-primary"
                   >
                     <Link2 className="h-3.5 w-3.5" />
-                    Facebook
+                    {t("facebook")}
                   </a>
                 )}
               </div>
@@ -166,19 +168,19 @@ export default async function BandOverviewPage({
         )}
         <Link href={`/bands/${bandId}/members`}>
           <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">Mitglieder</p>
+            <p className="text-sm text-muted">{t("members")}</p>
             <p className="text-2xl font-semibold text-foreground">{memberCount}</p>
           </Card>
         </Link>
         <Link href={`/bands/${bandId}/songs`}>
           <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">Songs im Repertoire</p>
+            <p className="text-sm text-muted">{t("songsInRepertoire")}</p>
             <p className="text-2xl font-semibold text-foreground">{songCount}</p>
           </Card>
         </Link>
         <Link href={`/bands/${bandId}/setlists`}>
           <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">Setlisten</p>
+            <p className="text-sm text-muted">{t("setlists")}</p>
             <p className="text-2xl font-semibold text-foreground">{setlistCount}</p>
           </Card>
         </Link>

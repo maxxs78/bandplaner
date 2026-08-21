@@ -4,11 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { requireMembership, canManageFinance } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
-import { eventTypeLabels } from "@/lib/event-colors";
+import { getEventTypeLabels } from "@/lib/event-colors";
+import { getTranslations, getFormatter, getLocale } from "next-intl/server";
 import {
-  financeEntryTypeLabels,
+  getFinanceEntryTypeLabels,
   financeEntryTypeBadgeVariant,
-  allocationNoun as allocationNounFor,
+  getAllocationNoun,
   isBalanceTransactionType,
 } from "@/lib/finance-entry-labels";
 import { Card, Badge } from "@/components/ui/card";
@@ -16,8 +17,8 @@ import { DeleteButton } from "@/components/delete-button";
 import { AllocationsForm } from "@/components/allocations-form";
 import { deleteFinanceEntryAction, saveAllocationsAction, confirmAllocationAction } from "../actions";
 
-function formatEuro(cents: number) {
-  return (cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+function formatEuro(cents: number, locale: string) {
+  return (cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
 export default async function FinanceEntryDetailPage({
@@ -30,6 +31,12 @@ export default async function FinanceEntryDetailPage({
   if (!getEnabledFeatures(membership.band).finance || !canManageFinance(isFinanceAdmin)) {
     redirect(`/bands/${bandId}/finance`);
   }
+  const t = await getTranslations("finance");
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const financeEntryTypeLabels = getFinanceEntryTypeLabels(t);
+  const format = await getFormatter();
+  const locale = await getLocale();
 
   const entry = await prisma.financeEntry.findUnique({
     where: { id: entryId, bandId },
@@ -58,16 +65,15 @@ export default async function FinanceEntryDetailPage({
 
   const allocatedSum = entry.allocations.reduce((s, a) => s + a.amountCents, 0);
   const remainder = entry.amountCents - allocatedSum;
-  const noun = allocationNounFor(entry.type);
+  const noun = getAllocationNoun(entry.type, t);
   const hint = isBalanceTransactionType(entry.type)
-    ? `Der Betrag muss sich vollständig auf Mitglieder verteilen (${formatEuro(entry.amountCents)}).`
+    ? t("hintBalanceType", { amount: formatEuro(entry.amountCents, locale) })
     : membership.band.financeSettlementMode === "NO_BALANCE"
-      ? `Die ${noun} müssen sich auf den Gesamtbetrag von ${formatEuro(entry.amountCents)} summieren – die Band hat kein eigenes Bandkonto.`
-      : `Ein nicht zugeordneter Rest wird automatisch mit dem Bandkonto verrechnet. ${
-          remainder !== 0
-            ? `Aktuell nicht zugeordnet: ${formatEuro(remainder)}.`
-            : "Aktuell ist der gesamte Betrag zugeordnet."
-        }`;
+      ? t("hintNoBalanceMode", { noun, amount: formatEuro(entry.amountCents, locale) })
+      : t("hintRemainderToBand") +
+        (remainder !== 0
+          ? t("hintRemainderCurrent", { amount: formatEuro(remainder, locale) })
+          : t("hintRemainderNone"));
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -77,28 +83,28 @@ export default async function FinanceEntryDetailPage({
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zu Finanzen
+          {t("backToFinance")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{entry.category}</h1>
             <p className="mt-1 text-sm text-muted">
-              {new Intl.DateTimeFormat("de-DE", { dateStyle: "full" }).format(entry.date)}
+              {format.dateTime(entry.date, { dateStyle: "full" })}
               {entry.event && ` · ${entry.event.title} (${eventTypeLabels[entry.event.type]})`}
             </p>
             {entry.description && <p className="mt-1 text-sm text-foreground">{entry.description}</p>}
-            <p className="mt-1 text-xs text-muted">Angelegt von {entry.createdBy.name}</p>
+            <p className="mt-1 text-xs text-muted">{t("createdBy", { name: entry.createdBy.name })}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant={financeEntryTypeBadgeVariant[entry.type]}>{financeEntryTypeLabels[entry.type]}</Badge>
           </div>
         </div>
-        <p className="mt-3 text-3xl font-semibold text-foreground">{formatEuro(entry.amountCents)}</p>
+        <p className="mt-3 text-3xl font-semibold text-foreground">{formatEuro(entry.amountCents, locale)}</p>
         <div className="mt-4">
           <DeleteButton
             action={deleteFinanceEntryAction.bind(null, bandId, entryId)}
-            label="Eintrag löschen"
-            confirmMessage={`Eintrag wirklich löschen? Damit werden auch alle zugehörigen Zuordnungen entfernt.`}
+            label={t("deleteEntry")}
+            confirmMessage={t("deleteEntryConfirm")}
           />
         </div>
       </div>

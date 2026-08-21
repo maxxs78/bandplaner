@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -10,4 +11,8 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Kein URL-Locale-Routing (kein [locale]-Segment) - die Sprache wird stattdessen
+// pro Request in src/i18n/request.ts aus Profil/Cookie/Accept-Language ermittelt.
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);

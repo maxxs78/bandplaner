@@ -16,18 +16,24 @@ export const notificationEvents = {
 
 export type NotificationEvent = keyof typeof notificationEvents;
 
-export const notificationEventLabels: Record<NotificationEvent, string> = {
-  NEW_EVENT: "Neuer Termin",
-  EVENT_CHANGE: "Termin geändert oder abgesagt",
-  SONG_PROPOSAL: "Neuer Songvorschlag",
-  NEW_FILE: "Neue Datei",
-  FINANCE_ALLOCATION: "Meine Gagen und Kostenanteile",
-};
+export function getNotificationEventLabels(
+  t: (key: string) => string
+): Record<NotificationEvent, string> {
+  return Object.fromEntries(
+    (Object.keys(notificationEvents) as NotificationEvent[]).map((event) => [
+      event,
+      t(`events.${event}.label`),
+    ])
+  ) as Record<NotificationEvent, string>;
+}
 
-export const notificationEventDescriptions: Record<NotificationEvent, string> = {
-  NEW_EVENT: "Wenn ein neuer Termin für diese Band angelegt wird.",
-  EVENT_CHANGE: "Wenn sich Datum, Zeit oder Ort eines Termins ändern oder er gelöscht wird.",
-  SONG_PROPOSAL: "Wenn jemand einen Song zur Abstimmung vorschlägt.",
-  NEW_FILE: "Wenn eine Datei für die Band hochgeladen wird.",
-  FINANCE_ALLOCATION: "Wenn dir ein Betrag zugeordnet wird oder eine Bestätigung aussteht.",
-};
+export function getNotificationEventDescriptions(
+  t: (key: string) => string
+): Record<NotificationEvent, string> {
+  return Object.fromEntries(
+    (Object.keys(notificationEvents) as NotificationEvent[]).map((event) => [
+      event,
+      t(`events.${event}.description`),
+    ])
+  ) as Record<NotificationEvent, string>;
+}

@@ -1,10 +1,11 @@
 import { FileAudio, FileMusic, FileText, Lock, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { SongAudioPlayer } from "@/components/song-audio-player";
 import { isPlayableAudio } from "@/lib/media";
 import { DeleteButton } from "@/components/delete-button";
 import { FileEditButton } from "@/components/file-edit-button";
 import { deleteSongFileAction, updateSongFileAction } from "@/app/(app)/bands/[bandId]/songs/actions";
-import { songFileVisibilityOptions as SONG_VISIBILITY_OPTIONS } from "@/lib/band-file-categories";
+import { getSongFileVisibilityOptions } from "@/lib/band-file-categories";
 
 type SongFileItem = {
   id: string;
@@ -47,8 +48,10 @@ export function SongFileList({
   keyDetectionEnabled?: boolean;
   songKey?: string | null;
 }) {
+  const t = useTranslations("songs.fileList");
+  const tUpload = useTranslations("songs.fileUpload");
   if (files.length === 0) {
-    return <p className="text-sm text-muted">Noch keine Dateien hochgeladen.</p>;
+    return <p className="text-sm text-muted">{t("noFiles")}</p>;
   }
 
   return (
@@ -74,7 +77,7 @@ export function SongFileList({
               <FileEditButton
                 filename={file.filename}
                 visibility={file.visibility}
-                visibilityOptions={SONG_VISIBILITY_OPTIONS}
+                visibilityOptions={getSongFileVisibilityOptions(tUpload)}
                 action={updateSongFileAction.bind(null, bandId, songId, file.id)}
               />
             )}
@@ -82,8 +85,8 @@ export function SongFileList({
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted"
               title={
                 file.visibility === "PRIVATE"
-                  ? `Privat · hochgeladen von ${file.uploadedBy.name}`
-                  : `Für die Band sichtbar · hochgeladen von ${file.uploadedBy.name}`
+                  ? t("uploadedByPrivate", { name: file.uploadedBy.name })
+                  : t("uploadedByBand", { name: file.uploadedBy.name })
               }
             >
               {file.visibility === "PRIVATE" ? (
@@ -97,7 +100,7 @@ export function SongFileList({
               <DeleteButton
                 action={deleteSongFileAction.bind(null, bandId, songId, file.id)}
                 label=""
-                confirmMessage="Datei wirklich löschen?"
+                confirmMessage={t("deleteConfirm")}
               />
             )}
           </div>

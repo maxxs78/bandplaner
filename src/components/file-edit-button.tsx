@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { Pencil, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 
@@ -27,13 +28,14 @@ export function FileEditButton({
   const filenameRef = useRef<HTMLInputElement>(null);
   const categoryRef = useRef<HTMLSelectElement>(null);
   const visibilityRef = useRef<HTMLSelectElement>(null);
+  const t = useTranslations("fileEdit");
 
   if (!editing) {
     return (
       <button
         type="button"
         onClick={() => setEditing(true)}
-        aria-label="Datei bearbeiten"
+        aria-label={t("edit")}
         className="shrink-0 text-muted hover:text-primary"
       >
         <Pencil className="h-4 w-4" />
@@ -60,12 +62,12 @@ export function FileEditButton({
     >
       <div className="grid gap-3 sm:grid-cols-3">
         <div className={categoryOptions ? "" : "sm:col-span-2"}>
-          <Label htmlFor="edit-filename">Dateiname</Label>
+          <Label htmlFor="edit-filename">{t("filename")}</Label>
           <Input id="edit-filename" ref={filenameRef} defaultValue={filename} disabled={pending} />
         </div>
         {categoryOptions && (
           <div>
-            <Label htmlFor="edit-category">Kategorie</Label>
+            <Label htmlFor="edit-category">{t("category")}</Label>
             <Select id="edit-category" ref={categoryRef} defaultValue={category} disabled={pending}>
               {categoryOptions.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -76,7 +78,7 @@ export function FileEditButton({
           </div>
         )}
         <div>
-          <Label htmlFor="edit-visibility">Sichtbarkeit</Label>
+          <Label htmlFor="edit-visibility">{t("visibility")}</Label>
           <Select id="edit-visibility" ref={visibilityRef} defaultValue={visibility} disabled={pending}>
             {visibilityOptions.map((v) => (
               <option key={v.value} value={v.value}>
@@ -88,11 +90,11 @@ export function FileEditButton({
       </div>
       <div className="mt-3 flex gap-2">
         <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Wird gespeichert…" : "Speichern"}
+          {pending ? t("saving") : t("save")}
         </Button>
         <Button type="button" variant="secondary" size="sm" onClick={() => setEditing(false)} disabled={pending}>
           <X className="h-4 w-4" />
-          Abbrechen
+          {t("cancel")}
         </Button>
       </div>
     </form>

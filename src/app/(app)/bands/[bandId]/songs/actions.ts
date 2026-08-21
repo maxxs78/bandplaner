@@ -1,8 +1,9 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand, canManageBandContent, canManageContent } from "@/lib/access";
-import { songSchema, songLinkSchema, songVoteSchema } from "@/lib/validation";
+import { getSongSchema, getSongLinkSchema, getSongVoteSchema } from "@/lib/validation";
 import { notifyBand } from "@/lib/notifications";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
@@ -41,12 +42,13 @@ async function upsertOrPruneSongNote(
   });
 }
 
-function parseSongForm(formData: FormData) {
+async function parseSongForm(formData: FormData) {
   const minutes = Number(formData.get("durationMin") || 0);
   const seconds = Number(formData.get("durationSecPart") || 0);
   const totalSec = minutes * 60 + seconds;
+  const t = await getTranslations("validation");
 
-  return songSchema.safeParse({
+  return getSongSchema(t).safeParse({
     title: formData.get("title"),
     key: formData.get("key") || undefined,
     bpm: formData.get("bpm") || "",
@@ -66,14 +68,15 @@ export async function createSongAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("songs.actions");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Songs anlegen" };
+    return { error: t("guestsCannotCreate") };
   }
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
-  const parsed = parseSongForm(formData);
+  const parsed = await parseSongForm(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
   const d = parsed.data;
 
@@ -101,10 +104,15 @@ export async function createSongAction(
       bandId,
       event: "SONG_PROPOSAL",
       excludeUserId: user.id,
-      subject: `Neuer Songvorschlag: ${song.title}`,
-      body:
-        `${user.name} schlägt einen neuen Song vor:\n\n${song.title}` +
-        `${song.artist ? ` (${song.artist})` : ""}\n\nDu kannst darüber abstimmen.`,
+      namespace: "songs.actions",
+      buildMessage: (t) => ({
+        subject: t("proposalSubject", { title: song.title }),
+        body: t("proposalBody", {
+          name: user.name ?? "",
+          title: song.title,
+          artistSuffix: song.artist ? ` (${song.artist})` : "",
+        }),
+      }),
       path: `/bands/${bandId}/songs/${song.id}`,
     });
   }
@@ -120,14 +128,15 @@ export async function updateSongAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("songs.actions");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können Songs nicht bearbeiten" };
+    return { error: t("guestsCannotEdit") };
   }
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
-  const parsed = parseSongForm(formData);
+  const parsed = await parseSongForm(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
   const d = parsed.data;
 
@@ -135,7 +144,7 @@ export async function updateSongAction(
     where: { id: songId, bandId },
     select: { status: true },
   });
-  if (!existing) return { error: "Song nicht gefunden" };
+  if (!existing) return { error: t("songNotFound") };
 
   // Nur Admins dürfen den Status ändern (u. a. damit Abstimmungen über Vorschläge
   // nicht durch einfaches Bearbeiten umgangen werden können).
@@ -220,13 +229,14 @@ export async function uploadSongFileAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const t = await getTranslations("songs.actions");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Dateien hochladen" };
+    return { error: t("guestsCannotUpload") };
   }
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
-    return { error: "Bitte eine Datei auswählen" };
+    return { error: t("selectFile") };
   }
   const visibility = formData.get("visibility") === "PRIVATE" ? "PRIVATE" : "BAND";
 
@@ -307,16 +317,20 @@ export async function addSongLinkAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const [t, tValidation] = await Promise.all([
+    getTranslations("songs.actions"),
+    getTranslations("validation"),
+  ]);
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Links hinzufügen" };
+    return { error: t("guestsCannotAddLinks") };
   }
 
-  const parsed = songLinkSchema.safeParse({
+  const parsed = getSongLinkSchema(tValidation).safeParse({
     url: formData.get("url"),
     label: formData.get("label") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   await prisma.songLink.create({
@@ -347,7 +361,8 @@ export async function updateSongKeyAction(
 ): Promise<{ error?: string } | undefined> {
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können die Tonart nicht ändern" };
+    const t = await getTranslations("songs.actions");
+    return { error: t("guestsCannotChangeKey") };
   }
 
   await prisma.song.update({ where: { id: songId, bandId }, data: { key } });
@@ -392,25 +407,29 @@ export async function voteSongAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const [t, tValidation] = await Promise.all([
+    getTranslations("songs.actions"),
+    getTranslations("validation"),
+  ]);
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können nicht abstimmen" };
+    return { error: t("guestsCannotVote") };
   }
 
   const song = await prisma.song.findUnique({
     where: { id: songId, bandId },
     select: { status: true },
   });
-  if (!song) return { error: "Song nicht gefunden" };
+  if (!song) return { error: t("songNotFound") };
   if (song.status !== "PROPOSED") {
-    return { error: "Über diesen Song kann nicht mehr abgestimmt werden" };
+    return { error: t("votingClosed") };
   }
 
-  const parsed = songVoteSchema.safeParse({
+  const parsed = getSongVoteSchema(tValidation).safeParse({
     vote: formData.get("vote"),
     comment: formData.get("comment") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   await prisma.songVote.upsert({

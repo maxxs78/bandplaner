@@ -2,18 +2,22 @@
 
 import { useTransition } from "react";
 import { Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export function DeleteButton({
   action,
-  label = "Löschen",
-  confirmMessage = "Bist du sicher? Dies kann nicht rückgängig gemacht werden.",
+  label,
+  confirmMessage,
 }: {
   action: () => Promise<void>;
   label?: string;
   confirmMessage?: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const t = useTranslations("common");
+  const resolvedLabel = label ?? t("delete");
+  const resolvedConfirmMessage = confirmMessage ?? t("deleteConfirmDefault");
 
   return (
     <Button
@@ -22,13 +26,13 @@ export function DeleteButton({
       size="sm"
       disabled={pending}
       onClick={() => {
-        if (confirm(confirmMessage)) {
+        if (confirm(resolvedConfirmMessage)) {
           startTransition(() => action());
         }
       }}
     >
       <Trash2 className="h-4 w-4" />
-      {pending ? "Wird gelöscht…" : label}
+      {pending ? t("deleting") : resolvedLabel}
     </Button>
   );
 }

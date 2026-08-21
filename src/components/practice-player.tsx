@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { Pause, Play, RotateCcw, SlidersHorizontal, Wand2, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { transposeKey, keysMatch } from "@/lib/music-key";
 import { detectKey, type DetectedKey } from "@/lib/key-detection";
@@ -92,6 +93,7 @@ export function PracticePlayer({
   const [keyAdopted, setKeyAdopted] = useState(false);
   const [keyBannerDismissed, setKeyBannerDismissed] = useState(false);
   const [adoptPending, startAdopt] = useTransition();
+  const t = useTranslations("practicePlayer");
 
   const contextRef = useRef<AudioContext | null>(null);
   const bufferRef = useRef<AudioBuffer | null>(null);
@@ -150,7 +152,7 @@ export function PracticePlayer({
           });
       } catch (error) {
         if (cancelled) return;
-        setErrorText(error instanceof Error ? error.message : "Unbekannter Fehler");
+        setErrorText(error instanceof Error ? error.message : t("unknownError"));
         setStatus("error");
       }
     })();
@@ -447,9 +449,9 @@ export function PracticePlayer({
   if (status === "error") {
     return (
       <div className="rounded-lg border border-danger/40 bg-danger/10 p-3 text-sm text-foreground">
-        <p>Übungsmodus konnte nicht geladen werden{errorText ? `: ${errorText}` : "."}</p>
+        <p>{t("loadError")}{errorText ? `: ${errorText}` : "."}</p>
         <Button variant="secondary" size="sm" className="mt-2" onClick={onClose}>
-          Schließen
+          {t("closeButton")}
         </Button>
       </div>
     );
@@ -458,7 +460,7 @@ export function PracticePlayer({
   if (status === "loading") {
     return (
       <div className="rounded-lg border border-border p-3 text-sm text-muted">
-        Übungsmodus wird vorbereitet – die Datei wird vollständig geladen und analysiert…
+        {t("loading")}
       </div>
     );
   }
@@ -468,12 +470,12 @@ export function PracticePlayer({
       <div className="flex items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground">
           <SlidersHorizontal className="h-4 w-4" />
-          Übungsmodus
+          {t("title")}
         </span>
         <button
           type="button"
           onClick={onClose}
-          aria-label="Übungsmodus beenden"
+          aria-label={t("close")}
           className="text-muted hover:text-foreground"
         >
           <X className="h-4 w-4" />
@@ -494,7 +496,7 @@ export function PracticePlayer({
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" onClick={togglePlay}>
           {playing ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-          {playing ? "Pause" : "Abspielen"}
+          {playing ? t("pause") : t("play")}
         </Button>
         <span className="font-mono text-sm text-muted">
           {formatTimeMs(position)} / {formatTimeMs(duration)} · −{formatTimeMs(duration - position)}
@@ -504,7 +506,7 @@ export function PracticePlayer({
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="block">
           <span className="flex items-center justify-between text-xs font-medium text-foreground">
-            Tempo
+            {t("tempo")}
             <span className="font-mono text-muted">
               {Math.round(tempo * 100)} %
               {baseBpm !== null ? ` · ${Math.round(baseBpm * tempo)} BPM` : ""}
@@ -523,9 +525,9 @@ export function PracticePlayer({
 
         <label className="block">
           <span className="flex items-center justify-between text-xs font-medium text-foreground">
-            Tonart
+            {t("key")}
             <span className="font-mono text-muted">
-              {semitones > 0 ? `+${semitones}` : semitones} Halbtöne
+              {semitones > 0 ? `+${semitones}` : semitones} {t("semitones")}
               {semitones !== 0 && transposedKey ? ` · ${transposedKey}` : ""}
             </span>
           </span>
@@ -542,12 +544,12 @@ export function PracticePlayer({
       </div>
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
-        <span className="text-xs font-medium text-foreground">Abschnitt:</span>
+        <span className="text-xs font-medium text-foreground">{t("section")}</span>
         <Button variant="secondary" size="sm" onClick={() => applyLoop(position, loopEnd)}>
-          A ab hier
+          {t("loopFromHere")}
         </Button>
         <Button variant="secondary" size="sm" onClick={() => applyLoop(loopStart, position)}>
-          B bis hier
+          {t("loopToHere")}
         </Button>
         {loopActive && (
           <>
@@ -556,7 +558,7 @@ export function PracticePlayer({
             </span>
             <Button variant="ghost" size="sm" onClick={() => applyLoop(null, null)}>
               <RotateCcw className="h-4 w-4" />
-              Loop aus
+              {t("loopOff")}
             </Button>
           </>
         )}
@@ -572,23 +574,21 @@ export function PracticePlayer({
               disabled={keyDetection.status === "detecting"}
             >
               <Wand2 className="h-4 w-4" />
-              {keyDetection.status === "detecting" ? "Analysiere…" : "Tonart erkennen"}
+              {keyDetection.status === "detecting" ? t("analyzing") : t("detectKey")}
             </Button>
             {keyDetection.status === "done" && (
               <span className="text-sm text-muted">
-                Erkannt: <span className="font-medium text-foreground">{keyDetection.result.label}</span>
+                {t("detected")} <span className="font-medium text-foreground">{keyDetection.result.label}</span>
                 {keyDetection.result.ambiguousWith && (
                   <>
                     {" "}
-                    (evtl. auch{" "}
-                    <span className="font-medium text-foreground">{keyDetection.result.ambiguousWith.label}</span> –
-                    Dur/Moll-Paralleltonarten sind chromatisch kaum unterscheidbar)
+                    {t("ambiguousHint", { label: keyDetection.result.ambiguousWith.label })}
                   </>
                 )}
               </span>
             )}
             {keyDetection.status === "error" && (
-              <span className="text-sm text-danger">Tonart konnte nicht sicher ermittelt werden.</span>
+              <span className="text-sm text-danger">{t("detectionFailed")}</span>
             )}
           </div>
 
@@ -598,28 +598,25 @@ export function PracticePlayer({
             !keysMatch(songKey, keyDetection.result.label) && (
               <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-sm">
                 <span className="text-foreground">
-                  Weicht von der hinterlegten Tonart ({songKey || "keine"}) ab. In Songdaten übernehmen?
+                  {t("keyDiffers", { key: songKey || t("noKey") })}
                 </span>
                 <Button
                   size="sm"
                   onClick={() => handleAdoptKey(keyDetection.result.label)}
                   disabled={adoptPending}
                 >
-                  Übernehmen
+                  {t("adopt")}
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setKeyBannerDismissed(true)}>
-                  Verwerfen
+                  {t("discard")}
                 </Button>
               </div>
             )}
-          {keyAdopted && <p className="mt-2 text-xs text-muted">Tonart in den Songdaten aktualisiert.</p>}
+          {keyAdopted && <p className="mt-2 text-xs text-muted">{t("keyAdopted")}</p>}
         </div>
       )}
 
-      <p className="text-xs text-muted">
-        Tempo und Tonart lassen sich unabhängig voneinander einstellen. Klick in die Wellenform springt an
-        die Stelle, Ziehen (Maus oder Finger) markiert einen Loop-Bereich.
-      </p>
+      <p className="text-xs text-muted">{t("hint")}</p>
     </div>
   );
 }

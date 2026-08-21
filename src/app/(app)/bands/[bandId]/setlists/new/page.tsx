@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { createSetlistAction } from "../actions";
@@ -28,10 +29,11 @@ export default async function NewSetlistPage({
   ]);
 
   const boundAction = createSetlistAction.bind(null, bandId);
+  const t = await getTranslations("setlists");
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-foreground">Neue Setlist</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("newTitle")}</h1>
       <Card className="mt-4">
         <NewSetlistForm
           action={boundAction}

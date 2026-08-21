@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -35,6 +36,8 @@ export default async function PacklistPrintPage({
     },
   });
   if (!packlist) notFound();
+
+  const t = await getTranslations("packlists.detail");
 
   return (
     <main className="mx-auto max-w-[210mm] bg-white px-10 py-10 text-black print:max-w-none print:px-0 print:py-0">
@@ -81,7 +84,7 @@ export default async function PacklistPrintPage({
           </li>
         ))}
       </ol>
-      {packlist.items.length === 0 && <p className="text-gray-600">Diese Packliste ist noch leer.</p>}
+      {packlist.items.length === 0 && <p className="text-gray-600">{t("printEmpty")}</p>}
     </main>
   );
 }

@@ -2,22 +2,12 @@
 
 import { useActionState } from "react";
 import { Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea, FieldError } from "@/components/ui/input";
 import type { FormState } from "@/app/(app)/bands/[bandId]/songs/actions";
 
-const statusOptions = [
-  { value: "PROPOSED", label: "Vorschlag" },
-  { value: "NEW", label: "Neu" },
-  { value: "IN_PROGRESS", label: "In Erarbeitung" },
-  { value: "STAGE_READY", label: "Bühnenreif" },
-  { value: "ACTIVE", label: "Im aktiven Repertoire" },
-  { value: "ARCHIVED", label: "Archiviert" },
-];
-
-const statusLabels: Record<string, string> = Object.fromEntries(
-  statusOptions.map((s) => [s.value, s.label])
-);
+const statusValues = ["PROPOSED", "NEW", "IN_PROGRESS", "STAGE_READY", "ACTIVE", "ARCHIVED"] as const;
 
 export function SongForm({
   action,
@@ -43,42 +33,48 @@ export function SongForm({
   canEditStatus?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useTranslations("songs");
+  const td = useTranslations("songs.detail");
+  const tf = useTranslations("songs.form");
   const totalDurationSec = Number(defaultValues?.durationSec) || 0;
   const defaultDurationMin = totalDurationSec ? Math.floor(totalDurationSec / 60) : undefined;
   const defaultDurationSecPart = totalDurationSec ? totalDurationSec % 60 : undefined;
 
+  const statusLabel = (value: string) =>
+    value === "ACTIVE" ? td("activeStatusFull") : t(`statusLabels.${value}`);
+
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <Label htmlFor="title">Titel</Label>
+        <Label htmlFor="title">{tf("title")}</Label>
         <Input id="title" name="title" required defaultValue={defaultValues?.title} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <Label htmlFor="key">Tonart</Label>
-          <Input id="key" name="key" placeholder="z. B. Am" defaultValue={defaultValues?.key} />
+          <Label htmlFor="key">{tf("key")}</Label>
+          <Input id="key" name="key" placeholder={tf("keyPlaceholder")} defaultValue={defaultValues?.key} />
         </div>
         <div>
-          <Label htmlFor="bpm">Tempo (BPM)</Label>
+          <Label htmlFor="bpm">{tf("tempo")}</Label>
           <Input id="bpm" name="bpm" type="number" min={1} defaultValue={defaultValues?.bpm} />
         </div>
         <div>
-          <Label htmlFor="timeSignature">Taktart</Label>
+          <Label htmlFor="timeSignature">{tf("timeSignature")}</Label>
           <Input id="timeSignature" name="timeSignature" placeholder="4/4" defaultValue={defaultValues?.timeSignature} />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
         <div>
-          <Label htmlFor="durationMin">Dauer (min:sek)</Label>
+          <Label htmlFor="durationMin">{tf("duration")}</Label>
           <div className="flex items-center gap-1">
             <Input
               id="durationMin"
               name="durationMin"
               type="number"
               min={0}
-              placeholder="min"
+              placeholder={tf("durationMinPlaceholder")}
               className="w-full"
               defaultValue={defaultDurationMin}
             />
@@ -89,22 +85,22 @@ export function SongForm({
               type="number"
               min={0}
               max={59}
-              placeholder="sek"
+              placeholder={tf("durationSecPlaceholder")}
               className="w-full"
               defaultValue={defaultDurationSecPart}
             />
           </div>
         </div>
         <div>
-          <Label htmlFor="genre">Genre</Label>
+          <Label htmlFor="genre">{tf("genre")}</Label>
           <Input id="genre" name="genre" defaultValue={defaultValues?.genre} />
         </div>
         <div>
-          <Label htmlFor="artist">Interpret</Label>
+          <Label htmlFor="artist">{tf("artist")}</Label>
           <Input
             id="artist"
             name="artist"
-            placeholder="Original-Interpret bei Coversongs"
+            placeholder={tf("artistPlaceholder")}
             defaultValue={defaultValues?.artist}
           />
         </div>
@@ -112,11 +108,11 @@ export function SongForm({
 
       {canEditStatus ? (
         <div>
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{tf("status")}</Label>
           <Select id="status" name="status" defaultValue={defaultValues?.status ?? "NEW"}>
-            {statusOptions.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
+            {statusValues.map((value) => (
+              <option key={value} value={value}>
+                {statusLabel(value)}
               </option>
             ))}
           </Select>
@@ -124,36 +120,36 @@ export function SongForm({
       ) : (
         <div>
           <input type="hidden" name="status" value={defaultValues?.status ?? "PROPOSED"} />
-          <Label htmlFor="status">Status</Label>
+          <Label htmlFor="status">{tf("status")}</Label>
           <p className="text-sm text-muted">
             {defaultValues?.status
-              ? `${statusLabels[defaultValues.status] ?? defaultValues.status} (nur Admins können den Status ändern)`
-              : "Wird als Vorschlag eingereicht und muss von der Band abgestimmt werden."}
+              ? `${statusLabel(defaultValues.status)} ${tf("statusReadonlySuffix")}`
+              : tf("statusProposalHint")}
           </p>
         </div>
       )}
 
       <div>
-        <Label htmlFor="lyrics">Songtext</Label>
+        <Label htmlFor="lyrics">{tf("lyrics")}</Label>
         <Textarea id="lyrics" name="lyrics" rows={6} defaultValue={defaultValues?.lyrics} />
       </div>
 
       <div>
-        <Label htmlFor="remarks">Notizen</Label>
+        <Label htmlFor="remarks">{tf("notes")}</Label>
         <Textarea
           id="remarks"
           name="remarks"
           rows={3}
-          placeholder="z. B. Live-Version, Sonderarrangement…"
+          placeholder={tf("notesPlaceholder")}
           defaultValue={defaultValues?.remarks}
         />
-        <p className="mt-1 text-xs text-muted">Für die ganze Band sichtbar.</p>
+        <p className="mt-1 text-xs text-muted">{tf("notesVisibility")}</p>
       </div>
 
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : submitLabel}
+        {pending ? tf("saving") : submitLabel}
       </Button>
     </form>
   );

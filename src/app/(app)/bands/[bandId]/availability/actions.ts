@@ -1,8 +1,9 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership } from "@/lib/access";
-import { absenceSchema } from "@/lib/validation";
+import { getAbsenceSchema } from "@/lib/validation";
 import { revalidatePath } from "next/cache";
 
 export type FormState = { error?: string } | undefined;
@@ -13,14 +14,15 @@ export async function createAbsenceAction(
   formData: FormData
 ): Promise<FormState> {
   const { user } = await requireMembership(bandId);
+  const t = await getTranslations("validation");
 
-  const parsed = absenceSchema.safeParse({
+  const parsed = getAbsenceSchema(t).safeParse({
     startDate: formData.get("startDate"),
     endDate: formData.get("endDate"),
     reason: formData.get("reason") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   await prisma.absence.create({

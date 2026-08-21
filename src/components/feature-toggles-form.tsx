@@ -2,25 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { FieldError } from "@/components/ui/input";
 import { ToggleRow } from "@/components/ui/toggle-row";
 import type { FormState } from "@/app/(app)/bands/[bandId]/settings/actions";
-
-const settlementModes = [
-  {
-    value: "NO_BALANCE",
-    label: "Kein Bandkonto",
-    description:
-      "Der Saldo der Band ist immer ausgeglichen. Einnahmen werden vollständig auf Mitglieder verteilt, Ausgaben vollständig anteilig von Mitgliedern getragen.",
-  },
-  {
-    value: "BAND_BALANCE",
-    label: "Bandkonto (Bandkapital)",
-    description:
-      "Die Band kann ein eigenes Guthaben halten. Einnahmen und Ausgaben müssen nicht zu 100 % auf Mitglieder verteilt werden – der Rest wird automatisch mit dem Bandkonto verrechnet.",
-  },
-] as const;
 
 export function FeatureTogglesForm({
   action,
@@ -49,23 +35,37 @@ export function FeatureTogglesForm({
   const [communicationEnabled, setCommunicationEnabled] = useState(initialCommunicationEnabled);
   const [mediaPlayerEnabled, setMediaPlayerEnabled] = useState(initialMediaPlayerEnabled);
   const [keyDetectionEnabled, setKeyDetectionEnabled] = useState(initialKeyDetectionEnabled);
+  const t = useTranslations("bandSettings");
+
+  const settlementModes = [
+    {
+      value: "NO_BALANCE",
+      label: t("settlementModes.noBalance.label"),
+      description: t("settlementModes.noBalance.description"),
+    },
+    {
+      value: "BAND_BALANCE",
+      label: t("settlementModes.bandBalance.label"),
+      description: t("settlementModes.bandBalance.description"),
+    },
+  ] as const;
 
   return (
     <form action={formAction} className="space-y-3">
       <ToggleRow
         name="equipmentEnabled"
-        label="Equipment"
-        description="Equipment-Katalog für die Band und einzelne Mitglieder (Instrumente, Technik, Zubehör)."
+        label={t("features.equipment.label")}
+        description={t("features.equipment.description")}
         checked={equipmentEnabled}
         onChange={setEquipmentEnabled}
       />
       <ToggleRow
         name="packlistsEnabled"
-        label="Packlisten"
+        label={t("features.packlists.label")}
         description={
           equipmentEnabled
-            ? "Checklisten für Proben und Gigs, gebaut aus dem Equipment-Katalog."
-            : "Benötigt Equipment (siehe oben) – bleibt deaktiviert, solange Equipment aus ist."
+            ? t("features.packlists.description")
+            : t("features.packlists.descriptionDisabled")
         }
         checked={equipmentEnabled && packlistsEnabled}
         disabled={!equipmentEnabled}
@@ -73,18 +73,18 @@ export function FeatureTogglesForm({
       />
       <ToggleRow
         name="financeEnabled"
-        label="Finanzen"
+        label={t("features.finance.label")}
         description={
           initialFinanceEnabled || financeEnabled
-            ? "Einnahmen, Ausgaben und Gagen der Band. Sichtbar nur für Finanzadmin:innen; alle anderen sehen nur ihre eigenen Posten."
-            : "Einnahmen, Ausgaben und Gagen der Band. Beim Aktivieren wirst du automatisch Finanzadmin:in, falls die Band noch keine:n hat."
+            ? t("features.finance.descriptionOn")
+            : t("features.finance.descriptionOff")
         }
         checked={financeEnabled}
         onChange={setFinanceEnabled}
       />
       {financeEnabled && (
         <div className="ml-4 space-y-2 border-l-2 border-border pl-4">
-          <p className="text-xs font-medium text-foreground">Abrechnungsmodus</p>
+          <p className="text-xs font-medium text-foreground">{t("settlementModes.title")}</p>
           {settlementModes.map((m) => (
             <label
               key={m.value}
@@ -108,15 +108,15 @@ export function FeatureTogglesForm({
       )}
       <ToggleRow
         name="communicationEnabled"
-        label="Kommunikation"
-        description="E-Mail-Benachrichtigungen zu Terminen, Songvorschlägen, Dateien und Gagen sowie Teilen per WhatsApp. Jede Person legt im eigenen Profil fest, worüber sie informiert wird."
+        label={t("features.communication.label")}
+        description={t("features.communication.description")}
         checked={communicationEnabled}
         onChange={setCommunicationEnabled}
       />
       <ToggleRow
         name="mediaPlayerEnabled"
-        label="Medienplayer"
-        description="Hinterlegte Audiodateien direkt in der App abspielen, inkl. Übungsmodus mit Tempo, Transponieren und Abschnitts-Loop. Verlinkte YouTube- und Spotify-Quellen werden eingebettet."
+        label={t("features.mediaPlayer.label")}
+        description={t("features.mediaPlayer.description")}
         checked={mediaPlayerEnabled}
         onChange={setMediaPlayerEnabled}
       />
@@ -124,8 +124,8 @@ export function FeatureTogglesForm({
         <div className="ml-4 space-y-2 border-l-2 border-border pl-4">
           <ToggleRow
             name="keyDetectionEnabled"
-            label="Tonart-Erkennung"
-            description="Schätzt im Übungsmodus auf Knopfdruck die Tonart der Audiodatei (Näherungswert, nicht immer zuverlässig – Dur/Moll-Paralleltonarten lassen sich algorithmisch kaum unterscheiden). Ändert nie automatisch Songdaten, das Ergebnis muss aktiv übernommen werden."
+            label={t("features.keyDetection.label")}
+            description={t("features.keyDetection.description")}
             checked={keyDetectionEnabled}
             onChange={setKeyDetectionEnabled}
           />
@@ -134,7 +134,7 @@ export function FeatureTogglesForm({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : "Speichern"}
+        {pending ? t("saving") : t("save")}
       </Button>
     </form>
   );

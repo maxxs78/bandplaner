@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
 import { ConfirmAllocationStatus } from "@/components/confirm-allocation-status";
@@ -12,13 +13,6 @@ import type { FinanceEntryType } from "@/generated/prisma/client";
 function toEuroString(cents: number | null | undefined) {
   return cents ? (cents / 100).toFixed(2) : "";
 }
-
-const submitLabels: Record<FinanceEntryType, string> = {
-  INCOME: "Gagen speichern",
-  EXPENSE: "Kostenanteile speichern",
-  BALANCE_PAYOUT: "Auszahlung speichern",
-  BALANCE_DEPOSIT: "Einzahlung speichern",
-};
 
 export function AllocationsForm({
   action,
@@ -38,6 +32,7 @@ export function AllocationsForm({
   existingAllocations: Record<string, { id: string; amountCents: number; confirmedAt: Date | null }>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useTranslations("finance.allocationsForm");
   // Kontrollierte Felder statt defaultValue: React setzt unkontrollierte
   // Formularfelder nach jedem Server-Action-Submit zurück (auch bei Fehlern) -
   // damit gingen bereits eingegebene Beträge nach einer fehlgeschlagenen
@@ -91,7 +86,7 @@ export function AllocationsForm({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : submitLabels[entryType]}
+        {pending ? t("saving") : t(`submitLabels.${entryType}`)}
       </Button>
     </form>
   );

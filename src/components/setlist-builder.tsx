@@ -17,6 +17,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Plus, Tag, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   addSongToSetlistAction,
   addCustomItemAction,
@@ -58,15 +59,15 @@ function formatDuration(sec: number | null) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-function itemTitleAndMeta(item: SetlistItem) {
-  const title = item.song?.title ?? item.customTitle ?? "Unbenannt";
+function itemTitleAndMeta(item: SetlistItem, t: (key: string) => string) {
+  const title = item.song?.title ?? item.customTitle ?? t("unnamed");
   const meta = item.song
     ? [item.song.key, item.song.bpm ? `${item.song.bpm} BPM` : null, formatDuration(item.song.durationSec)]
         .filter(Boolean)
         .join(" · ")
     : item.songDeleted
-      ? "Song gelöscht"
-      : "Eigener Eintrag";
+      ? t("songDeleted")
+      : t("customEntry");
   return { title, meta };
 }
 
@@ -81,7 +82,8 @@ function RowContent({
   isExpanded: boolean;
   onToggleExpand: () => void;
 }) {
-  const { title, meta } = itemTitleAndMeta(item);
+  const t = useTranslations("setlists.builder");
+  const { title, meta } = itemTitleAndMeta(item, t);
   const isArchived = item.song?.status === "ARCHIVED";
   const annotation = item.myAnnotation;
   const cues = parseCues(annotation?.cues);
@@ -101,7 +103,7 @@ function RowContent({
           </p>
           {isArchived && (
             <span className="shrink-0 rounded-full bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium text-muted">
-              Archiviert
+              {t("archivedBadge")}
             </span>
           )}
         </div>
@@ -116,8 +118,8 @@ function RowContent({
       <button
         type="button"
         onClick={onToggleExpand}
-        aria-label="Persönliche Notiz/Hinweise"
-        title="Persönliche Notiz, Farbe und Hinweis-Icons"
+        aria-label={t("annotationLabel")}
+        title={t("annotationTitle")}
         className={clsx(
           "shrink-0",
           isExpanded || annotation?.note || annotation?.color || cues.length > 0
@@ -171,6 +173,7 @@ function SortableRow({
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
+  const t = useTranslations("setlists.builder");
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -190,7 +193,7 @@ function SortableRow({
     >
       <button
         type="button"
-        aria-label="Verschieben"
+        aria-label={t("move")}
         className="cursor-grab touch-none text-muted active:cursor-grabbing"
         {...attributes}
         {...listeners}
@@ -201,7 +204,7 @@ function SortableRow({
       <button
         type="button"
         onClick={() => onRemove(item.id)}
-        aria-label="Entfernen"
+        aria-label={t("remove")}
         className="shrink-0 text-muted hover:text-danger"
       >
         <X className="h-4 w-4" />
@@ -229,6 +232,7 @@ export function SetlistBuilder({
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
   const optimisticIdCounter = useRef(0);
+  const t = useTranslations("setlists.builder");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
@@ -314,12 +318,10 @@ export function SetlistBuilder({
   return (
     <div className={readOnly ? "" : "grid gap-6 lg:grid-cols-[1fr_320px]"}>
       <div>
-        <h2 className="font-semibold text-foreground">Reihenfolge</h2>
+        <h2 className="font-semibold text-foreground">{t("order")}</h2>
         {items.length === 0 ? (
           <p className="mt-3 text-sm text-muted">
-            {readOnly
-              ? "Diese Setlist ist noch leer."
-              : "Noch keine Einträge. Füge rechts Songs aus der Bibliothek hinzu."}
+            {readOnly ? t("emptyReadOnly") : t("emptyEditable")}
           </p>
         ) : readOnly ? (
           <div className="mt-3 space-y-2">
@@ -389,12 +391,12 @@ export function SetlistBuilder({
             <Input
               value={customTitle}
               onChange={(e) => setCustomTitle(e.target.value)}
-              placeholder="Eigener Eintrag (z. B. Pause, Ansage)"
+              placeholder={t("customPlaceholder")}
               className="flex-1"
             />
             <Button type="submit" variant="secondary" size="sm">
               <Plus className="h-4 w-4" />
-              Hinzufügen
+              {t("add")}
             </Button>
           </form>
         )}
@@ -402,11 +404,11 @@ export function SetlistBuilder({
 
       {!readOnly && (
         <div>
-          <h2 className="font-semibold text-foreground">Songbibliothek</h2>
+          <h2 className="font-semibold text-foreground">{t("library")}</h2>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Song suchen…"
+            placeholder={t("searchPlaceholder")}
             className="mt-2"
           />
           <div className="mt-2 max-h-[500px] space-y-1.5 overflow-y-auto">
@@ -422,7 +424,7 @@ export function SetlistBuilder({
               </button>
             ))}
             {filteredLibrary.length === 0 && (
-              <p className="text-sm text-muted">Keine Songs gefunden.</p>
+              <p className="text-sm text-muted">{t("noSongsFound")}</p>
             )}
           </div>
         </div>

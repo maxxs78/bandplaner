@@ -2,16 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea, FieldError } from "@/components/ui/input";
 import type { FormState } from "@/app/(app)/bands/[bandId]/calendar/actions";
 
-const typeOptions = [
-  { value: "REHEARSAL", label: "Probe" },
-  { value: "GIG", label: "Auftritt" },
-  { value: "MEETING", label: "Meeting" },
-  { value: "OTHER", label: "Sonstiges" },
-];
+const typeValues = ["REHEARSAL", "GIG", "MEETING", "OTHER"] as const;
 
 /** Probe/Auftritt betreffen standardmäßig alle Mitglieder, alle anderen Terminarten nur die/den Ersteller:in. */
 function defaultParticipantIds(type: string, members: { id: string }[], currentUserId: string) {
@@ -50,6 +46,8 @@ export function EventForm({
   const [participantIds, setParticipantIds] = useState<Set<string>>(
     () => new Set(defaultValues?.participantIds ?? defaultParticipantIds(type, members, currentUserId))
   );
+  const t = useTranslations("event");
+  const tEventTypes = useTranslations("calendar.eventTypes");
 
   function handleTypeChange(newType: string) {
     setType(newType);
@@ -72,30 +70,30 @@ export function EventForm({
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <Label htmlFor="title">Titel</Label>
+        <Label htmlFor="title">{t("title")}</Label>
         <Input id="title" name="title" required defaultValue={defaultValues?.title} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="type">Art</Label>
+          <Label htmlFor="type">{t("type")}</Label>
           <Select id="type" name="type" value={type} onChange={(e) => handleTypeChange(e.target.value)}>
-            {typeOptions.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
+            {typeValues.map((value) => (
+              <option key={value} value={value}>
+                {tEventTypes(value)}
               </option>
             ))}
           </Select>
         </div>
         <div>
-          <Label htmlFor="location">Ort</Label>
+          <Label htmlFor="location">{t("location")}</Label>
           <Input id="location" name="location" defaultValue={defaultValues?.location} />
         </div>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <Label htmlFor="startsAt">Start</Label>
+          <Label htmlFor="startsAt">{t("start")}</Label>
           <Input
             id="startsAt"
             name="startsAt"
@@ -105,7 +103,7 @@ export function EventForm({
           />
         </div>
         <div>
-          <Label htmlFor="endsAt">Ende</Label>
+          <Label htmlFor="endsAt">{t("end")}</Label>
           <Input
             id="endsAt"
             name="endsAt"
@@ -117,15 +115,13 @@ export function EventForm({
       </div>
 
       <div>
-        <Label htmlFor="description">Beschreibung</Label>
+        <Label htmlFor="description">{t("description")}</Label>
         <Textarea id="description" name="description" rows={3} defaultValue={defaultValues?.description} />
       </div>
 
       <div>
-        <Label>Teilnehmer</Label>
-        <p className="mb-2 text-xs text-muted">
-          Bei Probe/Auftritt standardmäßig alle Mitglieder, bei Meeting/Sonstiges nur du - hier anpassbar.
-        </p>
+        <Label>{t("participants")}</Label>
+        <p className="mb-2 text-xs text-muted">{t("participantsHint")}</p>
         <div className="grid gap-2 rounded-lg border border-border p-3 sm:grid-cols-2">
           {members.map((m) => (
             <label key={m.id} className="flex items-center gap-2 text-sm text-foreground">
@@ -138,7 +134,7 @@ export function EventForm({
                 className="h-4 w-4 rounded border-border accent-primary"
               />
               {m.name}
-              {m.id === currentUserId && <span className="text-muted"> (du)</span>}
+              {m.id === currentUserId && <span className="text-muted">{t("you")}</span>}
             </label>
           ))}
         </div>
@@ -154,11 +150,11 @@ export function EventForm({
               onChange={(e) => setRepeatWeekly(e.target.checked)}
               className="h-4 w-4 rounded border-border accent-primary"
             />
-            Wöchentlich wiederholen
+            {t("repeatWeekly")}
           </label>
           {repeatWeekly && (
             <div className="mt-3">
-              <Label htmlFor="repeatUntil">Wiederholen bis</Label>
+              <Label htmlFor="repeatUntil">{t("repeatUntil")}</Label>
               <Input id="repeatUntil" name="repeatUntil" type="date" required={repeatWeekly} />
             </div>
           )}
@@ -168,7 +164,7 @@ export function EventForm({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : submitLabel}
+        {pending ? t("saving") : submitLabel}
       </Button>
     </form>
   );

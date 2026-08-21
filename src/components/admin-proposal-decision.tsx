@@ -2,6 +2,7 @@
 
 import { useTransition } from "react";
 import { Check, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 
 export function AdminProposalDecision({
@@ -12,6 +13,7 @@ export function AdminProposalDecision({
   onReject: () => Promise<void>;
 }) {
   const [pending, startTransition] = useTransition();
+  const t = useTranslations("songs.adminDecision");
 
   return (
     <div className="flex gap-2">
@@ -22,7 +24,7 @@ export function AdminProposalDecision({
         onClick={() => startTransition(() => onApprove())}
       >
         <Check className="h-4 w-4" />
-        Vorschlag annehmen
+        {t("approve")}
       </Button>
       <Button
         type="button"
@@ -32,7 +34,7 @@ export function AdminProposalDecision({
         onClick={() => startTransition(() => onReject())}
       >
         <X className="h-4 w-4" />
-        Vorschlag ablehnen
+        {t("reject")}
       </Button>
     </div>
   );

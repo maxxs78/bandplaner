@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -20,6 +21,7 @@ export default async function PacklistsPage({
   if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${bandId}/equipment`);
   const canCreate = canManageContent(membership.role);
   const { eventId } = await searchParams;
+  const t = await getTranslations("packlists");
 
   const [packlists, events] = await Promise.all([
     prisma.packlist.findMany({
@@ -38,13 +40,13 @@ export default async function PacklistsPage({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-foreground">Packlisten</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
         <EquipmentSubNav bandId={bandId} active="packlists" />
       </div>
 
       {canCreate && (
         <Card className="mt-4">
-          <h2 className="font-semibold text-foreground">Neue Packliste</h2>
+          <h2 className="font-semibold text-foreground">{t("newTitle")}</h2>
           <div className="mt-3">
             <NewPacklistForm
               action={createPacklistAction.bind(null, bandId)}
@@ -57,7 +59,7 @@ export default async function PacklistsPage({
 
       <div className="mt-4 space-y-2">
         {packlists.length === 0 && (
-          <Card className="text-sm text-muted">Noch keine Packlisten.</Card>
+          <Card className="text-sm text-muted">{t("noPacklists")}</Card>
         )}
         {packlists.map((p) => {
           const total = p.items.length;
@@ -68,8 +70,8 @@ export default async function PacklistsPage({
                 <div>
                   <p className="font-medium text-foreground">{p.name}</p>
                   <p className="text-sm text-muted">
-                    {total === 0 ? "Keine Einträge" : `${checked} von ${total} gepackt`}
-                    {p.event ? ` · verknüpft mit „${p.event.title}“` : ""}
+                    {total === 0 ? t("noEntries") : t("packedOf", { checked, total })}
+                    {p.event ? t("linkedWith", { title: p.event.title }) : ""}
                   </p>
                 </div>
               </Card>

@@ -74,6 +74,11 @@ model User {
   avatarUrl    String?
   createdAt    DateTime @default(now())
 
+  /// Bevorzugte Sprache des Kontos ("de" oder "en"). Vor dem ersten Login
+  /// bzw. fuer Gaeste ohne Konto wird stattdessen die Browser-Spracheinstellung
+  /// herangezogen - siehe src/i18n/request.ts.
+  locale String @default("de")
+
   /// Zaehler fehlgeschlagener Login-Versuche in Folge - wird bei jedem
   /// erfolgreichen Login zurueckgesetzt. Siehe lockedUntil.
   failedLoginAttempts Int       @default(0)

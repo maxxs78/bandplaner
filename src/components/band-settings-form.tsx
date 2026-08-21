@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { Save } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
 import { ToggleRow } from "@/components/ui/toggle-row";
@@ -18,11 +19,13 @@ export function BandSettingsForm({
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [publicFileLinksEnabled, setPublicFileLinksEnabled] = useState(initialPublicFileLinksEnabled);
+  const t = useTranslations("bandSettings");
+  const tForm = useTranslations("bandSettings.settingsForm");
 
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <Label htmlFor="defaultGuestAccessDays">Gastzugang läuft automatisch ab nach</Label>
+        <Label htmlFor="defaultGuestAccessDays">{tForm("guestAccessLabel")}</Label>
         <div className="flex items-center gap-2">
           <Input
             id="defaultGuestAccessDays"
@@ -30,22 +33,19 @@ export function BandSettingsForm({
             type="number"
             min={1}
             max={3650}
-            placeholder="unbegrenzt"
+            placeholder={tForm("unlimited")}
             defaultValue={initialDefaultGuestAccessDays ?? ""}
             className="max-w-[8rem]"
           />
-          <span className="text-sm text-muted">Tagen</span>
+          <span className="text-sm text-muted">{tForm("days")}</span>
         </div>
-        <p className="mt-1 text-xs text-muted">
-          Befüllt bei neuen Gast-Einladungen automatisch das Ablaufdatum vor – bleibt dort weiterhin frei
-          änderbar. Leer lassen für unbegrenzten Zugriff als Standard (wie bisher).
-        </p>
+        <p className="mt-1 text-xs text-muted">{tForm("guestAccessHint")}</p>
       </div>
 
       <ToggleRow
         name="publicFileLinksEnabled"
-        label="Öffentliche Datei-Links"
-        description="Erlaubt, Dateien über einen loginfreien Link zu teilen. Bei Deaktivierung funktionieren auch bereits bestehende Links nicht mehr, bis du das hier wieder einschaltest."
+        label={tForm("publicFileLinks")}
+        description={tForm("publicFileLinksDescription")}
         checked={publicFileLinksEnabled}
         onChange={setPublicFileLinksEnabled}
       />
@@ -53,7 +53,7 @@ export function BandSettingsForm({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>
         <Save className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : "Speichern"}
+        {pending ? t("saving") : t("save")}
       </Button>
     </form>
   );

@@ -4,13 +4,14 @@ import { Download } from "lucide-react";
 import { requireMembership, canManageFinance, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
-import { eventTypeLabels } from "@/lib/event-colors";
-import { financeCategorySuggestions } from "@/lib/finance-categories";
+import { EVENT_TYPES, getEventTypeLabels } from "@/lib/event-colors";
+import { getTranslations, getFormatter, getLocale } from "next-intl/server";
+import { getFinanceCategorySuggestions } from "@/lib/finance-categories";
 import { computeBandBalance } from "@/lib/finance-balance";
 import {
-  financeEntryTypeLabels,
+  getFinanceEntryTypeLabels,
   financeEntryTypeBadgeVariant,
-  allocationRoleLabel,
+  getAllocationRoleLabel,
   memberReceivesAllocation,
 } from "@/lib/finance-entry-labels";
 import { Card, Badge } from "@/components/ui/card";
@@ -19,8 +20,8 @@ import { NewFinanceEntryForm } from "@/components/new-finance-entry-form";
 import { createFinanceEntryAction, confirmAllocationAction } from "./actions";
 import type { EventType, FinanceEntryType } from "@/generated/prisma/client";
 
-function formatEuro(cents: number) {
-  return (cents / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
+function formatEuro(cents: number, locale: string) {
+  return (cents / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " €";
 }
 
 async function MyFinanceSection({
@@ -39,9 +40,14 @@ async function MyFinanceSection({
     orderBy: { financeEntry: { date: "desc" } },
     include: { financeEntry: { include: { event: { select: { title: true, type: true } } } } },
   });
+  const t = await getTranslations("finance");
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const format = await getFormatter();
+  const locale = await getLocale();
 
   if (myAllocations.length === 0) {
-    return <Card className="text-sm text-muted">Noch keine eigenen Posten erfasst.</Card>;
+    return <Card className="text-sm text-muted">{t("noOwnEntries")}</Card>;
   }
 
   return (
@@ -57,19 +63,19 @@ async function MyFinanceSection({
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <Badge variant={financeEntryTypeBadgeVariant[a.financeEntry.type]}>
-                  {allocationRoleLabel(a.financeEntry.type)}
+                  {getAllocationRoleLabel(a.financeEntry.type, t)}
                 </Badge>
                 <p className="font-medium text-foreground truncate">
                   {a.financeEntry.event?.title ?? a.financeEntry.category}
                 </p>
               </div>
               <p className="mt-1 text-sm text-muted">
-                {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(a.financeEntry.date)}
+                {format.dateTime(a.financeEntry.date, { dateStyle: "medium" })}
                 {a.financeEntry.event && ` · ${eventTypeLabels[a.financeEntry.event.type]}`}
               </p>
             </div>
             <div className="flex shrink-0 flex-col items-end gap-1">
-              <p className="font-semibold text-foreground">{formatEuro(a.amountCents)}</p>
+              <p className="font-semibold text-foreground">{formatEuro(a.amountCents, locale)}</p>
               <ConfirmAllocationStatus
                 confirmedAt={a.confirmedAt}
                 canConfirm={canConfirm}
@@ -109,15 +115,15 @@ export default async function FinancePage({
   const canManage = canManageFinance(isFinanceAdmin);
   const { from, to, type, eventType } = await searchParams;
   const isBandBalanceMode = membership.band.financeSettlementMode === "BAND_BALANCE";
+  const t = await getTranslations("finance");
+  const format = await getFormatter();
+  const locale = await getLocale();
 
   if (!canManage) {
     return (
       <div className="mx-auto max-w-2xl">
-        <h1 className="text-xl font-semibold text-foreground">Meine Finanzen</h1>
-        <p className="mt-1 text-sm text-muted">
-          Nur Finanzadmin:innen sehen die vollständige Finanzübersicht der Band. Hier siehst du deine eigenen
-          Auszahlungen und Kostenanteile.
-        </p>
+        <h1 className="text-xl font-semibold text-foreground">{t("myFinances")}</h1>
+        <p className="mt-1 text-sm text-muted">{t("adminOnlyHint")}</p>
         <div className="mt-4">
           <MyFinanceSection bandId={bandId} userId={user.id} isFinanceAdmin={isFinanceAdmin} linkToEntries={false} />
         </div>
@@ -125,7 +131,11 @@ export default async function FinancePage({
     );
   }
 
-  const validEventType = eventType && eventType in eventTypeLabels ? (eventType as EventType) : undefined;
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const financeEntryTypeLabels = getFinanceEntryTypeLabels(t);
+  const validEventType =
+    eventType && (EVENT_TYPES as readonly string[]).includes(eventType) ? (eventType as EventType) : undefined;
 
   const where = {
     bandId,
@@ -167,10 +177,10 @@ export default async function FinancePage({
   const balance = incomeTotal - expenseTotal;
 
   const typeFilters = [
-    { value: undefined, label: "Alle" },
-    { value: "INCOME", label: "Einnahmen" },
-    { value: "EXPENSE", label: "Ausgaben" },
-    ...(isBandBalanceMode ? [{ value: "BALANCE", label: "Bandkonto" }] : []),
+    { value: undefined, label: t("filterAll") },
+    { value: "INCOME", label: t("filterIncome") },
+    { value: "EXPENSE", label: t("filterExpense") },
+    ...(isBandBalanceMode ? [{ value: "BALANCE", label: t("filterBalance") }] : []),
   ];
 
   const exportParams = new URLSearchParams();
@@ -182,51 +192,51 @@ export default async function FinancePage({
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-foreground">Finanzen</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
         <Link
           href={`/api/bands/${bandId}/finance-export.csv?${exportParams.toString()}`}
           className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground hover:border-primary"
         >
           <Download className="h-4 w-4" />
-          CSV-Export
+          {t("csvExport")}
         </Link>
       </div>
 
       <div className={`mt-4 grid gap-3 sm:grid-cols-3 ${isBandBalanceMode ? "lg:grid-cols-4" : ""}`}>
         <Card>
-          <p className="text-sm text-muted">Einnahmen</p>
-          <p className="text-xl font-semibold text-success">{formatEuro(incomeTotal)}</p>
+          <p className="text-sm text-muted">{t("income")}</p>
+          <p className="text-xl font-semibold text-success">{formatEuro(incomeTotal, locale)}</p>
         </Card>
         <Card>
-          <p className="text-sm text-muted">Ausgaben</p>
-          <p className="text-xl font-semibold text-danger">{formatEuro(expenseTotal)}</p>
+          <p className="text-sm text-muted">{t("expense")}</p>
+          <p className="text-xl font-semibold text-danger">{formatEuro(expenseTotal, locale)}</p>
         </Card>
         <Card>
-          <p className="text-sm text-muted">Saldo</p>
-          <p className="text-xl font-semibold text-foreground">{formatEuro(balance)}</p>
+          <p className="text-sm text-muted">{t("balance")}</p>
+          <p className="text-xl font-semibold text-foreground">{formatEuro(balance, locale)}</p>
         </Card>
         {isBandBalanceMode && (
           <Card>
-            <p className="text-sm text-muted">Bandkonto (gesamt)</p>
-            <p className="text-xl font-semibold text-foreground">{formatEuro(bandBalance)}</p>
+            <p className="text-sm text-muted">{t("bandBalanceTotal")}</p>
+            <p className="text-xl font-semibold text-foreground">{formatEuro(bandBalance, locale)}</p>
           </Card>
         )}
       </div>
 
       <div className="mt-4">
-        <h2 className="font-semibold text-foreground">Meine Finanzen</h2>
+        <h2 className="font-semibold text-foreground">{t("myFinances")}</h2>
         <div className="mt-2">
           <MyFinanceSection bandId={bandId} userId={user.id} isFinanceAdmin={isFinanceAdmin} linkToEntries />
         </div>
       </div>
 
       <Card className="mt-4">
-        <h2 className="font-semibold text-foreground">Eintrag anlegen</h2>
+        <h2 className="font-semibold text-foreground">{t("createEntryTitle")}</h2>
         <div className="mt-3">
           <NewFinanceEntryForm
             action={createFinanceEntryAction.bind(null, bandId)}
             events={events}
-            categorySuggestions={financeCategorySuggestions}
+            categorySuggestions={getFinanceCategorySuggestions(t)}
             allowBalanceTypes={isBandBalanceMode}
           />
         </div>
@@ -234,7 +244,7 @@ export default async function FinancePage({
 
       <form className="mt-4 flex flex-wrap items-end gap-3 rounded-lg border border-border p-3" method="get">
         <div>
-          <label className="mb-1 block text-xs font-medium text-foreground">Von</label>
+          <label className="mb-1 block text-xs font-medium text-foreground">{t("from")}</label>
           <input
             type="date"
             name="from"
@@ -243,7 +253,7 @@ export default async function FinancePage({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-foreground">Bis</label>
+          <label className="mb-1 block text-xs font-medium text-foreground">{t("to")}</label>
           <input
             type="date"
             name="to"
@@ -252,13 +262,13 @@ export default async function FinancePage({
           />
         </div>
         <div>
-          <label className="mb-1 block text-xs font-medium text-foreground">Auftrittsart</label>
+          <label className="mb-1 block text-xs font-medium text-foreground">{t("eventTypeLabel")}</label>
           <select
             name="eventType"
             defaultValue={eventType ?? ""}
             className="rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
           >
-            <option value="">Alle</option>
+            <option value="">{t("filterAll")}</option>
             {Object.entries(eventTypeLabels).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
@@ -270,7 +280,7 @@ export default async function FinancePage({
           type="submit"
           className="rounded-lg bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
         >
-          Filtern
+          {t("filter")}
         </button>
       </form>
 
@@ -299,21 +309,21 @@ export default async function FinancePage({
       </div>
 
       <div className="mt-4 space-y-2">
-        {entries.length === 0 && <Card className="text-sm text-muted">Keine Einträge gefunden.</Card>}
+        {entries.length === 0 && <Card className="text-sm text-muted">{t("noEntriesFound")}</Card>}
         {entries.map((entry) => (
           <Link key={entry.id} href={`/bands/${bandId}/finance/${entry.id}`}>
             <Card className="flex items-center justify-between gap-3 transition hover:border-primary">
               <div className="min-w-0">
                 <p className="font-medium text-foreground">{entry.category}</p>
                 <p className="truncate text-sm text-muted">
-                  {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(entry.date)}
+                  {format.dateTime(entry.date, { dateStyle: "medium" })}
                   {entry.event && ` · ${entry.event.title}`}
                   {entry.description && ` · ${entry.description}`}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant={financeEntryTypeBadgeVariant[entry.type]}>{financeEntryTypeLabels[entry.type]}</Badge>
-                <p className="font-semibold text-foreground">{formatEuro(entry.amountCents)}</p>
+                <p className="font-semibold text-foreground">{formatEuro(entry.amountCents, locale)}</p>
               </div>
             </Card>
           </Link>

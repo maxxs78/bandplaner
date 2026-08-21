@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { createEventAction } from "../actions";
@@ -23,14 +24,15 @@ export default async function NewEventPage({
     orderBy: { createdAt: "asc" },
   });
   const members = memberships.map((m) => m.user);
+  const t = await getTranslations("calendar");
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-foreground">Neuer Termin</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("newTitle")}</h1>
       <Card className="mt-4">
         <EventForm
           action={boundAction}
-          submitLabel="Termin erstellen"
+          submitLabel={t("createSubmit")}
           allowRepeat
           members={members}
           currentUserId={user.id}

@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations, getLocale } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { computeBandBalance } from "@/lib/finance-balance";
@@ -13,8 +14,9 @@ export async function updateBandFeaturesAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandSettings.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Admins können Funktionen für die Band verwalten" };
+    return { error: t("onlyAdminsManageFeatures") };
   }
 
   const equipmentEnabled = formData.get("equipmentEnabled") === "on";
@@ -30,10 +32,9 @@ export async function updateBandFeaturesAction(
   if (membership.band.financeSettlementMode === "BAND_BALANCE" && financeSettlementMode === "NO_BALANCE") {
     const balance = await computeBandBalance(bandId);
     if (balance !== 0) {
-      const formatted = (balance / 100).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      return {
-        error: `Das Bandkonto muss erst ausgeglichen werden, bevor "Kein Bandkonto" aktiviert werden kann (aktueller Stand: ${formatted} €). Lege dazu auf der Finanzseite eine Bandkonto-Auszahlung bzw. -Einzahlung an, die den Restbetrag auf die Mitglieder verteilt.`,
-      };
+      const locale = await getLocale();
+      const formatted = (balance / 100).toLocaleString(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      return { error: t("balanceMustBeSettled", { balance: formatted }) };
     }
   }
 
@@ -67,16 +68,15 @@ export async function updateFinanceAdminsAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandSettings.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Admins können Finanzadmin:innen festlegen" };
+    return { error: t("onlyAdminsManageFinanceAdmins") };
   }
 
   const newUserIds = formData.getAll("financeAdminIds").map(String);
 
   if (membership.band.financeEnabled && newUserIds.length === 0) {
-    return {
-      error: "Die Band braucht mindestens eine:n Finanzadmin:in, solange das Finanzmodul aktiviert ist.",
-    };
+    return { error: t("needsAtLeastOneFinanceAdmin") };
   }
 
   if (newUserIds.length > 0) {
@@ -85,7 +85,7 @@ export async function updateFinanceAdminsAction(
       select: { userId: true },
     });
     if (validMembers.length !== newUserIds.length) {
-      return { error: "Ungültige Auswahl" };
+      return { error: t("invalidSelection") };
     }
   }
 
@@ -110,8 +110,9 @@ export async function updateBandSettingsAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandSettings.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Admins können Einstellungen für die Band verwalten" };
+    return { error: t("onlyAdminsManageSettings") };
   }
 
   const daysRaw = (formData.get("defaultGuestAccessDays") as string)?.trim();
@@ -119,7 +120,7 @@ export async function updateBandSettingsAction(
   if (daysRaw) {
     const parsed = Number(daysRaw);
     if (!Number.isInteger(parsed) || parsed < 1 || parsed > 3650) {
-      return { error: "Gastzugangsdauer muss eine Zahl zwischen 1 und 3650 Tagen sein" };
+      return { error: t("invalidGuestAccessDays") };
     }
     defaultGuestAccessDays = parsed;
   }

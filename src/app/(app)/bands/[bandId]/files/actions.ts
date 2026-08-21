@@ -1,9 +1,10 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { saveBandFile, deleteStoredFile, BAND_STORAGE_QUOTA_BYTES } from "@/lib/uploads";
-import { bandFileCategoryLabels } from "@/lib/band-file-categories";
+import { BAND_FILE_CATEGORIES } from "@/lib/band-file-categories";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { notifyBand } from "@/lib/notifications";
 import { revalidatePath } from "next/cache";
@@ -11,7 +12,7 @@ import type { BandFileCategory, BandFileVisibility } from "@/generated/prisma/cl
 
 export type FormState = { error?: string } | undefined;
 
-const CATEGORIES = Object.keys(bandFileCategoryLabels);
+const CATEGORIES: readonly string[] = BAND_FILE_CATEGORIES;
 
 export async function bandFileStorageUsage(bandId: string) {
   const [bandFiles, songFiles] = await Promise.all([
@@ -27,20 +28,21 @@ export async function uploadBandFileAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandFiles.actions");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Dateien hochladen" };
+    return { error: t("guestsCannotUpload") };
   }
 
   const file = formData.get("file") as File | null;
   if (!file || file.size === 0) {
-    return { error: "Bitte eine Datei auswählen" };
+    return { error: t("fileRequired") };
   }
 
   const used = await bandFileStorageUsage(bandId);
   if (used + file.size > BAND_STORAGE_QUOTA_BYTES) {
     const usedMb = Math.round(used / (1024 * 1024));
     const quotaMb = Math.round(BAND_STORAGE_QUOTA_BYTES / (1024 * 1024));
-    return { error: `Speicherkontingent überschritten (${usedMb} von ${quotaMb} MB belegt)` };
+    return { error: t("quotaExceeded", { used: usedMb, quota: quotaMb }) };
   }
 
   const categoryRaw = formData.get("category");
@@ -53,18 +55,18 @@ export async function uploadBandFileAction(
   const equipmentId = (formData.get("equipmentId") as string) || null;
   if (eventId) {
     const event = await prisma.event.findUnique({ where: { id: eventId, bandId }, select: { id: true } });
-    if (!event) return { error: "Ungültiger Termin" };
+    if (!event) return { error: t("invalidEvent") };
   }
   if (songId) {
     const song = await prisma.song.findUnique({ where: { id: songId, bandId }, select: { id: true } });
-    if (!song) return { error: "Ungültiger Song" };
+    if (!song) return { error: t("invalidSong") };
   }
   if (equipmentId) {
     const equipment = await prisma.equipment.findFirst({
       where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
       select: { id: true },
     });
-    if (!equipment) return { error: "Ungültiges Equipment" };
+    if (!equipment) return { error: t("invalidEquipment") };
   }
 
   const result = await saveBandFile(file);
@@ -90,8 +92,11 @@ export async function uploadBandFileAction(
     bandId,
     event: "NEW_FILE",
     excludeUserId: user.id,
-    subject: `Neue Datei: ${result.filename}`,
-    body: `${user.name} hat eine Datei hochgeladen:\n\n${result.filename}`,
+    namespace: "bandFiles.actions",
+    buildMessage: (t) => ({
+      subject: t("newFileSubject", { filename: result.filename }),
+      body: t("newFileBody", { name: user.name ?? "", filename: result.filename }),
+    }),
     path: `/bands/${bandId}/files`,
   });
 

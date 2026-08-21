@@ -1,12 +1,5 @@
 import type { FinanceEntryType } from "@/generated/prisma/client";
 
-export const financeEntryTypeLabels: Record<FinanceEntryType, string> = {
-  INCOME: "Einnahme",
-  EXPENSE: "Ausgabe",
-  BALANCE_PAYOUT: "Bandkonto-Auszahlung",
-  BALANCE_DEPOSIT: "Bandkonto-Einzahlung",
-};
-
 export const financeEntryTypeBadgeVariant: Record<FinanceEntryType, "success" | "danger" | "warning" | "accent"> = {
   INCOME: "success",
   EXPENSE: "danger",
@@ -14,32 +7,23 @@ export const financeEntryTypeBadgeVariant: Record<FinanceEntryType, "success" | 
   BALANCE_DEPOSIT: "accent",
 };
 
+export function getFinanceEntryTypeLabels(t: (key: string) => string): Record<FinanceEntryType, string> {
+  return {
+    INCOME: t("types.INCOME"),
+    EXPENSE: t("types.EXPENSE"),
+    BALANCE_PAYOUT: t("types.BALANCE_PAYOUT"),
+    BALANCE_DEPOSIT: t("types.BALANCE_DEPOSIT"),
+  };
+}
+
 /** Bezeichnung für die Zuordnungsliste auf der Eintrags-Detailseite. */
-export function allocationNoun(type: FinanceEntryType) {
-  switch (type) {
-    case "INCOME":
-      return "Gagen";
-    case "EXPENSE":
-      return "Kostenanteile";
-    case "BALANCE_PAYOUT":
-      return "Auszahlung";
-    case "BALANCE_DEPOSIT":
-      return "Einzahlung";
-  }
+export function getAllocationNoun(type: FinanceEntryType, t: (key: string) => string) {
+  return t(`allocationNoun.${type}`);
 }
 
 /** Bezeichnung für die Position in "Meine Finanzen" (Perspektive des Mitglieds). */
-export function allocationRoleLabel(type: FinanceEntryType) {
-  switch (type) {
-    case "INCOME":
-      return "Auszahlung";
-    case "EXPENSE":
-      return "Kostenanteil";
-    case "BALANCE_PAYOUT":
-      return "Bandkonto-Auszahlung";
-    case "BALANCE_DEPOSIT":
-      return "Bandkonto-Einzahlung";
-  }
+export function getAllocationRoleLabel(type: FinanceEntryType, t: (key: string) => string) {
+  return t(`allocationRoleLabel.${type}`);
 }
 
 /**

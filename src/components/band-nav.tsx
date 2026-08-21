@@ -3,19 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users } from "lucide-react";
+import { useTranslations } from "next-intl";
 import clsx from "clsx";
-
-const tabs = [
-  { href: "", label: "Übersicht", icon: LayoutDashboard },
-  { href: "/calendar", label: "Kalender", icon: Calendar },
-  { href: "/availability", label: "Verfügbarkeit", icon: CalendarCheck },
-  { href: "/songs", label: "Songs", icon: Music },
-  { href: "/setlists", label: "Setlisten", icon: ListMusic },
-  { href: "/files", label: "Dateien", icon: Folder },
-  { href: "/equipment", label: "Equipment", icon: Package },
-  { href: "/finance", label: "Finanzen", icon: Wallet },
-  { href: "/members", label: "Band", icon: Users },
-];
 
 export function BandNav({
   bandId,
@@ -27,6 +16,18 @@ export function BandNav({
   showFinance?: boolean;
 }) {
   const pathname = usePathname();
+  const t = useTranslations("bandNav");
+  const tabs = [
+    { href: "", label: t("overview"), icon: LayoutDashboard },
+    { href: "/calendar", label: t("calendar"), icon: Calendar },
+    { href: "/availability", label: t("availability"), icon: CalendarCheck },
+    { href: "/songs", label: t("songs"), icon: Music },
+    { href: "/setlists", label: t("setlists"), icon: ListMusic },
+    { href: "/files", label: t("files"), icon: Folder },
+    { href: "/equipment", label: t("equipment"), icon: Package },
+    { href: "/finance", label: t("finance"), icon: Wallet },
+    { href: "/members", label: t("band"), icon: Users },
+  ];
   const base = `/bands/${bandId}`;
   const visibleTabs = tabs.filter(
     (tab) => (showEquipment || tab.href !== "/equipment") && (showFinance || tab.href !== "/finance")

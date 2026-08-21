@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { PrintTrigger } from "@/components/print-trigger";
@@ -32,6 +33,7 @@ export default async function SetlistPrintPage({
   });
   if (!setlist) notFound();
 
+  const t = await getTranslations("setlists.detail");
   const totalDurationSec = setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
   const formatTotalDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
@@ -118,7 +120,7 @@ export default async function SetlistPrintPage({
           );
         })}
       </ol>
-      {setlist.items.length === 0 && <p className="text-gray-600">Diese Setlist ist noch leer.</p>}
+      {setlist.items.length === 0 && <p className="text-gray-600">{t("printEmpty")}</p>}
     </main>
   );
 }

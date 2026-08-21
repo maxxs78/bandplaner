@@ -1,5 +1,6 @@
 import clsx from "clsx";
-import { CUE_DEFINITIONS, type Cue } from "@/lib/setlist-cues";
+import { useTranslations } from "next-intl";
+import { getCueDefinitions, type Cue } from "@/lib/setlist-cues";
 
 export function CueBadges({
   cues,
@@ -8,11 +9,13 @@ export function CueBadges({
   cues: Cue[];
   size?: "sm" | "lg";
 }) {
+  const t = useTranslations("cues");
   if (cues.length === 0) return null;
+  const cueDefinitions = getCueDefinitions(t);
   return (
     <div className={clsx("flex flex-wrap items-center", size === "lg" ? "gap-2" : "gap-1")}>
       {cues.map((cue, i) => {
-        const def = CUE_DEFINITIONS[cue.type];
+        const def = cueDefinitions[cue.type];
         return (
           <span
             key={`${cue.type}-${i}`}

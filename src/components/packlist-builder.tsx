@@ -2,6 +2,7 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import { Check, Plus, Trash2 } from "lucide-react";
+import { useTranslations, useLocale } from "next-intl";
 import { Input, Label, Select } from "@/components/ui/input";
 import clsx from "clsx";
 
@@ -26,28 +27,33 @@ function ownerKey(item: PacklistItem) {
   if (!item.equipment) return CUSTOM_KEY;
   return item.equipment.owner ? item.equipment.owner.id : BAND_KEY;
 }
-function ownerLabel(item: PacklistItem) {
-  if (!item.equipment) return "Eigener Eintrag";
-  return item.equipment.owner ? item.equipment.owner.name : "Band-Eigentum";
+function ownerLabel(item: PacklistItem, t: (key: string) => string) {
+  if (!item.equipment) return t("customEntry");
+  return item.equipment.owner ? item.equipment.owner.name : t("bandOwned");
 }
 function locationKey(item: PacklistItem) {
   return item.equipment?.location ?? NONE_KEY;
 }
-function locationLabel(item: PacklistItem) {
-  return item.equipment?.location ?? "Ohne Lagerort";
+function locationLabel(item: PacklistItem, t: (key: string) => string) {
+  return item.equipment?.location ?? t("noLocation");
 }
 function assignedKey(item: PacklistItem) {
   return item.assignedTo?.id ?? NONE_KEY;
 }
-function assignedLabel(item: PacklistItem) {
-  return item.assignedTo?.name ?? "Nicht zugewiesen";
+function assignedLabel(item: PacklistItem, t: (key: string) => string) {
+  return item.assignedTo?.name ?? t("notAssigned");
 }
 
-function collectOptions(items: PacklistItem[], key: (i: PacklistItem) => string, label: (i: PacklistItem) => string) {
+function collectOptions(
+  items: PacklistItem[],
+  key: (i: PacklistItem) => string,
+  label: (i: PacklistItem) => string,
+  locale: string
+) {
   const map = new Map<string, string>();
   for (const item of items) map.set(key(item), label(item));
   return Array.from(map.entries())
-    .sort((a, b) => a[1].localeCompare(b[1], "de"))
+    .sort((a, b) => a[1].localeCompare(b[1], locale))
     .map(([value, text]) => ({ value, label: text }));
 }
 
@@ -72,6 +78,8 @@ export function PacklistBuilder({
   onAddEquipment: (equipmentId: string) => Promise<void>;
   onAddCustom: (formData: FormData) => Promise<void>;
 }) {
+  const t = useTranslations("packlists.builder");
+  const locale = useLocale();
   const [items, setItems] = useState(initialItems);
   const [search, setSearch] = useState("");
   const [customName, setCustomName] = useState("");
@@ -87,9 +95,18 @@ export function PacklistBuilder({
     (e) => !usedEquipmentIds.has(e.id) && e.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  const ownerOptions = useMemo(() => collectOptions(items, ownerKey, ownerLabel), [items]);
-  const locationOptions = useMemo(() => collectOptions(items, locationKey, locationLabel), [items]);
-  const assignedOptions = useMemo(() => collectOptions(items, assignedKey, assignedLabel), [items]);
+  const ownerOptions = useMemo(
+    () => collectOptions(items, ownerKey, (i) => ownerLabel(i, t), locale),
+    [items, t, locale]
+  );
+  const locationOptions = useMemo(
+    () => collectOptions(items, locationKey, (i) => locationLabel(i, t), locale),
+    [items, t, locale]
+  );
+  const assignedOptions = useMemo(
+    () => collectOptions(items, assignedKey, (i) => assignedLabel(i, t), locale),
+    [items, t, locale]
+  );
 
   const filteredItems = items.filter(
     (i) =>
@@ -99,7 +116,14 @@ export function PacklistBuilder({
   );
 
   const groupKeyFn = groupBy === "owner" ? ownerKey : groupBy === "location" ? locationKey : groupBy === "assigned" ? assignedKey : null;
-  const groupLabelFn = groupBy === "owner" ? ownerLabel : groupBy === "location" ? locationLabel : groupBy === "assigned" ? assignedLabel : null;
+  const groupLabelFn =
+    groupBy === "owner"
+      ? (i: PacklistItem) => ownerLabel(i, t)
+      : groupBy === "location"
+        ? (i: PacklistItem) => locationLabel(i, t)
+        : groupBy === "assigned"
+          ? (i: PacklistItem) => assignedLabel(i, t)
+          : null;
 
   const groups: { key: string; label: string; items: PacklistItem[] }[] = [];
   if (groupKeyFn && groupLabelFn) {
@@ -109,7 +133,7 @@ export function PacklistBuilder({
       if (!map.has(key)) map.set(key, { key, label: groupLabelFn(item), items: [] });
       map.get(key)!.items.push(item);
     }
-    groups.push(...Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, "de")));
+    groups.push(...Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label, locale)));
   }
 
   function handleToggle(itemId: string, checked: boolean) {
@@ -188,9 +212,9 @@ export function PacklistBuilder({
               item.checked ? "text-muted line-through" : "text-foreground"
             )}
           >
-            {item.equipment?.name ?? item.customName ?? "Unbenannt"}
+            {item.equipment?.name ?? item.customName ?? t("unnamed")}
           </p>
-          {!item.equipment && <p className="text-xs text-muted">Eigener Eintrag</p>}
+          {!item.equipment && <p className="text-xs text-muted">{t("customEntry")}</p>}
         </div>
         {!readOnly && (
           <Select
@@ -198,7 +222,7 @@ export function PacklistBuilder({
             onChange={(e) => handleAssign(item.id, e.target.value)}
             className="max-w-[9.5rem] shrink-0 text-xs"
           >
-            <option value="">Niemand zugewiesen</option>
+            <option value="">{t("unassigned")}</option>
             {members.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.name}
@@ -213,7 +237,7 @@ export function PacklistBuilder({
           <button
             type="button"
             onClick={() => handleRemove(item.id)}
-            aria-label="Entfernen"
+            aria-label={t("remove")}
             className="shrink-0 text-muted hover:text-danger"
           >
             <Trash2 className="h-4 w-4" />
@@ -227,10 +251,10 @@ export function PacklistBuilder({
     <div className={readOnly ? "" : "grid gap-6 lg:grid-cols-[1fr_320px]"}>
       <div>
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Einträge</h2>
+          <h2 className="font-semibold text-foreground">{t("entries")}</h2>
           {items.length > 0 && (
             <span className="text-sm text-muted">
-              {checkedCount} von {items.length} gepackt
+              {t("packedOf", { checked: checkedCount, total: items.length })}
             </span>
           )}
         </div>
@@ -238,9 +262,9 @@ export function PacklistBuilder({
         {items.length > 0 && (
           <div className="mt-3 grid gap-2 sm:grid-cols-4">
             <div>
-              <Label htmlFor="filterOwner">Eigentümer</Label>
+              <Label htmlFor="filterOwner">{t("owner")}</Label>
               <Select id="filterOwner" value={filterOwner} onChange={(e) => setFilterOwner(e.target.value)}>
-                <option value="">Alle</option>
+                <option value="">{t("all")}</option>
                 {ownerOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -249,9 +273,9 @@ export function PacklistBuilder({
               </Select>
             </div>
             <div>
-              <Label htmlFor="filterLocation">Lagerort</Label>
+              <Label htmlFor="filterLocation">{t("location")}</Label>
               <Select id="filterLocation" value={filterLocation} onChange={(e) => setFilterLocation(e.target.value)}>
-                <option value="">Alle</option>
+                <option value="">{t("all")}</option>
                 {locationOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -260,9 +284,9 @@ export function PacklistBuilder({
               </Select>
             </div>
             <div>
-              <Label htmlFor="filterAssigned">Verantwortlich</Label>
+              <Label htmlFor="filterAssigned">{t("responsible")}</Label>
               <Select id="filterAssigned" value={filterAssigned} onChange={(e) => setFilterAssigned(e.target.value)}>
-                <option value="">Alle</option>
+                <option value="">{t("all")}</option>
                 {assignedOptions.map((o) => (
                   <option key={o.value} value={o.value}>
                     {o.label}
@@ -271,16 +295,16 @@ export function PacklistBuilder({
               </Select>
             </div>
             <div>
-              <Label htmlFor="groupBy">Gruppieren nach</Label>
+              <Label htmlFor="groupBy">{t("groupBy")}</Label>
               <Select
                 id="groupBy"
                 value={groupBy}
                 onChange={(e) => setGroupBy(e.target.value as typeof groupBy)}
               >
-                <option value="none">Keine</option>
-                <option value="owner">Eigentümer</option>
-                <option value="location">Lagerort</option>
-                <option value="assigned">Verantwortlichem</option>
+                <option value="none">{t("none")}</option>
+                <option value="owner">{t("byOwner")}</option>
+                <option value="location">{t("byLocation")}</option>
+                <option value="assigned">{t("byResponsible")}</option>
               </Select>
             </div>
           </div>
@@ -288,10 +312,10 @@ export function PacklistBuilder({
 
         {items.length === 0 ? (
           <p className="mt-3 text-sm text-muted">
-            {readOnly ? "Diese Packliste ist noch leer." : "Noch keine Einträge. Füge rechts Equipment hinzu."}
+            {readOnly ? t("emptyReadOnly") : t("emptyEditable")}
           </p>
         ) : filteredItems.length === 0 ? (
-          <p className="mt-3 text-sm text-muted">Kein Eintrag entspricht den gewählten Filtern.</p>
+          <p className="mt-3 text-sm text-muted">{t("noMatchFilters")}</p>
         ) : groups.length > 0 ? (
           <div className="mt-3 space-y-4">
             {groups.map((group) => (
@@ -312,7 +336,7 @@ export function PacklistBuilder({
             <Input
               value={customName}
               onChange={(e) => setCustomName(e.target.value)}
-              placeholder="Eigener Eintrag (z. B. Verlängerungskabel)"
+              placeholder={t("customPlaceholder")}
               className="flex-1"
             />
             <button
@@ -320,7 +344,7 @@ export function PacklistBuilder({
               className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
             >
               <Plus className="h-4 w-4" />
-              Hinzufügen
+              {t("add")}
             </button>
           </form>
         )}
@@ -328,11 +352,11 @@ export function PacklistBuilder({
 
       {!readOnly && (
         <div>
-          <h2 className="font-semibold text-foreground">Equipment-Katalog</h2>
+          <h2 className="font-semibold text-foreground">{t("catalog")}</h2>
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Equipment suchen…"
+            placeholder={t("searchPlaceholder")}
             className="mt-2"
           />
           <div className="mt-2 max-h-[500px] space-y-1.5 overflow-y-auto">
@@ -351,7 +375,7 @@ export function PacklistBuilder({
               </button>
             ))}
             {filteredCatalog.length === 0 && (
-              <p className="text-sm text-muted">Kein Equipment gefunden.</p>
+              <p className="text-sm text-muted">{t("noneFound")}</p>
             )}
           </div>
         </div>

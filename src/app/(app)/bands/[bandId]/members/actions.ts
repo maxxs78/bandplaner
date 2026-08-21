@@ -2,9 +2,10 @@
 
 import bcrypt from "bcryptjs";
 import { randomInt } from "crypto";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBand } from "@/lib/access";
-import { inviteSchema, bandProfileSchema, guestAccessSchema } from "@/lib/validation";
+import { getInviteSchema, getBandProfileSchema, guestAccessSchema } from "@/lib/validation";
 import { saveUploadedImage, deleteUploadedFile } from "@/lib/uploads";
 import { revalidatePath } from "next/cache";
 import type { Role } from "@/generated/prisma/client";
@@ -29,17 +30,19 @@ export async function inviteAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const ta = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Administrator:innen können einladen" };
+    return { error: ta("onlyAdminsInvite") };
   }
 
-  const parsed = inviteSchema.safeParse({
+  const t = await getTranslations("validation");
+  const parsed = getInviteSchema(t).safeParse({
     email: formData.get("email"),
     role: formData.get("role"),
     guestUntil: formData.get("guestUntil") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const email = parsed.data.email.toLowerCase().trim();
@@ -48,7 +51,7 @@ export async function inviteAction(
     where: { bandId, user: { email } },
   });
   if (existingMember) {
-    return { error: "Diese Person ist bereits Mitglied" };
+    return { error: ta("alreadyMember") };
   }
 
   const expiresAt = new Date();
@@ -71,7 +74,7 @@ export async function inviteAction(
   });
 
   revalidatePath(`/bands/${bandId}/members`);
-  return { success: "Einladung erstellt" };
+  return { success: ta("invitationCreated") };
 }
 
 export async function revokeInvitationAction(bandId: string, invitationId: string) {
@@ -90,24 +93,22 @@ export async function updateRoleAction(
   role: Role
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Keine Berechtigung" };
+    return { error: t("noPermission") };
   }
 
   const target = await prisma.membership.findUnique({
     where: { id: membershipId, bandId },
   });
-  if (!target) return { error: "Mitglied nicht gefunden" };
+  if (!target) return { error: t("memberNotFound") };
 
   if (target.role === "ADMIN" && role !== "ADMIN") {
     const adminCount = await prisma.membership.count({
       where: { bandId, role: "ADMIN" },
     });
     if (adminCount <= 1) {
-      return {
-        error:
-          "Die Band braucht mindestens eine:n Administrator:in. Ernenne zuerst eine andere Person zum Admin.",
-      };
+      return { error: t("needsAtLeastOneAdmin") };
     }
   }
 
@@ -124,23 +125,25 @@ export async function updateGuestAccessAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const ta = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Keine Berechtigung" };
+    return { error: ta("noPermission") };
   }
 
   const target = await prisma.membership.findUnique({
     where: { id: membershipId, bandId },
   });
-  if (!target) return { error: "Mitglied nicht gefunden" };
+  if (!target) return { error: ta("memberNotFound") };
   if (target.role !== "GUEST") {
-    return { error: "Zugriffsbeschränkung gilt nur für Gäste" };
+    return { error: ta("guestOnlyAccessLimit") };
   }
 
   const parsed = guestAccessSchema.safeParse({
     guestUntil: formData.get("guestUntil") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    const t = await getTranslations("validation");
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   await prisma.membership.update({
@@ -148,7 +151,7 @@ export async function updateGuestAccessAction(
     data: { guestUntil: parsed.data.guestUntil ? new Date(parsed.data.guestUntil) : null },
   });
   revalidatePath(`/bands/${bandId}/members`);
-  return { success: "Zugriffszeitraum gespeichert" };
+  return { success: ta("guestAccessSaved") };
 }
 
 export async function removeMemberAction(
@@ -156,27 +159,25 @@ export async function removeMemberAction(
   membershipId: string
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Keine Berechtigung" };
+    return { error: t("noPermission") };
   }
   if (membership.id === membershipId) {
-    return { error: "Du kannst dich nicht selbst entfernen" };
+    return { error: t("cannotRemoveSelf") };
   }
 
   const target = await prisma.membership.findUnique({
     where: { id: membershipId, bandId },
   });
-  if (!target) return { error: "Mitglied nicht gefunden" };
+  if (!target) return { error: t("memberNotFound") };
 
   if (target.role === "ADMIN") {
     const adminCount = await prisma.membership.count({
       where: { bandId, role: "ADMIN" },
     });
     if (adminCount <= 1) {
-      return {
-        error:
-          "Die Band braucht mindestens eine:n Administrator:in und kann nicht entfernt werden.",
-      };
+      return { error: t("needsAtLeastOneAdminToRemove") };
     }
   }
 
@@ -188,10 +189,7 @@ export async function removeMemberAction(
     if (isTargetFinanceAdmin) {
       const financeAdminCount = await prisma.bandFinanceAdmin.count({ where: { bandId } });
       if (financeAdminCount <= 1) {
-        return {
-          error:
-            "Die Band braucht mindestens eine:n Finanzadmin:in, solange das Finanzmodul aktiviert ist. Weise die Rolle zuerst jemand anderem zu.",
-        };
+        return { error: t("needsAtLeastOneFinanceAdmin") };
       }
     }
   }
@@ -215,15 +213,16 @@ export async function resetMemberPasswordAction(
   membershipId: string
 ): Promise<PasswordResetState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Keine Berechtigung" };
+    return { error: t("noPermission") };
   }
 
   const target = await prisma.membership.findUnique({
     where: { id: membershipId, bandId },
     include: { user: { select: { id: true, name: true } } },
   });
-  if (!target) return { error: "Mitglied nicht gefunden" };
+  if (!target) return { error: t("memberNotFound") };
 
   const tempPassword = generateTempPassword();
   const passwordHash = await bcrypt.hash(tempPassword, 10);
@@ -234,7 +233,7 @@ export async function resetMemberPasswordAction(
   });
 
   return {
-    success: `Neues Passwort für ${target.user.name} gesetzt.`,
+    success: t("passwordResetSuccess", { name: target.user.name }),
     tempPassword,
   };
 }
@@ -245,11 +244,13 @@ export async function updateBandProfileAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const ta = await getTranslations("bandMembers.actions");
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Administrator:innen können das Bandprofil bearbeiten" };
+    return { error: ta("onlyAdminsEditProfile") };
   }
 
-  const parsed = bandProfileSchema.safeParse({
+  const t = await getTranslations("validation");
+  const parsed = getBandProfileSchema(t).safeParse({
     name: formData.get("name"),
     genre: formData.get("genre") || undefined,
     bio: formData.get("bio") || undefined,
@@ -261,7 +262,7 @@ export async function updateBandProfileAction(
     spotifyUrl: formData.get("spotifyUrl") || "",
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
   const d = parsed.data;
 
@@ -281,7 +282,7 @@ export async function updateBandProfileAction(
   });
 
   revalidatePath(`/bands/${bandId}`, "layout");
-  return { success: "Bandprofil gespeichert" };
+  return { success: ta("profileSaved") };
 }
 
 export async function updateBandImageAction(
@@ -291,12 +292,14 @@ export async function updateBandImageAction(
 ): Promise<ImageFormState> {
   const { membership } = await requireMembership(bandId);
   if (!canManageBand(membership.role)) {
-    return { error: "Nur Administrator:innen können das Bandbild ändern" };
+    const t = await getTranslations("bandMembers.actions");
+    return { error: t("onlyAdminsChangeImage") };
   }
 
   const file = formData.get("image") as File | null;
   if (!file || file.size === 0) {
-    return { error: "Bitte ein Bild auswählen" };
+    const t = await getTranslations("imageUpload");
+    return { error: t("imageRequired") };
   }
 
   const result = await saveUploadedImage(file, "bands");

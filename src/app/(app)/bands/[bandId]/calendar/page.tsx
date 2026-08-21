@@ -10,20 +10,23 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns";
-import { de } from "date-fns/locale";
+import { de, enUS } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Download, Plus } from "lucide-react";
+import { getLocale, getTranslations, getFormatter } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  eventTypeLabels,
+  getEventTypeLabels,
   eventTypeBadgeVariant,
   eventTypeColor,
   eventPillClasses,
   isEventFullyConfirmed,
 } from "@/lib/event-colors";
 import clsx from "clsx";
+
+const dateFnsLocales = { de, en: enUS };
 
 export default async function CalendarPage({
   params,
@@ -37,6 +40,21 @@ export default async function CalendarPage({
   const canCreate = canManageContent(membership.role);
   const sp = await searchParams;
   const view = sp.view === "month" ? "month" : "list";
+  const t = await getTranslations("calendar");
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const intlFormat = await getFormatter();
+  const locale = await getLocale();
+  const dateFnsLocale = dateFnsLocales[locale as keyof typeof dateFnsLocales] ?? enUS;
+  const weekdayLabels = [
+    t("weekdays.mo"),
+    t("weekdays.tu"),
+    t("weekdays.we"),
+    t("weekdays.th"),
+    t("weekdays.fr"),
+    t("weekdays.sa"),
+    t("weekdays.su"),
+  ];
 
   if (view === "month") {
     const monthDate = sp.month ? new Date(`${sp.month}-01T00:00:00`) : new Date();
@@ -80,34 +98,31 @@ export default async function CalendarPage({
 
     return (
       <div>
-        <CalendarHeader bandId={bandId} view={view} canCreate={canCreate} />
+        <CalendarHeader bandId={bandId} view={view} canCreate={canCreate} t={t} />
         <div className="mt-4 flex items-center justify-between">
           <Link href={`/bands/${bandId}/calendar?view=month&month=${prevMonth}`}>
             <Button variant="secondary" size="sm">
               <ChevronLeft className="h-4 w-4" />
-              Zurück
+              {t("prev")}
             </Button>
           </Link>
           <h2 className="font-semibold text-foreground">
-            {format(monthDate, "MMMM yyyy", { locale: de })}
+            {format(monthDate, "MMMM yyyy", { locale: dateFnsLocale })}
           </h2>
           <Link href={`/bands/${bandId}/calendar?view=month&month=${nextMonth}`}>
             <Button variant="secondary" size="sm">
-              Weiter
+              {t("next")}
               <ChevronRight className="h-4 w-4" />
             </Button>
           </Link>
         </div>
 
         {totalMembers > 0 && (
-          <p className="mt-3 text-xs text-muted">
-            Hintergrund zeigt Abwesenheiten: je mehr Mitglieder abwesend sind, desto intensiver die
-            Färbung.
-          </p>
+          <p className="mt-3 text-xs text-muted">{t("absenceLegend")}</p>
         )}
 
         <div className="mt-2 grid grid-cols-7 gap-px overflow-hidden rounded-lg border border-border bg-border text-xs">
-          {["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"].map((d) => (
+          {weekdayLabels.map((d) => (
             <div key={d} className="bg-surface-muted px-2 py-1.5 text-center font-medium text-muted">
               {d}
             </div>
@@ -130,7 +145,7 @@ export default async function CalendarPage({
                 key={key}
                 title={
                   absentCount > 0
-                    ? `${absentCount} von ${totalMembers} Mitglied(ern) abwesend`
+                    ? t("absentTitle", { count: absentCount, total: totalMembers })
                     : undefined
                 }
                 className={clsx(
@@ -191,27 +206,27 @@ export default async function CalendarPage({
 
   return (
     <div>
-      <CalendarHeader bandId={bandId} view={view} canCreate={canCreate} />
+      <CalendarHeader bandId={bandId} view={view} canCreate={canCreate} t={t} />
 
       <div className="mt-6 space-y-6">
         <section>
-          <h2 className="font-semibold text-foreground">Anstehend</h2>
+          <h2 className="font-semibold text-foreground">{t("upcoming")}</h2>
           <div className="mt-3 space-y-2">
             {upcoming.length === 0 && (
-              <Card className="text-sm text-muted">Keine anstehenden Termine.</Card>
+              <Card className="text-sm text-muted">{t("noUpcomingEvents")}</Card>
             )}
             {upcoming.map((event) => (
-              <EventRow key={event.id} bandId={bandId} event={event} />
+              <EventRow key={event.id} bandId={bandId} event={event} eventTypeLabels={eventTypeLabels} format={intlFormat} />
             ))}
           </div>
         </section>
 
         {past.length > 0 && (
           <section>
-            <h2 className="font-semibold text-foreground">Vergangen</h2>
+            <h2 className="font-semibold text-foreground">{t("past")}</h2>
             <div className="mt-3 space-y-2">
               {past.map((event) => (
-                <EventRow key={event.id} bandId={bandId} event={event} />
+                <EventRow key={event.id} bandId={bandId} event={event} eventTypeLabels={eventTypeLabels} format={intlFormat} />
               ))}
             </div>
           </section>
@@ -225,10 +240,12 @@ function CalendarHeader({
   bandId,
   view,
   canCreate,
+  t,
 }: {
   bandId: string;
   view: string;
   canCreate: boolean;
+  t: (key: string) => string;
 }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -240,7 +257,7 @@ function CalendarHeader({
               view === "list" ? "bg-primary text-primary-foreground" : "text-muted"
             )}
           >
-            Liste
+            {t("viewList")}
           </span>
         </Link>
         <Link href={`/bands/${bandId}/calendar?view=month`}>
@@ -250,7 +267,7 @@ function CalendarHeader({
               view === "month" ? "bg-primary text-primary-foreground" : "text-muted"
             )}
           >
-            Monat
+            {t("viewMonth")}
           </span>
         </Link>
       </div>
@@ -258,14 +275,14 @@ function CalendarHeader({
         <a href={`/api/bands/${bandId}/calendar.ics`} target="_blank" rel="noreferrer">
           <Button variant="secondary" size="sm">
             <Download className="h-4 w-4" />
-            ICS-Feed
+            {t("icsFeed")}
           </Button>
         </a>
         {canCreate && (
           <Link href={`/bands/${bandId}/calendar/new`}>
             <Button size="sm">
               <Plus className="h-4 w-4" />
-              Neuer Termin
+              {t("newEvent")}
             </Button>
           </Link>
         )}
@@ -277,6 +294,8 @@ function CalendarHeader({
 function EventRow({
   bandId,
   event,
+  eventTypeLabels,
+  format,
 }: {
   bandId: string;
   event: {
@@ -288,6 +307,8 @@ function EventRow({
     participants: { userId: string }[];
     availabilities: { userId: string; status: string }[];
   };
+  eventTypeLabels: Record<string, string>;
+  format: Awaited<ReturnType<typeof getFormatter>>;
 }) {
   const allConfirmed = isEventFullyConfirmed(
     event.participants.map((p) => p.userId),
@@ -307,9 +328,7 @@ function EventRow({
         <div>
           <p className="font-medium text-foreground">{event.title}</p>
           <p className="text-sm text-muted">
-            {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium", timeStyle: "short" }).format(
-              event.startsAt
-            )}
+            {format.dateTime(event.startsAt, { dateStyle: "medium", timeStyle: "short" })}
             {event.location ? ` · ${event.location}` : ""}
           </p>
         </div>

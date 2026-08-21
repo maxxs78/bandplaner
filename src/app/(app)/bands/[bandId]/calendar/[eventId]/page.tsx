@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Pencil, Plus } from "lucide-react";
+import { getTranslations, getFormatter } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -15,9 +16,8 @@ import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
-import { eventTypeLabels, eventTypeBadgeVariant } from "@/lib/event-colors";
+import { getEventTypeLabels, eventTypeBadgeVariant } from "@/lib/event-colors";
 
-const statusLabels: Record<string, string> = { YES: "Zusage", NO: "Absage", MAYBE: "Vielleicht" };
 const statusVariant: Record<string, "success" | "danger" | "warning"> = {
   YES: "success",
   NO: "danger",
@@ -31,6 +31,11 @@ export default async function EventDetailPage({
 }) {
   const { bandId, eventId } = await params;
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("calendar.detail");
+  const tAvailability = await getTranslations("calendar.availability");
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const format = await getFormatter();
 
   const event = await prisma.event.findUnique({
     where: { id: eventId, bandId },
@@ -93,7 +98,7 @@ export default async function EventDetailPage({
 
   const shareText = [
     `${membership.band.name}: ${event.title}`,
-    new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(event.startsAt),
+    format.dateTime(event.startsAt, { dateStyle: "full", timeStyle: "short" }),
     event.location || null,
   ]
     .filter(Boolean)
@@ -123,17 +128,15 @@ export default async function EventDetailPage({
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zum Kalender
+          {t("backToCalendar")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{event.title}</h1>
             <p className="mt-1 text-sm text-muted">
-              {new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(
-                event.startsAt
-              )}{" "}
+              {format.dateTime(event.startsAt, { dateStyle: "full", timeStyle: "short" })}{" "}
               –{" "}
-              {new Intl.DateTimeFormat("de-DE", { timeStyle: "short" }).format(event.endsAt)}
+              {format.dateTime(event.endsAt, { timeStyle: "short" })}
               {event.location ? ` · ${event.location}` : ""}
             </p>
           </div>
@@ -148,10 +151,10 @@ export default async function EventDetailPage({
               <Link href={`/bands/${bandId}/calendar/${eventId}/edit`}>
                 <Button variant="secondary" size="sm">
                   <Pencil className="h-4 w-4" />
-                  Bearbeiten
+                  {t("editButton")}
                 </Button>
               </Link>
-              <DeleteButton action={deleteEventAction.bind(null, bandId, eventId)} label="Termin löschen" />
+              <DeleteButton action={deleteEventAction.bind(null, bandId, eventId)} label={t("deleteButton")} />
             </>
           )}
         </div>
@@ -159,17 +162,16 @@ export default async function EventDetailPage({
 
       {myAbsence && (
         <Card className="border-warning/40 bg-warning/10 text-sm text-foreground">
-          ⚠ Dieser Termin überschneidet sich mit deiner eingetragenen Abwesenheit (
-          {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(myAbsence.startDate)}{" "}
-          –{" "}
-          {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(myAbsence.endDate)}
-          ).
+          {t("absenceOverlap", {
+            start: format.dateTime(myAbsence.startDate, { dateStyle: "medium" }),
+            end: format.dateTime(myAbsence.endDate, { dateStyle: "medium" }),
+          })}
         </Card>
       )}
 
       {isParticipant && (
         <Card>
-          <h2 className="font-semibold text-foreground">Deine Verfügbarkeit</h2>
+          <h2 className="font-semibold text-foreground">{t("yourAvailability")}</h2>
           <div className="mt-3">
             <AvailabilityButtons
               action={respondAvailabilityAction.bind(null, bandId, eventId)}
@@ -180,19 +182,19 @@ export default async function EventDetailPage({
       )}
 
       <Card>
-        <h2 className="font-semibold text-foreground">Rückmeldungen</h2>
-        <p className="mt-1 text-sm text-muted">Betrifft {participantMembers.length} Mitglied(er).</p>
+        <h2 className="font-semibold text-foreground">{t("responses")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("affectsMembers", { count: participantMembers.length })}</p>
         <div className="mt-3 space-y-2">
           {relevantAvailabilities.map((a) => (
             <div key={a.id} className="flex items-center justify-between text-sm">
               <span className="text-foreground">{a.user.name}</span>
-              <Badge variant={statusVariant[a.status]}>{statusLabels[a.status]}</Badge>
+              <Badge variant={statusVariant[a.status]}>{tAvailability(a.status)}</Badge>
             </div>
           ))}
           {noResponse.map((m) => (
             <div key={m.id} className="flex items-center justify-between text-sm">
               <span className="text-foreground">{m.user.name}</span>
-              <Badge variant="default">Ausstehend</Badge>
+              <Badge variant="default">{t("pending")}</Badge>
             </div>
           ))}
         </div>
@@ -200,19 +202,19 @@ export default async function EventDetailPage({
 
       <Card>
         <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-foreground">Setlisten</h2>
+          <h2 className="font-semibold text-foreground">{t("setlists")}</h2>
           {canManage && (
             <Link href={`/bands/${bandId}/setlists/new?eventId=${eventId}`}>
               <Button variant="secondary" size="sm">
                 <Plus className="h-4 w-4" />
-                Setlist
+                {t("setlistButton")}
               </Button>
             </Link>
           )}
         </div>
         <div className="mt-3 space-y-2">
           {event.setlists.length === 0 && (
-            <p className="text-sm text-muted">Noch keine Setlist verknüpft.</p>
+            <p className="text-sm text-muted">{t("noSetlistLinked")}</p>
           )}
           {event.setlists.map((s) => (
             <div
@@ -225,7 +227,7 @@ export default async function EventDetailPage({
               {canManage && (
                 <form action={unlinkSetlistFromEventAction.bind(null, bandId, s.id, eventId)}>
                   <button type="submit" className="text-xs text-muted hover:text-danger">
-                    Trennen
+                    {t("unlink")}
                   </button>
                 </form>
               )}
@@ -244,12 +246,12 @@ export default async function EventDetailPage({
               className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
             >
               <option value="" disabled>
-                Bestehende Setlist verknüpfen…
+                {t("linkExistingSetlist")}
               </option>
               {otherSetlists.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.event ? ` (aktuell: ${s.event.title})` : ""}
+                  {s.event ? t("currentLabel", { title: s.event.title }) : ""}
                 </option>
               ))}
             </select>
@@ -257,7 +259,7 @@ export default async function EventDetailPage({
               type="submit"
               className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
             >
-              Verknüpfen
+              {t("link")}
             </button>
           </form>
         )}
@@ -266,19 +268,19 @@ export default async function EventDetailPage({
       {features.packlists && (
         <Card>
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-foreground">Packlisten</h2>
+            <h2 className="font-semibold text-foreground">{t("packlists")}</h2>
             {canManage && (
               <Link href={`/bands/${bandId}/equipment/packlists?eventId=${eventId}`}>
                 <Button variant="secondary" size="sm">
                   <Plus className="h-4 w-4" />
-                  Packliste
+                  {t("packlistButton")}
                 </Button>
               </Link>
             )}
           </div>
           <div className="mt-3 space-y-2">
             {event.packlists.length === 0 && (
-              <p className="text-sm text-muted">Noch keine Packliste verknüpft.</p>
+              <p className="text-sm text-muted">{t("noPacklistLinked")}</p>
             )}
             {event.packlists.map((p) => (
               <div
@@ -294,7 +296,7 @@ export default async function EventDetailPage({
                 {canManage && (
                   <form action={unlinkPacklistFromEventAction.bind(null, bandId, p.id, eventId)}>
                     <button type="submit" className="text-xs text-muted hover:text-danger">
-                      Trennen
+                      {t("unlink")}
                     </button>
                   </form>
                 )}
@@ -313,12 +315,12 @@ export default async function EventDetailPage({
                 className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
               >
                 <option value="" disabled>
-                  Bestehende Packliste verknüpfen…
+                  {t("linkExistingPacklist")}
                 </option>
                 {otherPacklists.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
-                    {p.event ? ` (aktuell: ${p.event.title})` : ""}
+                    {p.event ? t("currentLabel", { title: p.event.title }) : ""}
                   </option>
                 ))}
               </select>
@@ -326,7 +328,7 @@ export default async function EventDetailPage({
                 type="submit"
                 className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
               >
-                Verknüpfen
+                {t("link")}
               </button>
             </form>
           )}
@@ -334,7 +336,7 @@ export default async function EventDetailPage({
       )}
 
       <Card>
-        <h2 className="font-semibold text-foreground">Dateien</h2>
+        <h2 className="font-semibold text-foreground">{t("files")}</h2>
         {canManage && (
           <div className="mt-3">
             <MinimalFileUpload

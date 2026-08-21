@@ -1,11 +1,15 @@
 import clsx from "clsx";
 
-export const eventTypeLabels: Record<string, string> = {
-  REHEARSAL: "Probe",
-  GIG: "Auftritt",
-  MEETING: "Meeting",
-  OTHER: "Sonstiges",
-};
+export const EVENT_TYPES = ["REHEARSAL", "GIG", "MEETING", "OTHER"] as const;
+
+export function getEventTypeLabels(t: (key: string) => string): Record<string, string> {
+  return {
+    REHEARSAL: t("REHEARSAL"),
+    GIG: t("GIG"),
+    MEETING: t("MEETING"),
+    OTHER: t("OTHER"),
+  };
+}
 
 export const eventTypeBadgeVariant: Record<string, "accent" | "success" | "warning" | "default"> = {
   REHEARSAL: "accent",

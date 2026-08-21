@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -18,6 +19,7 @@ export default async function EditEquipmentPage({
   const { bandId, equipmentId } = await params;
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).equipment) redirect(`/bands/${bandId}`);
+  const t = await getTranslations("equipment");
 
   const equipment = await prisma.equipment.findFirst({
     where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
@@ -68,12 +70,12 @@ export default async function EditEquipmentPage({
   return (
     <div className="mx-auto max-w-lg space-y-6">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Equipment bearbeiten</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("editTitle")}</h1>
         <Card className="mt-4">
           <EquipmentForm
             action={boundAction}
             members={members}
-            submitLabel="Änderungen speichern"
+            submitLabel={t("editSubmit")}
             defaultValues={{
               name: equipment.name,
               description: equipment.description ?? "",
@@ -87,10 +89,8 @@ export default async function EditEquipmentPage({
       </div>
 
       <Card>
-        <h2 className="font-semibold text-foreground">Dateien</h2>
-        <p className="mt-1 text-xs text-muted">
-          Z. B. Bedienungsanleitungen, Kaufbelege oder Fotos zu diesem Equipment.
-        </p>
+        <h2 className="font-semibold text-foreground">{t("files")}</h2>
+        <p className="mt-1 text-xs text-muted">{t("filesDescription")}</p>
         <div className="mt-3">
           <MinimalFileUpload
             action={uploadEquipmentFileAction.bind(null, bandId, equipmentId)}

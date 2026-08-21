@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ExternalLink, Pencil, Save } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBand, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
@@ -30,15 +31,6 @@ import { getEnabledFeatures } from "@/lib/features";
 import { detectStreamingEmbed } from "@/lib/media";
 import { SongEmbed } from "@/components/song-embed";
 
-const statusLabels: Record<string, string> = {
-  PROPOSED: "Vorschlag",
-  NEW: "Neu",
-  IN_PROGRESS: "In Erarbeitung",
-  STAGE_READY: "Bühnenreif",
-  ACTIVE: "Im aktiven Repertoire",
-  ARCHIVED: "Archiviert",
-};
-
 export default async function SongDetailPage({
   params,
 }: {
@@ -54,6 +46,8 @@ export default async function SongDetailPage({
   // Vorschläge entscheiden, fremde hochgeladene Dateien umbenennen/löschen).
   const canManageSongs = canManageBandContent(membership.role, isFinanceAdmin);
   const features = getEnabledFeatures(membership.band);
+  const t = await getTranslations("songs");
+  const td = await getTranslations("songs.detail");
 
   const song = await prisma.song.findUnique({
     where: { id: songId, bandId },
@@ -85,8 +79,8 @@ export default async function SongDetailPage({
   const setlistNames = setlistUsages.map((u) => u.setlist.name);
   const deleteConfirmMessage =
     setlistNames.length > 0
-      ? `Dieser Song wird noch in ${setlistNames.length} Setlist${setlistNames.length > 1 ? "en" : ""} verwendet (${setlistNames.join(", ")}). Der Eintrag bleibt dort erhalten, wird grau markiert und zeigt weiterhin den zuletzt bekannten Songtitel – kann aber nicht mehr bearbeitet werden. Song wirklich endgültig löschen?`
-      : "Bist du sicher? Dies kann nicht rückgängig gemacht werden.";
+      ? td("deleteConfirmWithSetlists", { count: setlistNames.length, names: setlistNames.join(", ") })
+      : td("deleteConfirmSimple");
 
   const myNote = song.notes[0];
   const myVote = song.votes.find((v) => v.userId === user.id);
@@ -110,7 +104,7 @@ export default async function SongDetailPage({
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zu Songs
+          {td("backToSongs")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <div className="flex min-w-0 items-start gap-3">
@@ -128,14 +122,17 @@ export default async function SongDetailPage({
           </div>
           <div className="flex shrink-0 items-center gap-2">
             {song.rejected && song.status === "ARCHIVED" && (
-              <Badge variant="danger">Abgelehnt</Badge>
+              <Badge variant="danger">{t("rejectedBadge")}</Badge>
             )}
-            <Badge variant="accent">{statusLabels[song.status]}</Badge>
+            <Badge variant="accent">
+              {song.status === "ACTIVE" ? td("activeStatusFull") : t(`statusLabels.${song.status}`)}
+            </Badge>
           </div>
         </div>
         {song.proposedBy && (
           <p className="mt-1 text-sm text-muted">
-            {song.status === "PROPOSED" ? "Vorgeschlagen" : "Erstellt"} von {song.proposedBy.name}
+            {song.status === "PROPOSED" ? td("proposedByPrefix") : td("createdByPrefix")}{" "}
+            {td("byPerson", { name: song.proposedBy.name })}
           </p>
         )}
         {canManage && (
@@ -143,38 +140,32 @@ export default async function SongDetailPage({
             <Link href={`/bands/${bandId}/songs/${songId}/edit`}>
               <Button variant="secondary" size="sm">
                 <Pencil className="h-4 w-4" />
-                Bearbeiten
+                {td("edit")}
               </Button>
             </Link>
             {canDeleteSong && (
               <DeleteButton
                 action={deleteSongAction.bind(null, bandId, songId)}
-                label="Song löschen"
+                label={td("delete")}
                 confirmMessage={deleteConfirmMessage}
               />
             )}
           </div>
         )}
         {isAdmin && !canDeleteSong && (
-          <p className="mt-2 text-xs text-muted">
-            Löschen ist nur möglich, wenn der Song im Status „Vorschlag“ oder „Archiviert“ ist.
-          </p>
+          <p className="mt-2 text-xs text-muted">{td("deleteRestriction")}</p>
         )}
       </div>
 
       {song.status === "PROPOSED" && (
         <Card>
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-foreground">Abstimmung</h2>
+            <h2 className="font-semibold text-foreground">{td("voting")}</h2>
             <span className="text-sm text-muted">
-              {song.votes.length} von {eligibleVoterCount} abgestimmt
+              {td("votesOf", { votes: song.votes.length, total: eligibleVoterCount })}
             </span>
           </div>
-          <p className="mt-1 text-sm text-muted">
-            Stimmen alle zu, wird der Song automatisch auf &bdquo;Neu&ldquo; gesetzt. Lehnen alle
-            ab, wird er archiviert und als abgelehnt markiert. Bei Uneinigkeit entscheidet ein:e
-            Administrator:in.
-          </p>
+          <p className="mt-1 text-sm text-muted">{td("votingExplanation")}</p>
 
           {canManage && (
             <div className="mt-4">
@@ -192,7 +183,7 @@ export default async function SongDetailPage({
 
           {canManageSongs && (
             <div className="mt-4 border-t border-border pt-4">
-              <p className="mb-2 text-sm text-muted">Als Admin entscheiden:</p>
+              <p className="mb-2 text-sm text-muted">{td("adminDecide")}</p>
               <AdminProposalDecision
                 onApprove={adminDecideProposalAction.bind(null, bandId, songId, "APPROVE")}
                 onReject={adminDecideProposalAction.bind(null, bandId, songId, "REJECT")}
@@ -203,34 +194,34 @@ export default async function SongDetailPage({
       )}
 
       <Card>
-        <h2 className="font-semibold text-foreground">Bandweite Informationen</h2>
+        <h2 className="font-semibold text-foreground">{td("bandInfo")}</h2>
         <dl className="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
-          <Info label="Tonart" value={song.key} />
-          <Info label="Tempo" value={song.bpm ? `${song.bpm} BPM` : null} />
-          <Info label="Taktart" value={song.timeSignature} />
-          <Info label="Dauer" value={formatDuration(song.durationSec)} />
-          <Info label="Genre" value={song.genre} />
-          <Info label="Interpret" value={song.artist} />
+          <Info label={td("key")} value={song.key} noValue={td("noValue")} />
+          <Info label={td("tempo")} value={song.bpm ? `${song.bpm} BPM` : null} noValue={td("noValue")} />
+          <Info label={td("timeSignature")} value={song.timeSignature} noValue={td("noValue")} />
+          <Info label={td("duration")} value={formatDuration(song.durationSec)} noValue={td("noValue")} />
+          <Info label={td("genre")} value={song.genre} noValue={td("noValue")} />
+          <Info label={td("artist")} value={song.artist} noValue={td("noValue")} />
         </dl>
         {song.remarks && (
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-foreground">Notizen</h3>
+            <h3 className="text-sm font-medium text-foreground">{td("notes")}</h3>
             <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{song.remarks}</p>
           </div>
         )}
         {song.lyrics && (
           <div className="mt-4">
-            <h3 className="text-sm font-medium text-foreground">Songtext</h3>
+            <h3 className="text-sm font-medium text-foreground">{td("lyrics")}</h3>
             <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{song.lyrics}</p>
           </div>
         )}
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-foreground">Links</h2>
+        <h2 className="font-semibold text-foreground">{td("links")}</h2>
         <div className="mt-3 space-y-2">
           {song.links.length === 0 && (
-            <p className="text-sm text-muted">Noch keine Links hinterlegt.</p>
+            <p className="text-sm text-muted">{td("noLinks")}</p>
           )}
           {song.links.map((link) => {
             const embed = features.mediaPlayer ? detectStreamingEmbed(link.url) : null;
@@ -254,7 +245,7 @@ export default async function SongDetailPage({
                 </div>
                 {embed && (
                   <div className="mt-2">
-                    <SongEmbed embed={embed} label={link.label || "Verlinkte Quelle"} />
+                    <SongEmbed embed={embed} label={link.label || td("linkedSource")} />
                   </div>
                 )}
               </div>
@@ -269,11 +260,8 @@ export default async function SongDetailPage({
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-foreground">Dateien</h2>
-        <p className="mt-1 text-sm text-muted">
-          Audio, PDF, Guitar Pro u. a. Administrator:innen sehen alle Dateien; private Dateien sind
-          sonst nur für dich sichtbar.
-        </p>
+        <h2 className="font-semibold text-foreground">{td("files")}</h2>
+        <p className="mt-1 text-sm text-muted">{td("filesDescription")}</p>
         <div className="mt-3">
           <SongFileList
             bandId={bandId}
@@ -294,22 +282,20 @@ export default async function SongDetailPage({
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-foreground">Meine persönlichen Notizen</h2>
-        <p className="mt-1 text-sm text-muted">Nur für dich sichtbar.</p>
+        <h2 className="font-semibold text-foreground">{td("myNotes")}</h2>
+        <p className="mt-1 text-sm text-muted">{td("myNotesVisibility")}</p>
         <form action={saveNoteAction.bind(null, bandId, songId)} className="mt-3 space-y-3">
-          <Textarea name="content" rows={4} defaultValue={myNote?.content ?? ""} placeholder="z. B. eigene Spielhinweise, Fingersatz, Erinnerungen…" />
+          <Textarea name="content" rows={4} defaultValue={myNote?.content ?? ""} placeholder={td("notesPlaceholder")} />
           <Button type="submit" size="sm">
             <Save className="h-4 w-4" />
-            Notiz speichern
+            {td("saveNote")}
           </Button>
         </form>
       </Card>
 
       <Card>
-        <h2 className="font-semibold text-foreground">Meine Bühnen-Hinweise</h2>
-        <p className="mt-1 text-sm text-muted">
-          Nur für dich sichtbar. Wird beim Hinzufügen zu einer neuen Setlist automatisch übernommen.
-        </p>
+        <h2 className="font-semibold text-foreground">{td("myCues")}</h2>
+        <p className="mt-1 text-sm text-muted">{td("myCuesVisibility")}</p>
         <div className="mt-3">
           <CueAnnotationEditor
             defaultValues={{
@@ -325,11 +311,19 @@ export default async function SongDetailPage({
   );
 }
 
-function Info({ label, value }: { label: string; value: string | null | undefined }) {
+function Info({
+  label,
+  value,
+  noValue,
+}: {
+  label: string;
+  value: string | null | undefined;
+  noValue: string;
+}) {
   return (
     <div>
       <dt className="text-muted">{label}</dt>
-      <dd className="text-foreground">{value || "—"}</dd>
+      <dd className="text-foreground">{value || noValue}</dd>
     </div>
   );
 }

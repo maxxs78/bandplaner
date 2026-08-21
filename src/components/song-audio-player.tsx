@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { PracticePlayer } from "@/components/practice-player";
 
@@ -27,6 +28,7 @@ export function SongAudioPlayer({
   keyDetectionEnabled?: boolean;
 }) {
   const [practiceMode, setPracticeMode] = useState(false);
+  const t = useTranslations("songs.audioPlayer");
 
   if (practiceMode) {
     return (
@@ -44,11 +46,11 @@ export function SongAudioPlayer({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <audio controls preload="metadata" src={src} className="h-9 min-w-0 flex-1" aria-label={filename}>
-        Dein Browser kann diese Audiodatei nicht abspielen.
+        {t("unsupported")}
       </audio>
       <Button variant="secondary" size="sm" onClick={() => setPracticeMode(true)}>
         <SlidersHorizontal className="h-4 w-4" />
-        Übungsmodus
+        {t("practiceMode")}
       </Button>
     </div>
   );

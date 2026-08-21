@@ -1,8 +1,10 @@
+import { getTranslations, getFormatter } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { sendMail } from "@/lib/mail";
 import { isGuestAccessExpired } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { notificationEvents, type NotificationEvent } from "@/lib/notification-events";
+import { isLocale, defaultLocale } from "@/i18n/config";
 
 export { notificationEvents };
 export type { NotificationEvent };
@@ -12,21 +14,28 @@ function appUrl(path: string) {
   return `${base.replace(/\/$/, "")}${path}`;
 }
 
+type MessageBuilder = (
+  t: Awaited<ReturnType<typeof getTranslations>>,
+  format: Awaited<ReturnType<typeof getFormatter>>
+) => { subject: string; body: string };
+
 /**
  * Gemeinsamer Versandweg fuer alle Benachrichtigungen. Prueft zentral, ob das
  * Kommunikationsmodul der Band ueberhaupt aktiv ist - damit kann keine
  * Aufrufstelle das versehentlich umgehen. Empfaenger sind nur Mitglieder mit
  * passendem Schalter; Gaeste mit abgelaufenem Zugriff und die ausloesende
- * Person selbst fallen raus. Fehler werden geschluckt: eine fehlgeschlagene
- * Benachrichtigung darf die ausloesende Aktion nie abbrechen.
+ * Person selbst fallen raus. Betreff/Text werden je Empfaenger-Sprache neu
+ * gerendert (gruppiert nach Sprache, damit nicht pro Person einzeln versendet
+ * werden muss). Fehler werden geschluckt: eine fehlgeschlagene Benachrichtigung
+ * darf die ausloesende Aktion nie abbrechen.
  */
 async function dispatch(options: {
   bandId: string;
   event: NotificationEvent;
   userIds?: string[];
   excludeUserId?: string;
-  subject: string;
-  body: string;
+  namespace: string;
+  buildMessage: MessageBuilder;
   path?: string;
 }) {
   try {
@@ -51,20 +60,37 @@ async function dispatch(options: {
         ...(options.userIds ? { userId: { in: options.userIds } } : {}),
         ...(options.excludeUserId ? { userId: { not: options.excludeUserId } } : {}),
       },
-      include: { user: { select: { email: true } } },
+      include: { user: { select: { email: true, locale: true } } },
     });
 
-    const recipients = memberships
-      .filter((m) => !isGuestAccessExpired(m))
-      .map((m) => m.user.email);
+    const recipients = memberships.filter((m) => !isGuestAccessExpired(m));
     if (recipients.length === 0) return;
 
+    const emailsByLocale = new Map<string, string[]>();
+    for (const m of recipients) {
+      const locale = isLocale(m.user.locale) ? m.user.locale : defaultLocale;
+      const list = emailsByLocale.get(locale) ?? [];
+      list.push(m.user.email);
+      emailsByLocale.set(locale, list);
+    }
+
     const link = options.path ? `\n\n${appUrl(options.path)}` : "";
-    await sendMail({
-      to: recipients,
-      subject: `[${band.name}] ${options.subject}`,
-      text: `${options.body}${link}\n\nDu kannst diese Benachrichtigungen in deinem Profil abschalten:\n${appUrl("/profile")}\n`,
-    });
+
+    await Promise.all(
+      Array.from(emailsByLocale.entries()).map(async ([locale, emails]) => {
+        const [t, format, tCommon] = await Promise.all([
+          getTranslations({ locale, namespace: options.namespace }),
+          getFormatter({ locale }),
+          getTranslations({ locale, namespace: "notifications" }),
+        ]);
+        const { subject, body } = options.buildMessage(t, format);
+        await sendMail({
+          to: emails,
+          subject: `[${band.name}] ${subject}`,
+          text: `${body}${link}\n\n${tCommon("unsubscribeHint")}\n${appUrl("/profile")}\n`,
+        });
+      })
+    );
   } catch (error) {
     console.error("[notifications] Versand fehlgeschlagen:", error);
   }
@@ -75,8 +101,8 @@ export async function notifyBand(options: {
   bandId: string;
   event: NotificationEvent;
   excludeUserId?: string;
-  subject: string;
-  body: string;
+  namespace: string;
+  buildMessage: MessageBuilder;
   path?: string;
 }) {
   await dispatch(options);
@@ -88,8 +114,8 @@ export async function notifyUsers(options: {
   userIds: string[];
   event: NotificationEvent;
   excludeUserId?: string;
-  subject: string;
-  body: string;
+  namespace: string;
+  buildMessage: MessageBuilder;
   path?: string;
 }) {
   if (options.userIds.length === 0) return;

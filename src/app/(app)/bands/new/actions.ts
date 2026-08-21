@@ -1,8 +1,9 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireActiveUser } from "@/lib/access";
-import { bandCreateSchema } from "@/lib/validation";
+import { getBandCreateSchema } from "@/lib/validation";
 import { redirect } from "next/navigation";
 
 export type FormState = { error?: string } | undefined;
@@ -12,10 +13,11 @@ export async function createBandAction(
   formData: FormData
 ): Promise<FormState> {
   const user = await requireActiveUser();
+  const t = await getTranslations("validation");
 
-  const parsed = bandCreateSchema.safeParse({ name: formData.get("name") });
+  const parsed = getBandCreateSchema(t).safeParse({ name: formData.get("name") });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const band = await prisma.band.create({

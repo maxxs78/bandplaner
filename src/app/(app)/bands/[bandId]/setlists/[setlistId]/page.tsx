@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Printer, Save } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -21,6 +22,7 @@ export default async function SetlistDetailPage({
   const { user, membership } = await requireMembership(bandId);
   const canManage = canManageContent(membership.role);
   const features = getEnabledFeatures(membership.band);
+  const t = await getTranslations("setlists.detail");
 
   const setlist = await prisma.setlist.findUnique({
     where: { id: setlistId, bandId },
@@ -77,14 +79,14 @@ export default async function SetlistDetailPage({
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zu Setlisten
+          {t("backToSetlists")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{setlist.name}</h1>
             {setlist.event && (
               <p className="mt-1 text-sm text-muted">
-                Verknüpft mit{" "}
+                {t("linkedWithPrefix")}{" "}
                 <Link href={`/bands/${bandId}/calendar/${setlist.event.id}`} className="text-primary hover:underline">
                   {setlist.event.title}
                 </Link>
@@ -93,20 +95,20 @@ export default async function SetlistDetailPage({
             {totalDurationSec > 0 && (
               <p className="mt-1 flex items-center gap-1 text-sm text-muted">
                 <Clock className="h-3.5 w-3.5" />
-                Gesamtdauer: {formatTotalDuration(totalDurationSec)}
+                {t("totalDuration", { duration: formatTotalDuration(totalDurationSec) })}
               </p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            {features.communication && <WhatsAppShareButton text={shareText} label="Teilen" />}
+            {features.communication && <WhatsAppShareButton text={shareText} label={t("share")} />}
             <Link href={`/print/setlists/${setlistId}`} target="_blank">
               <Button variant="secondary" size="sm">
                 <Printer className="h-4 w-4" />
-                Drucken
+                {t("print")}
               </Button>
             </Link>
             {canManage && (
-              <DeleteButton action={deleteSetlistAction.bind(null, bandId, setlistId)} label="Löschen" />
+              <DeleteButton action={deleteSetlistAction.bind(null, bandId, setlistId)} label={t("delete")} />
             )}
           </div>
         </div>
@@ -124,18 +126,18 @@ export default async function SetlistDetailPage({
       </div>
 
       <Card className="mt-6">
-        <h2 className="font-semibold text-foreground">Meine Notizen zu dieser Setlist</h2>
-        <p className="mt-1 text-sm text-muted">Nur für dich sichtbar.</p>
+        <h2 className="font-semibold text-foreground">{t("myNotes")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("myNotesVisibility")}</p>
         <form action={saveSetlistNoteAction.bind(null, bandId, setlistId)} className="mt-3 space-y-3">
           <Textarea
             name="content"
             rows={3}
             defaultValue={myNote?.content ?? ""}
-            placeholder="z. B. Ablaufhinweise, Reihenfolge-Absprachen, Erinnerungen für diesen Auftritt…"
+            placeholder={t("notesPlaceholder")}
           />
           <Button type="submit" size="sm">
             <Save className="h-4 w-4" />
-            Notiz speichern
+            {t("saveNote")}
           </Button>
         </form>
       </Card>

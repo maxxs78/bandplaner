@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Pencil, Users } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -10,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteButton } from "@/components/delete-button";
 import { EquipmentForm } from "@/components/equipment-form";
 import { EquipmentSubNav } from "@/components/equipment-sub-nav";
-import { equipmentCategoryLabels } from "@/lib/equipment-categories";
+import { getEquipmentCategoryLabels } from "@/lib/equipment-categories";
 import { createEquipmentAction, deleteEquipmentAction } from "./actions";
 
 export default async function EquipmentPage({
@@ -26,6 +27,8 @@ export default async function EquipmentPage({
   if (!features.equipment) redirect(`/bands/${bandId}`);
   const canManage = canManageContent(membership.role);
   const { owner } = await searchParams;
+  const t = await getTranslations("equipment");
+  const equipmentCategoryLabels = getEquipmentCategoryLabels(t);
 
   const ownerFilter =
     owner === "band"
@@ -53,26 +56,26 @@ export default async function EquipmentPage({
   const members = memberships.map((m) => m.user);
 
   const filters = [
-    { value: undefined, label: "Alle" },
-    { value: "band", label: "Band-Eigentum" },
-    { value: "mine", label: "Mein Equipment" },
+    { value: undefined, label: t("filterAll") },
+    { value: "band", label: t("filterBandOwned") },
+    { value: "mine", label: t("filterMine") },
   ];
 
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold text-foreground">Equipment</h1>
+        <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
         <EquipmentSubNav bandId={bandId} active="catalog" showPacklists={features.packlists} />
       </div>
 
       {canManage && (
         <Card className="mt-4">
-          <h2 className="font-semibold text-foreground">Equipment hinzufügen</h2>
+          <h2 className="font-semibold text-foreground">{t("addTitle")}</h2>
           <div className="mt-3">
             <EquipmentForm
               action={createEquipmentAction.bind(null, bandId)}
               members={members}
-              submitLabel="Hinzufügen"
+              submitLabel={t("addSubmit")}
             />
           </div>
         </Card>
@@ -99,7 +102,7 @@ export default async function EquipmentPage({
 
       <div className="mt-4 space-y-2">
         {equipment.length === 0 && (
-          <Card className="text-sm text-muted">Kein Equipment gefunden.</Card>
+          <Card className="text-sm text-muted">{t("noneFound")}</Card>
         )}
         {equipment.map((item) => {
           const canEdit = item.ownerUser ? item.ownerUser.id === user.id : canManage;
@@ -110,13 +113,13 @@ export default async function EquipmentPage({
                 <p className="truncate text-sm text-muted">
                   {[equipmentCategoryLabels[item.category], item.location, item.description]
                     .filter(Boolean)
-                    .join(" · ") || "Keine weiteren Angaben"}
-                  {item.responsible && ` · Verantwortlich: ${item.responsible.name}`}
+                    .join(" · ") || t("noFurtherInfo")}
+                  {item.responsible && t("responsiblePrefix", { name: item.responsible.name })}
                 </p>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant={item.ownerUser ? "accent" : "default"}>
-                  {item.ownerUser ? item.ownerUser.name : "Band"}
+                  {item.ownerUser ? item.ownerUser.name : t("bandBadge")}
                 </Badge>
                 {canEdit && (
                   <>
@@ -128,7 +131,7 @@ export default async function EquipmentPage({
                     <DeleteButton
                       action={deleteEquipmentAction.bind(null, bandId, item.id)}
                       label=""
-                      confirmMessage="Equipment wirklich entfernen?"
+                      confirmMessage={t("deleteConfirm")}
                     />
                   </>
                 )}
@@ -141,8 +144,7 @@ export default async function EquipmentPage({
       {members.length > 1 && (
         <p className="mt-4 flex items-center gap-1.5 text-xs text-muted">
           <Users className="h-3.5 w-3.5" />
-          Persönliches Equipment kann nur die besitzende Person selbst bearbeiten und ist automatisch in
-          jeder Band nutzbar, in der sie Mitglied ist.
+          {t("personalEquipmentHint")}
         </p>
       )}
     </div>

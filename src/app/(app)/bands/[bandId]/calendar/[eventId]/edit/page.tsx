@@ -1,5 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { format } from "date-fns";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { updateEventAction } from "../../actions";
@@ -35,14 +36,15 @@ export default async function EditEventPage({
     orderBy: { createdAt: "asc" },
   });
   const members = memberships.map((m) => m.user);
+  const t = await getTranslations("calendar");
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-foreground">Termin bearbeiten</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("editTitle")}</h1>
       <Card className="mt-4">
         <EventForm
           action={boundAction}
-          submitLabel="Änderungen speichern"
+          submitLabel={t("editSubmit")}
           members={members}
           currentUserId={user.id}
           defaultValues={{

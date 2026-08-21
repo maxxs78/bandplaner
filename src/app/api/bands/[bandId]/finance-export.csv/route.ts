@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
+import { getTranslations, getLocale } from "next-intl/server";
 import { requireMembership, canManageFinance } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { prisma } from "@/lib/prisma";
-import { eventTypeLabels } from "@/lib/event-colors";
-import { financeEntryTypeLabels } from "@/lib/finance-entry-labels";
+import { EVENT_TYPES, getEventTypeLabels } from "@/lib/event-colors";
+import { getFinanceEntryTypeLabels } from "@/lib/finance-entry-labels";
 import type { EventType, FinanceEntryType } from "@/generated/prisma/client";
 
 const BALANCE_TYPES: FinanceEntryType[] = ["BALANCE_PAYOUT", "BALANCE_DEPOSIT"];
@@ -30,7 +31,8 @@ export async function GET(
   const to = url.searchParams.get("to");
   const type = url.searchParams.get("type");
   const eventType = url.searchParams.get("eventType");
-  const validEventType = eventType && eventType in eventTypeLabels ? (eventType as EventType) : undefined;
+  const validEventType =
+    eventType && (EVENT_TYPES as readonly string[]).includes(eventType) ? (eventType as EventType) : undefined;
 
   const entries = await prisma.financeEntry.findMany({
     where: {
@@ -54,22 +56,28 @@ export async function GET(
     include: { event: { select: { title: true, type: true } }, allocations: { select: { amountCents: true } } },
   });
 
+  const t = await getTranslations("finance.export");
+  const locale = await getLocale();
   const header = [
-    "Datum",
-    "Typ",
-    "Kategorie",
-    "Betrag (EUR)",
-    "Zugeordnet (EUR)",
-    "Rest/Bandkonto (EUR)",
-    "Währung",
-    "Termin",
-    "Auftrittsart",
-    "Beschreibung",
+    t("date"),
+    t("type"),
+    t("category"),
+    t("amount"),
+    t("allocated"),
+    t("remainder"),
+    t("currency"),
+    t("event"),
+    t("eventType"),
+    t("description"),
   ];
+  const tEventTypes = await getTranslations("calendar.eventTypes");
+  const eventTypeLabels = getEventTypeLabels(tEventTypes);
+  const tFinance = await getTranslations("finance");
+  const financeEntryTypeLabels = getFinanceEntryTypeLabels(tFinance);
   const rows = entries.map((e) => {
     const allocated = e.allocations.reduce((s, a) => s + a.amountCents, 0);
     return [
-      new Intl.DateTimeFormat("de-DE", { dateStyle: "short" }).format(e.date),
+      new Intl.DateTimeFormat(locale, { dateStyle: "short" }).format(e.date),
       financeEntryTypeLabels[e.type],
       e.category,
       (e.amountCents / 100).toFixed(2),

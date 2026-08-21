@@ -3,9 +3,10 @@
 import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { CUE_TYPES, CUE_DEFINITIONS, COLOR_PALETTE, type Cue } from "@/lib/setlist-cues";
+import { CUE_TYPES, getCueDefinitions, COLOR_PALETTE, type Cue } from "@/lib/setlist-cues";
 
 export type AnnotationValues = { note: string; color: string | null; cues: Cue[] };
 
@@ -18,6 +19,8 @@ export function CueAnnotationEditor({
   onSave: (data: AnnotationValues) => Promise<{ error?: string } | void>;
   compact?: boolean;
 }) {
+  const t = useTranslations("cues");
+  const cueDefinitions = getCueDefinitions(t);
   const [note, setNote] = useState(defaultValues.note);
   const [color, setColor] = useState<string | null>(defaultValues.color);
   const [cues, setCues] = useState<Cue[]>(defaultValues.cues);
@@ -50,18 +53,18 @@ export function CueAnnotationEditor({
         <Input
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Kurzer Hinweis (z. B. „leise anfangen“)"
+          placeholder={t("notePlaceholder")}
           maxLength={80}
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="text-xs text-muted">Farbe:</span>
+        <span className="text-xs text-muted">{t("colorLabel")}</span>
         <button
           type="button"
           onClick={() => setColor(null)}
-          aria-label="Keine Farbe"
-          title="Keine Farbe"
+          aria-label={t("noColor")}
+          title={t("noColor")}
           className={clsx(
             "h-5 w-5 rounded-full border border-border",
             color === null && "ring-2 ring-primary ring-offset-1 ring-offset-surface"
@@ -85,7 +88,7 @@ export function CueAnnotationEditor({
 
       <div className="space-y-1.5">
         {CUE_TYPES.map((type) => {
-          const def = CUE_DEFINITIONS[type];
+          const def = cueDefinitions[type];
           const active = cues.find((c) => c.type === type);
           return (
             <div key={type} className="flex items-center gap-2">
@@ -118,7 +121,7 @@ export function CueAnnotationEditor({
       {error && <p className="text-xs text-danger">{error}</p>}
       <Button type="button" size="sm" disabled={pending} onClick={handleSave}>
         <Check className="h-4 w-4" />
-        {pending ? "Wird gespeichert…" : "Speichern"}
+        {pending ? t("saving") : t("save")}
       </Button>
     </div>
   );

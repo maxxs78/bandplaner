@@ -4,33 +4,34 @@ export type CueType = "RETUNE" | "INSTRUMENT_CHANGE" | "PROGRAM_CHANGE" | "CUSTO
 
 export type Cue = { type: CueType; value?: string };
 
-export const CUE_DEFINITIONS: Record<
-  CueType,
-  { label: string; icon: LucideIcon; hasValue: boolean; valueLabel?: string; placeholder?: string }
-> = {
-  RETUNE: { label: "Umstimmen", icon: RefreshCw, hasValue: false },
-  INSTRUMENT_CHANGE: {
-    label: "Instrument wechseln",
-    icon: Repeat,
-    hasValue: true,
-    valueLabel: "Instrument (optional)",
-    placeholder: "z. B. Akustikgitarre",
-  },
-  PROGRAM_CHANGE: {
-    label: "Programmwechsel",
-    icon: Hash,
-    hasValue: true,
-    valueLabel: "Programm-Nr.",
-    placeholder: "z. B. 12",
-  },
-  CUSTOM: {
-    label: "Eigener Hinweis",
-    icon: AlertCircle,
-    hasValue: true,
-    valueLabel: "Hinweis",
-    placeholder: "z. B. Klick an",
-  },
-};
+export function getCueDefinitions(
+  t: (key: string) => string
+): Record<CueType, { label: string; icon: LucideIcon; hasValue: boolean; valueLabel?: string; placeholder?: string }> {
+  return {
+    RETUNE: { label: t("retune"), icon: RefreshCw, hasValue: false },
+    INSTRUMENT_CHANGE: {
+      label: t("instrumentChange"),
+      icon: Repeat,
+      hasValue: true,
+      valueLabel: t("instrumentChangeValueLabel"),
+      placeholder: t("instrumentChangePlaceholder"),
+    },
+    PROGRAM_CHANGE: {
+      label: t("programChange"),
+      icon: Hash,
+      hasValue: true,
+      valueLabel: t("programChangeValueLabel"),
+      placeholder: t("programChangePlaceholder"),
+    },
+    CUSTOM: {
+      label: t("custom"),
+      icon: AlertCircle,
+      hasValue: true,
+      valueLabel: t("customValueLabel"),
+      placeholder: t("customPlaceholder"),
+    },
+  };
+}
 
 export const CUE_TYPES: CueType[] = ["RETUNE", "INSTRUMENT_CHANGE", "PROGRAM_CHANGE", "CUSTOM"];
 

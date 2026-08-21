@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { UserMinus, X, KeyRound, Copy } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   updateRoleAction,
   updateGuestAccessAction,
@@ -11,12 +12,6 @@ import {
 import { Select, Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import type { Role } from "@/generated/prisma/client";
-
-const roleOptions: { value: Role; label: string }[] = [
-  { value: "MEMBER", label: "Mitglied" },
-  { value: "ADMIN", label: "Administrator" },
-  { value: "GUEST", label: "Gast" },
-];
 
 function toDateInputValue(iso: string | null) {
   return iso ? iso.slice(0, 10) : "";
@@ -40,6 +35,13 @@ export function MemberRowActions({
   const [error, setError] = useState<string | null>(null);
   const [tempPassword, setTempPassword] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const t = useTranslations("bandMembers.rowActions");
+  const tRoles = useTranslations("dashboard.roles");
+  const roleOptions: { value: Role; label: string }[] = [
+    { value: "MEMBER", label: tRoles("MEMBER") },
+    { value: "ADMIN", label: tRoles("ADMIN") },
+    { value: "GUEST", label: tRoles("GUEST") },
+  ];
 
   function handleRoleChange(newRole: Role) {
     const previousRole = currentRole;
@@ -80,7 +82,7 @@ export function MemberRowActions({
   }
 
   function handleResetPassword() {
-    if (!confirm("Neues initiales Passwort für diese Person vergeben? Das bisherige Passwort wird ungültig.")) {
+    if (!confirm(t("resetPasswordConfirm"))) {
       return;
     }
     setError(null);
@@ -105,14 +107,14 @@ export function MemberRowActions({
               value={currentGuestUntil}
               disabled={pending}
               onChange={(e) => handleGuestUntilChange(e.target.value)}
-              title="Zugriff bis (leer = unbegrenzt)"
+              title={t("guestUntilTitle")}
               className="w-auto text-xs"
             />
             {currentGuestUntil && (
               <button
                 type="button"
-                aria-label="Zugriff unbegrenzt setzen"
-                title="Zugriff unbegrenzt setzen"
+                aria-label={t("setUnlimitedAria")}
+                title={t("setUnlimitedAria")}
                 disabled={pending}
                 onClick={() => handleGuestUntilChange("")}
                 className="text-muted hover:text-danger"
@@ -136,7 +138,7 @@ export function MemberRowActions({
         </Select>
         <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={handleResetPassword}>
           <KeyRound className="h-4 w-4" />
-          Passwort zurücksetzen
+          {t("resetPassword")}
         </Button>
         <Button
           type="button"
@@ -146,26 +148,26 @@ export function MemberRowActions({
           onClick={handleRemove}
         >
           <UserMinus className="h-4 w-4" />
-          Entfernen
+          {t("remove")}
         </Button>
       </div>
       {error && <p className="max-w-[220px] text-right text-xs text-danger">{error}</p>}
       {tempPassword && (
         <div className="max-w-[280px] rounded-lg border border-warning/40 bg-warning/10 p-2 text-right text-xs text-foreground">
-          <p>Neues Passwort (nur jetzt sichtbar, sicher weitergeben):</p>
+          <p>{t("newPasswordNotice")}</p>
           <div className="mt-1 flex items-center justify-end gap-1.5">
             <code className="select-all rounded bg-surface px-1.5 py-0.5 font-mono text-sm">{tempPassword}</code>
             <button
               type="button"
-              aria-label="Passwort kopieren"
-              title="Passwort kopieren"
+              aria-label={t("copyPasswordAria")}
+              title={t("copyPasswordAria")}
               onClick={() => navigator.clipboard.writeText(tempPassword)}
               className="text-muted hover:text-foreground"
             >
               <Copy className="h-3.5 w-3.5" />
             </button>
           </div>
-          <p className="mt-1">Muss beim nächsten Login geändert werden.</p>
+          <p className="mt-1">{t("mustChangeNotice")}</p>
         </div>
       )}
     </div>

@@ -2,16 +2,11 @@
 
 import { useActionState, useState } from "react";
 import { Send } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { inviteAction, type FormState } from "@/app/(app)/bands/[bandId]/members/actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, FieldError } from "@/components/ui/input";
 import type { Role } from "@/generated/prisma/client";
-
-const roleOptions: { value: Role; label: string }[] = [
-  { value: "MEMBER", label: "Mitglied" },
-  { value: "ADMIN", label: "Administrator" },
-  { value: "GUEST", label: "Gast" },
-];
 
 export function InviteForm({ bandId, defaultGuestUntil }: { bandId: string; defaultGuestUntil?: string }) {
   const boundAction = inviteAction.bind(null, bandId);
@@ -20,15 +15,22 @@ export function InviteForm({ bandId, defaultGuestUntil }: { bandId: string; defa
     undefined
   );
   const [role, setRole] = useState<Role>("MEMBER");
+  const t = useTranslations("bandMembers.inviteForm");
+  const tRoles = useTranslations("dashboard.roles");
+  const roleOptions: { value: Role; label: string }[] = [
+    { value: "MEMBER", label: tRoles("MEMBER") },
+    { value: "ADMIN", label: tRoles("ADMIN") },
+    { value: "GUEST", label: tRoles("GUEST") },
+  ];
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3">
       <div className="flex-1 min-w-[200px]">
-        <Label htmlFor="invite-email">E-Mail-Adresse</Label>
+        <Label htmlFor="invite-email">{t("email")}</Label>
         <Input id="invite-email" name="email" type="email" required />
       </div>
       <div>
-        <Label htmlFor="invite-role">Rolle</Label>
+        <Label htmlFor="invite-role">{t("role")}</Label>
         <Select
           id="invite-role"
           name="role"
@@ -44,22 +46,20 @@ export function InviteForm({ bandId, defaultGuestUntil }: { bandId: string; defa
       </div>
       {role === "GUEST" && (
         <div>
-          <Label htmlFor="invite-guestUntil">Zugriff bis (optional)</Label>
+          <Label htmlFor="invite-guestUntil">{t("guestUntil")}</Label>
           <Input id="invite-guestUntil" name="guestUntil" type="date" defaultValue={defaultGuestUntil} />
         </div>
       )}
       <Button type="submit" disabled={pending}>
         <Send className="h-4 w-4" />
-        {pending ? "Wird gesendet…" : "Einladen"}
+        {pending ? t("sending") : t("invite")}
       </Button>
       <div className="w-full">
         <FieldError>{state?.error}</FieldError>
         {state?.success && <p className="mt-1 text-sm text-success">{state.success}</p>}
         {role === "GUEST" && (
           <p className="mt-1 text-xs text-muted">
-            {defaultGuestUntil
-              ? "Datum wurde nach dem Band-Standard vorbelegt, aber frei änderbar. Leeren für unbegrenzten Zugriff."
-              : "Ohne Datum hat der Gast unbegrenzten Zugriff."}
+            {defaultGuestUntil ? t("guestHintPrefilled") : t("guestHintDefault")}
           </p>
         )}
       </div>

@@ -8,6 +8,8 @@ Davon unabhängig lassen sich beliebig viele Personen als **Finanzadmin:in** ken
 
 Die Anmeldung erfolgt wahlweise mit E-Mail-Adresse oder Benutzernamen. Alle Nutzer:innen können ihr Passwort im Profil selbst ändern; Admins können außerdem ein neues Initialpasswort für ein Mitglied vergeben, das dieses beim nächsten Login ändern muss. Nach 5 fehlgeschlagenen Loginversuchen in Folge wird ein Konto für 2 Tage automatisch gesperrt (Schutz gegen Brute-Force-Versuche); die Sperre läuft danach von selbst ab oder wird durch einen Admin-Passwort-Reset sofort aufgehoben.
 
+Die Oberfläche ist auf Deutsch und Englisch verfügbar, umschaltbar über einen Sprachwähler im Kopfbereich. Die Wahl wird dauerhaft im Benutzerprofil gespeichert und gilt bandübergreifend; vor dem Login erkennt die App die Sprache automatisch aus den Browser-Einstellungen.
+
 Aktuell umgesetzte Module:
 
 - **Kalender & Termine** – Proben, Auftritte, Meetings und sonstige Termine inkl. Terminserien; je Terminart vorbelegter Teilnehmerkreis (bei Proben/Auftritten standardmäßig alle Mitglieder, bei Meetings nur die erstellende Person), individuell anpassbar. Abonnierbar als ICS-Feed für externe Kalender-Apps.

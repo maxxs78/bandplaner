@@ -1,8 +1,9 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageContent } from "@/lib/access";
-import { setlistSchema } from "@/lib/validation";
+import { getSetlistSchema } from "@/lib/validation";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
 import { redirect } from "next/navigation";
@@ -43,16 +44,18 @@ export async function createSetlistAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("validation");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Setlisten erstellen" };
+    const tSetlists = await getTranslations("setlists");
+    return { error: tSetlists("guestsCannotCreate") };
   }
 
-  const parsed = setlistSchema.safeParse({
+  const parsed = getSetlistSchema(t).safeParse({
     name: formData.get("name"),
     eventId: formData.get("eventId") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const copyFromId = formData.get("copyFromId") as string | null;

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft, FileDown } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
@@ -26,6 +27,7 @@ export default async function PacklistDetailPage({
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) redirect(`/bands/${bandId}`);
   const canManage = canManageContent(membership.role);
+  const t = await getTranslations("packlists.detail");
 
   const packlist = await prisma.packlist.findUnique({
     where: { id: packlistId, bandId },
@@ -89,14 +91,14 @@ export default async function PacklistDetailPage({
           className="inline-flex items-center gap-1 text-sm text-muted hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4" />
-          Zurück zu Packlisten
+          {t("backToPacklists")}
         </Link>
         <div className="mt-2 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{packlist.name}</h1>
             {packlist.event && (
               <p className="mt-1 text-sm text-muted">
-                Verknüpft mit{" "}
+                {t("linkedWithPrefix")}{" "}
                 <Link href={`/bands/${bandId}/calendar/${packlist.event.id}`} className="text-primary hover:underline">
                   {packlist.event.title}
                 </Link>
@@ -107,11 +109,11 @@ export default async function PacklistDetailPage({
             <Link href={`/print/packlists/${packlistId}`} target="_blank">
               <Button variant="secondary" size="sm">
                 <FileDown className="h-4 w-4" />
-                Drucken
+                {t("print")}
               </Button>
             </Link>
             {canManage && (
-              <DeleteButton action={deletePacklistAction.bind(null, bandId, packlistId)} label="Löschen" />
+              <DeleteButton action={deletePacklistAction.bind(null, bandId, packlistId)} label={t("delete")} />
             )}
           </div>
         </div>

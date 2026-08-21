@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { createSongAction } from "../actions";
 import { SongForm } from "@/components/song-form";
@@ -16,22 +17,20 @@ export default async function NewSongPage({
   }
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const boundAction = createSongAction.bind(null, bandId);
+  const t = await getTranslations("songs");
 
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-xl font-semibold text-foreground">
-        {isAdmin ? "Neuer Song" : "Song vorschlagen"}
+        {isAdmin ? t("newTitle") : t("proposeTitle")}
       </h1>
       {!isAdmin && (
-        <p className="mt-1 text-sm text-muted">
-          Dein Vorschlag wird zur Abstimmung gestellt. Stimmen alle zu, wird er automatisch
-          übernommen.
-        </p>
+        <p className="mt-1 text-sm text-muted">{t("proposalNotice")}</p>
       )}
       <Card className="mt-4">
         <SongForm
           action={boundAction}
-          submitLabel={isAdmin ? "Song anlegen" : "Als Vorschlag einreichen"}
+          submitLabel={isAdmin ? t("createSubmit") : t("proposeSubmit")}
           canEditStatus={isAdmin}
         />
       </Card>

@@ -1,5 +1,6 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { signIn, AccountLockedError } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
@@ -18,14 +19,12 @@ export async function loginAction(
       redirectTo: callbackUrl,
     });
   } catch (error) {
+    const t = await getTranslations("auth.login");
     if (error instanceof AccountLockedError) {
-      return {
-        error:
-          "Zu viele fehlgeschlagene Loginversuche. Das Konto ist vorübergehend gesperrt und wird automatisch nach 2 Tagen wieder freigeschaltet.",
-      };
+      return { error: t("accountLocked") };
     }
     if (error instanceof AuthError) {
-      return { error: "E-Mail/Benutzername oder Passwort ist falsch" };
+      return { error: t("invalidCredentials") };
     }
     throw error;
   }

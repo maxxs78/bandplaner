@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 import { Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Select, Label, FieldError } from "@/components/ui/input";
-import { bandFileCategoryOptions, bandFileVisibilityOptions } from "@/lib/band-file-categories";
+import { getBandFileCategoryOptions, getBandFileVisibilityOptions } from "@/lib/band-file-categories";
 import type { FormState } from "@/app/(app)/bands/[bandId]/files/actions";
 
 export function BandFileUpload({
@@ -22,6 +23,10 @@ export function BandFileUpload({
   publicLinksEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useTranslations("bandFiles");
+  const tForm = useTranslations("bandFiles.form");
+  const bandFileCategoryOptions = getBandFileCategoryOptions(t);
+  const bandFileVisibilityOptions = getBandFileVisibilityOptions(t);
   const visibilityOptions = publicLinksEnabled
     ? bandFileVisibilityOptions
     : bandFileVisibilityOptions.filter((v) => v.value !== "PUBLIC");
@@ -36,7 +41,7 @@ export function BandFileUpload({
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="category">Kategorie</Label>
+          <Label htmlFor="category">{tForm("category")}</Label>
           <Select id="category" name="category" defaultValue="OTHER">
             {bandFileCategoryOptions.map((c) => (
               <option key={c.value} value={c.value}>
@@ -46,7 +51,7 @@ export function BandFileUpload({
           </Select>
         </div>
         <div>
-          <Label htmlFor="visibility">Sichtbarkeit</Label>
+          <Label htmlFor="visibility">{tForm("visibility")}</Label>
           <Select id="visibility" name="visibility" defaultValue="INTERNAL">
             {visibilityOptions.map((v) => (
               <option key={v.value} value={v.value}>
@@ -56,9 +61,9 @@ export function BandFileUpload({
           </Select>
         </div>
         <div>
-          <Label htmlFor="songId">Verknüpfter Song</Label>
+          <Label htmlFor="songId">{tForm("linkedSong")}</Label>
           <Select id="songId" name="songId" defaultValue="">
-            <option value="">– keiner –</option>
+            <option value="">{tForm("noSong")}</option>
             {songs.map((s) => (
               <option key={s.id} value={s.id}>
                 {s.title}
@@ -67,9 +72,9 @@ export function BandFileUpload({
           </Select>
         </div>
         <div>
-          <Label htmlFor="eventId">Verknüpfter Termin</Label>
+          <Label htmlFor="eventId">{tForm("linkedEvent")}</Label>
           <Select id="eventId" name="eventId" defaultValue="">
-            <option value="">– keiner –</option>
+            <option value="">{tForm("noEvent")}</option>
             {events.map((e) => (
               <option key={e.id} value={e.id}>
                 {e.title}
@@ -79,9 +84,9 @@ export function BandFileUpload({
         </div>
         {equipment && (
           <div>
-            <Label htmlFor="equipmentId">Verknüpftes Equipment</Label>
+            <Label htmlFor="equipmentId">{tForm("linkedEquipment")}</Label>
             <Select id="equipmentId" name="equipmentId" defaultValue="">
-              <option value="">– keines –</option>
+              <option value="">{tForm("noEquipment")}</option>
               {equipment.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.name}
@@ -94,7 +99,7 @@ export function BandFileUpload({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" size="sm" disabled={pending}>
         <Upload className="h-4 w-4" />
-        {pending ? "Wird hochgeladen…" : "Hochladen"}
+        {pending ? tForm("uploading") : tForm("upload")}
       </Button>
     </form>
   );
@@ -111,6 +116,10 @@ export function MinimalFileUpload({
   publicLinksEnabled?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useTranslations("bandFiles");
+  const tForm = useTranslations("bandFiles.form");
+  const bandFileCategoryOptions = getBandFileCategoryOptions(t);
+  const bandFileVisibilityOptions = getBandFileVisibilityOptions(t);
   const visibilityOptions = publicLinksEnabled
     ? bandFileVisibilityOptions
     : bandFileVisibilityOptions.filter((v) => v.value !== "PUBLIC");
@@ -125,7 +134,7 @@ export function MinimalFileUpload({
       />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="category">Kategorie</Label>
+          <Label htmlFor="category">{tForm("category")}</Label>
           <Select id="category" name="category" defaultValue="OTHER">
             {bandFileCategoryOptions.map((c) => (
               <option key={c.value} value={c.value}>
@@ -135,7 +144,7 @@ export function MinimalFileUpload({
           </Select>
         </div>
         <div>
-          <Label htmlFor="visibility">Sichtbarkeit</Label>
+          <Label htmlFor="visibility">{tForm("visibility")}</Label>
           <Select id="visibility" name="visibility" defaultValue="INTERNAL">
             {visibilityOptions.map((v) => (
               <option key={v.value} value={v.value}>
@@ -148,7 +157,7 @@ export function MinimalFileUpload({
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" size="sm" disabled={pending}>
         <Upload className="h-4 w-4" />
-        {pending ? "Wird hochgeladen…" : "Hochladen"}
+        {pending ? tForm("uploading") : tForm("upload")}
       </Button>
     </form>
   );

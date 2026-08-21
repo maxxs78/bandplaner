@@ -1,20 +1,12 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import clsx from "clsx";
 import type { SongStatus } from "@/generated/prisma/client";
-
-const statusLabels: Record<string, string> = {
-  PROPOSED: "Vorschlag",
-  NEW: "Neu",
-  IN_PROGRESS: "In Erarbeitung",
-  STAGE_READY: "Bühnenreif",
-  ACTIVE: "Aktiv",
-  ARCHIVED: "Archiviert",
-};
 
 const statusVariant: Record<string, "warning" | "accent" | "success" | "default" | "danger"> = {
   PROPOSED: "warning",
@@ -37,6 +29,7 @@ export default async function SongsPage({
   const canCreate = canManageContent(membership.role);
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const { status } = await searchParams;
+  const t = await getTranslations("songs");
 
   const songs = await prisma.song.findMany({
     where: {
@@ -48,13 +41,13 @@ export default async function SongsPage({
   });
 
   const filters = [
-    { value: undefined, label: "Alle" },
-    { value: "PROPOSED", label: "Vorschläge" },
-    { value: "NEW", label: "Neu" },
-    { value: "IN_PROGRESS", label: "In Erarbeitung" },
-    { value: "STAGE_READY", label: "Bühnenreif" },
-    { value: "ACTIVE", label: "Aktiv" },
-    { value: "ARCHIVED", label: "Archiviert" },
+    { value: undefined, label: t("filterAll") },
+    { value: "PROPOSED", label: t("filterProposed") },
+    { value: "NEW", label: t("statusLabels.NEW") },
+    { value: "IN_PROGRESS", label: t("statusLabels.IN_PROGRESS") },
+    { value: "STAGE_READY", label: t("statusLabels.STAGE_READY") },
+    { value: "ACTIVE", label: t("statusLabels.ACTIVE") },
+    { value: "ARCHIVED", label: t("statusLabels.ARCHIVED") },
   ];
 
   return (
@@ -81,14 +74,14 @@ export default async function SongsPage({
           <Link href={`/bands/${bandId}/songs/new`}>
             <Button size="sm">
               <Plus className="h-4 w-4" />
-              {isAdmin ? "Neuer Song" : "Song vorschlagen"}
+              {isAdmin ? t("newButton") : t("proposeButton")}
             </Button>
           </Link>
         )}
       </div>
 
       <div className="mt-4 space-y-2">
-        {songs.length === 0 && <Card className="text-sm text-muted">Keine Songs gefunden.</Card>}
+        {songs.length === 0 && <Card className="text-sm text-muted">{t("noSongsFound")}</Card>}
         {songs.map((song) => (
           <Link key={song.id} href={`/bands/${bandId}/songs/${song.id}`}>
             <Card className="flex items-center justify-between transition hover:border-primary">
@@ -97,14 +90,14 @@ export default async function SongsPage({
                 <p className="text-sm text-muted">
                   {[song.artist, song.key, song.bpm ? `${song.bpm} BPM` : null, song.genre]
                     .filter(Boolean)
-                    .join(" · ") || "Keine weiteren Angaben"}
+                    .join(" · ") || t("noFurtherInfo")}
                 </p>
               </div>
               <div className="flex items-center gap-2">
                 {song.rejected && song.status === "ARCHIVED" && (
-                  <Badge variant="danger">Abgelehnt</Badge>
+                  <Badge variant="danger">{t("rejectedBadge")}</Badge>
                 )}
-                <Badge variant={statusVariant[song.status]}>{statusLabels[song.status]}</Badge>
+                <Badge variant={statusVariant[song.status]}>{t(`statusLabels.${song.status}`)}</Badge>
               </div>
             </Card>
           </Link>

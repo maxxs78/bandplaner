@@ -2,6 +2,7 @@
 
 import { useActionState, useRef, useState, useTransition } from "react";
 import { Camera, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Avatar } from "@/components/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +26,7 @@ export function ImageUploadForm({
   const [removing, startRemoveTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
+  const t = useTranslations("imageUpload");
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -58,7 +60,7 @@ export function ImageUploadForm({
             onClick={() => inputRef.current?.click()}
           >
             <Camera className="h-4 w-4" />
-            {pending ? "Wird hochgeladen…" : "Bild ändern"}
+            {pending ? t("uploading") : t("change")}
           </Button>
           {removeAction && displaySrc && (
             <Button
@@ -72,7 +74,7 @@ export function ImageUploadForm({
               }}
             >
               <X className="h-4 w-4" />
-              Entfernen
+              {t("remove")}
             </Button>
           )}
         </div>

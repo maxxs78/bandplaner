@@ -1,8 +1,9 @@
 "use server";
 
+import { getTranslations, getFormatter } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
-import { eventSchema } from "@/lib/validation";
+import { getEventSchema } from "@/lib/validation";
 import { notifyBand } from "@/lib/notifications";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
@@ -12,12 +13,13 @@ import type { EventType, Role } from "@/generated/prisma/client";
 
 export type FormState = { error?: string } | undefined;
 
-function formatEventDate(date: Date) {
-  return new Intl.DateTimeFormat("de-DE", { dateStyle: "full", timeStyle: "short" }).format(date);
+function formatEventDate(format: Awaited<ReturnType<typeof getFormatter>>, date: Date) {
+  return format.dateTime(date, { dateStyle: "full", timeStyle: "short" });
 }
 
-function parseEventForm(formData: FormData) {
-  return eventSchema.safeParse({
+async function parseEventForm(formData: FormData) {
+  const t = await getTranslations("validation");
+  return getEventSchema(t).safeParse({
     title: formData.get("title"),
     type: formData.get("type"),
     startsAt: formData.get("startsAt"),
@@ -35,13 +37,15 @@ export async function createEventAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const t = await getTranslations("calendar.actions");
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Termine erstellen" };
+    return { error: t("guestsCannotCreate") };
   }
 
-  const parsed = parseEventForm(formData);
+  const parsed = await parseEventForm(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    const tValidation = await getTranslations("validation");
+    return { error: parsed.error.issues[0]?.message ?? tValidation("invalidInput") };
   }
   const data = parsed.data;
   const participantIds = formData.getAll("participantIds").map(String);
@@ -93,17 +97,21 @@ export async function createEventAction(
     return first!;
   });
 
-  const seriesNote =
-    occurrences.length > 1 ? `\nWöchentliche Serie mit ${occurrences.length} Terminen.` : "";
   await notifyBand({
     bandId,
     event: "NEW_EVENT",
     excludeUserId: user.id,
-    subject: `Neuer Termin: ${data.title}`,
-    body:
-      `${user.name} hat einen neuen Termin angelegt:\n\n` +
-      `${data.title}\n${formatEventDate(start)}` +
-      `${data.location ? `\nOrt: ${data.location}` : ""}${seriesNote}`,
+    namespace: "calendar.actions",
+    buildMessage: (t, format) => ({
+      subject: t("notifyNewEventSubject", { title: data.title }),
+      body: t("notifyNewEventBody", {
+        name: user.name ?? "",
+        title: data.title,
+        date: formatEventDate(format, start),
+        locationSuffix: data.location ? t("locationSuffix", { location: data.location }) : "",
+        seriesNote: occurrences.length > 1 ? t("weeklySeriesNote", { count: occurrences.length }) : "",
+      }),
+    }),
     path: `/bands/${bandId}/calendar/${firstEvent.id}`,
   });
 
@@ -135,13 +143,15 @@ export async function updateEventAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("calendar.actions");
   if (!(await canEditEvent(bandId, eventId, user.id, membership.role, isFinanceAdmin))) {
-    return { error: "Keine Berechtigung, diesen Termin zu bearbeiten" };
+    return { error: t("noPermissionToEdit") };
   }
 
-  const parsed = parseEventForm(formData);
+  const parsed = await parseEventForm(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    const tValidation = await getTranslations("validation");
+    return { error: parsed.error.issues[0]?.message ?? tValidation("invalidInput") };
   }
   const data = parsed.data;
   const participantIds = formData.getAll("participantIds").map(String);
@@ -168,11 +178,16 @@ export async function updateEventAction(
     bandId,
     event: "EVENT_CHANGE",
     excludeUserId: user.id,
-    subject: `Termin geändert: ${data.title}`,
-    body:
-      `${user.name} hat einen Termin geändert:\n\n` +
-      `${data.title}\n${formatEventDate(new Date(data.startsAt))}` +
-      `${data.location ? `\nOrt: ${data.location}` : ""}`,
+    namespace: "calendar.actions",
+    buildMessage: (t, format) => ({
+      subject: t("notifyEventChangedSubject", { title: data.title }),
+      body: t("notifyEventChangedBody", {
+        name: user.name ?? "",
+        title: data.title,
+        date: formatEventDate(format, new Date(data.startsAt)),
+        locationSuffix: data.location ? t("locationSuffix", { location: data.location }) : "",
+      }),
+    }),
     path: `/bands/${bandId}/calendar/${eventId}`,
   });
 
@@ -197,8 +212,15 @@ export async function deleteEventAction(bandId: string, eventId: string) {
       bandId,
       event: "EVENT_CHANGE",
       excludeUserId: user.id,
-      subject: `Termin abgesagt: ${event.title}`,
-      body: `${user.name} hat einen Termin gelöscht:\n\n${event.title}\n${formatEventDate(event.startsAt)}`,
+      namespace: "calendar.actions",
+      buildMessage: (t, format) => ({
+        subject: t("notifyEventCancelledSubject", { title: event.title }),
+        body: t("notifyEventCancelledBody", {
+          name: user.name ?? "",
+          title: event.title,
+          date: formatEventDate(format, event.startsAt),
+        }),
+      }),
       path: `/bands/${bandId}/calendar`,
     });
   }

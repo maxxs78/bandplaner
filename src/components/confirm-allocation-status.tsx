@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Check } from "lucide-react";
+import { useTranslations, useFormatter } from "next-intl";
 
 export function ConfirmAllocationStatus({
   confirmedAt,
@@ -15,18 +16,20 @@ export function ConfirmAllocationStatus({
   confirmAction: (allocationId: string) => Promise<void>;
 }) {
   const [pending, setPending] = useState(false);
+  const t = useTranslations("finance.confirmStatus");
+  const format = useFormatter();
 
   if (confirmedAt) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-success">
         <Check className="h-3.5 w-3.5" />
-        bestätigt {new Intl.DateTimeFormat("de-DE", { dateStyle: "short" }).format(confirmedAt)}
+        {t("confirmedOn", { date: format.dateTime(confirmedAt, { dateStyle: "short" }) })}
       </span>
     );
   }
 
   if (!canConfirm) {
-    return <span className="text-xs text-warning">ausstehend</span>;
+    return <span className="text-xs text-warning">{t("pending")}</span>;
   }
 
   return (
@@ -40,7 +43,7 @@ export function ConfirmAllocationStatus({
       }}
       className="rounded-md border border-border px-2 py-0.5 text-xs font-medium text-foreground hover:border-primary disabled:opacity-60"
     >
-      {pending ? "…" : "Bestätigen"}
+      {pending ? t("confirming") : t("confirm")}
     </button>
   );
 }

@@ -1,9 +1,10 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageFinance } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
-import { allocationNoun, isBalanceTransactionType, memberReceivesAllocation } from "@/lib/finance-entry-labels";
+import { getAllocationNoun, isBalanceTransactionType, memberReceivesAllocation } from "@/lib/finance-entry-labels";
 import { notifyUsers } from "@/lib/notifications";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -26,37 +27,38 @@ export async function createFinanceEntryAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("finance.actions");
   if (!getEnabledFeatures(membership.band).finance) {
-    return { error: "Das Finanzmodul ist für diese Band deaktiviert" };
+    return { error: t("disabled") };
   }
   if (!canManageFinance(isFinanceAdmin)) {
-    return { error: "Nur Finanzadmin:innen können Einträge anlegen" };
+    return { error: t("onlyAdminsCreate") };
   }
 
   const rawType = formData.get("type");
   const type = FINANCE_ENTRY_TYPES.includes(rawType as FinanceEntryType) ? (rawType as FinanceEntryType) : "INCOME";
   if (isBalanceTransactionType(type) && membership.band.financeSettlementMode !== "BAND_BALANCE") {
-    return { error: "Bandkonto-Auszahlungen und -Einzahlungen sind nur im Abrechnungsmodus „Bandkonto“ möglich." };
+    return { error: t("balanceOnlyInBandBalanceMode") };
   }
   const amountCents = parseAmountToCents(formData.get("amount"));
   if (amountCents === null || amountCents === 0) {
-    return { error: "Bitte einen gültigen Betrag angeben" };
+    return { error: t("invalidAmount") };
   }
   const category = (formData.get("category") as string)?.trim();
   if (!category) {
-    return { error: "Bitte eine Kategorie angeben" };
+    return { error: t("categoryRequired") };
   }
   const dateRaw = formData.get("date") as string;
   const date = dateRaw ? new Date(dateRaw) : null;
   if (!date || Number.isNaN(date.getTime())) {
-    return { error: "Bitte ein gültiges Datum angeben" };
+    return { error: t("invalidDate") };
   }
   const description = (formData.get("description") as string)?.trim() || null;
   const eventId = (formData.get("eventId") as string) || null;
 
   if (eventId) {
     const event = await prisma.event.findUnique({ where: { id: eventId, bandId }, select: { id: true } });
-    if (!event) return { error: "Ungültiger Termin" };
+    if (!event) return { error: t("invalidEvent") };
   }
 
   const entry = await prisma.financeEntry.create({
@@ -93,19 +95,21 @@ export async function saveAllocationsAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership, isFinanceAdmin } = await requireMembership(bandId);
+  const t = await getTranslations("finance.actions");
   if (!getEnabledFeatures(membership.band).finance) {
-    return { error: "Das Finanzmodul ist für diese Band deaktiviert" };
+    return { error: t("disabled") };
   }
   if (!canManageFinance(isFinanceAdmin)) {
-    return { error: "Nur Finanzadmin:innen können Anteile verwalten" };
+    return { error: t("onlyAdminsManageAllocations") };
   }
 
   const entry = await prisma.financeEntry.findUnique({
     where: { id: entryId, bandId },
     include: { allocations: { select: { userId: true, amountCents: true } } },
   });
-  if (!entry) return { error: "Eintrag nicht gefunden" };
-  const noun = allocationNoun(entry.type);
+  if (!entry) return { error: t("entryNotFound") };
+  const tFinance = await getTranslations("finance");
+  const noun = getAllocationNoun(entry.type, tFinance);
   // Bandkonto-Bewegungen muessen immer vollstaendig zugeordnet werden - anders
   // als bei Einnahmen/Ausgaben gibt es dabei keinen "Rest fuer die Band".
   const requireFullAllocation = isBalanceTransactionType(entry.type) || membership.band.financeSettlementMode === "NO_BALANCE";
@@ -118,7 +122,7 @@ export async function saveAllocationsAction(
     const raw = formData.get(`allocation_${userId}`) as string | null;
     if (raw === null || raw.trim() === "") continue;
     const amountCents = parseAmountToCents(raw);
-    if (amountCents === null) return { error: `Ungültiger Betrag bei „${noun}“` };
+    if (amountCents === null) return { error: t("invalidAllocationAmount", { noun }) };
     if (amountCents > 0) allocations.push({ userId, amountCents });
   }
 
@@ -128,16 +132,16 @@ export async function saveAllocationsAction(
   if (sum > entry.amountCents) {
     const diff = ((sum - entry.amountCents) / 100).toFixed(2);
     return {
-      error: `Zugeordnet sind aktuell ${sumFormatted} € „${noun}“ – das sind ${diff} € mehr als der Gesamtbetrag von ${total} €.`,
+      error: t("allocationExceedsTotal", { sum: sumFormatted, noun, diff, total }),
     };
   }
   if (sum !== entry.amountCents && requireFullAllocation) {
     const diff = ((entry.amountCents - sum) / 100).toFixed(2);
     const reason = isBalanceTransactionType(entry.type)
-      ? "eine Bandkonto-Bewegung muss immer vollständig auf Mitglieder verteilt werden"
-      : "die Band hat kein Bandkonto, siehe Verwaltung";
+      ? t("reasonBalanceFull")
+      : t("reasonNoBandBalance");
     return {
-      error: `Zugeordnet sind aktuell ${sumFormatted} € „${noun}“ – es fehlen noch ${diff} € bis zum Gesamtbetrag von ${total} € (${reason}).`,
+      error: t("allocationIncomplete", { sum: sumFormatted, noun, diff, total, reason }),
     };
   }
 
@@ -169,10 +173,13 @@ export async function saveAllocationsAction(
       userIds: changedUserIds,
       event: "FINANCE_ALLOCATION",
       excludeUserId: membership.userId,
-      subject: `${noun}: ${entry.category}`,
-      body: receives
-        ? `Dir wurde ein Betrag zugeordnet (${entry.category}). Bitte bestätige den Erhalt, sobald du das Geld bekommen hast.`
-        : `Dir wurde ein Kostenanteil zugeordnet (${entry.category}). Die Finanzverwaltung bestätigt den Eingang, sobald du gezahlt hast.`,
+      namespace: "finance",
+      buildMessage: (tf) => ({
+        subject: tf("actions.notifySubject", { noun: getAllocationNoun(entry.type, tf), category: entry.category }),
+        body: receives
+          ? tf("actions.notifyBodyReceives", { category: entry.category })
+          : tf("actions.notifyBodyOwes", { category: entry.category }),
+      }),
       path: `/bands/${bandId}/finance`,
     });
   }

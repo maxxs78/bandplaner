@@ -1,8 +1,9 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
-import { registerSchema } from "@/lib/validation";
+import { getRegisterSchema } from "@/lib/validation";
 import { signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
@@ -12,21 +13,23 @@ export async function registerAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
-  const parsed = registerSchema.safeParse({
+  const t = await getTranslations("auth.register");
+
+  const parsed = getRegisterSchema(t).safeParse({
     name: formData.get("name"),
     email: formData.get("email"),
     password: formData.get("password"),
   });
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const email = parsed.data.email.toLowerCase().trim();
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    return { error: "Diese E-Mail-Adresse wird bereits verwendet" };
+    return { error: t("emailTaken") };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.password, 10);
@@ -45,7 +48,7 @@ export async function registerAction(
     });
   } catch (error) {
     if (error instanceof AuthError) {
-      return { error: "Registrierung erfolgreich, Anmeldung fehlgeschlagen" };
+      return { error: t("loginFailedAfterRegister") };
     }
     throw error;
   }

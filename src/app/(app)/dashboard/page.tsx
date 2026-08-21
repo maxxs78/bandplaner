@@ -1,17 +1,11 @@
 import Link from "next/link";
 import { Plus } from "lucide-react";
+import { getTranslations, getFormatter } from "next-intl/server";
 import { requireActiveUser, isGuestAccessExpired } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/avatar";
-
-const roleLabels: Record<string, string> = {
-  ADMIN: "Administrator",
-  FINANCE_ADMIN: "Finanz-Admin",
-  MEMBER: "Mitglied",
-  GUEST: "Gast",
-};
 
 export default async function DashboardPage({
   searchParams,
@@ -20,6 +14,8 @@ export default async function DashboardPage({
 }) {
   const user = await requireActiveUser();
   const { accessExpired } = await searchParams;
+  const t = await getTranslations("dashboard");
+  const format = await getFormatter();
 
   const memberships = await prisma.membership.findMany({
     where: { userId: user.id },
@@ -42,35 +38,31 @@ export default async function DashboardPage({
     <div>
       {accessExpired && (
         <Card className="mb-6 border-warning/40 bg-warning/10 text-sm text-foreground">
-          Dein zeitlich begrenzter Gast-Zugriff auf diese Band ist abgelaufen.
+          {t("accessExpiredBanner")}
         </Card>
       )}
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Meine Bands</h1>
-          <p className="mt-1 text-sm text-muted">
-            Willkommen zurück, {user.name}.
-          </p>
+          <h1 className="text-2xl font-semibold text-foreground">{t("title")}</h1>
+          <p className="mt-1 text-sm text-muted">{t("welcome", { name: user.name ?? "" })}</p>
         </div>
         <Link href="/bands/new">
           <Button>
             <Plus className="h-4 w-4" />
-            Neue Band
+            {t("newBand")}
           </Button>
         </Link>
       </div>
 
       {memberships.length === 0 ? (
         <Card className="mt-8 text-center">
-          <p className="text-foreground">Du bist noch in keiner Band.</p>
-          <p className="mt-1 text-sm text-muted">
-            Erstelle deine erste Band oder lass dich per Einladungslink hinzufügen.
-          </p>
+          <p className="text-foreground">{t("noBandsTitle")}</p>
+          <p className="mt-1 text-sm text-muted">{t("noBandsSubtitle")}</p>
           <Link href="/bands/new" className="mt-4 inline-block">
             <Button>
               <Plus className="h-4 w-4" />
-              Band erstellen
+              {t("createBand")}
             </Button>
           </Link>
         </Card>
@@ -92,24 +84,23 @@ export default async function DashboardPage({
                     <h2 className="font-semibold text-foreground">{m.band.name}</h2>
                   </div>
                   <Badge variant={expired ? "default" : "accent"}>
-                    {expired ? "Zugriff abgelaufen" : roleLabels[m.role]}
+                    {expired ? t("accessExpiredBadge") : t(`roles.${m.role}`)}
                   </Badge>
                 </div>
                 <p className="mt-2 text-sm text-muted">
-                  {m.band._count.memberships}{" "}
-                  {m.band._count.memberships === 1 ? "Mitglied" : "Mitglieder"}
+                  {t("memberCount", { count: m.band._count.memberships })}
                 </p>
                 {!expired &&
                   (m.band.events[0] ? (
                     <p className="mt-3 text-sm text-foreground">
-                      Nächster Termin:{" "}
-                      {new Intl.DateTimeFormat("de-DE", {
+                      {t("nextEvent")}{" "}
+                      {format.dateTime(m.band.events[0].startsAt, {
                         dateStyle: "medium",
                         timeStyle: "short",
-                      }).format(m.band.events[0].startsAt)}
+                      })}
                     </p>
                   ) : (
-                    <p className="mt-3 text-sm text-muted">Keine anstehenden Termine</p>
+                    <p className="mt-3 text-sm text-muted">{t("noUpcomingEvents")}</p>
                   ))}
               </Card>
             );

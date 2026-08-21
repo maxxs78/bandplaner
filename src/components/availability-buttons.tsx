@@ -3,11 +3,12 @@
 import { useTransition } from "react";
 import { Check, HelpCircle, X } from "lucide-react";
 import clsx from "clsx";
+import { useTranslations } from "next-intl";
 
 const options = [
-  { value: "YES", label: "Zusage", icon: Check, className: "data-[active=true]:bg-success data-[active=true]:text-white" },
-  { value: "MAYBE", label: "Vielleicht", icon: HelpCircle, className: "data-[active=true]:bg-warning data-[active=true]:text-white" },
-  { value: "NO", label: "Absage", icon: X, className: "data-[active=true]:bg-danger data-[active=true]:text-white" },
+  { value: "YES", icon: Check, className: "data-[active=true]:bg-success data-[active=true]:text-white" },
+  { value: "MAYBE", icon: HelpCircle, className: "data-[active=true]:bg-warning data-[active=true]:text-white" },
+  { value: "NO", icon: X, className: "data-[active=true]:bg-danger data-[active=true]:text-white" },
 ] as const;
 
 export function AvailabilityButtons({
@@ -18,6 +19,7 @@ export function AvailabilityButtons({
   current?: string;
 }) {
   const [pending, startTransition] = useTransition();
+  const t = useTranslations("availabilityButtons");
 
   return (
     <div className="flex gap-2">
@@ -34,7 +36,7 @@ export function AvailabilityButtons({
           )}
         >
           <opt.icon className="h-4 w-4" />
-          {opt.label}
+          {t(opt.value)}
         </button>
       ))}
     </div>

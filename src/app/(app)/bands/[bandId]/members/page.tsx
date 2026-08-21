@@ -1,3 +1,4 @@
+import { getTranslations, getFormatter } from "next-intl/server";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
@@ -13,13 +14,6 @@ import {
   updateBandProfileAction,
 } from "./actions";
 
-const roleLabels: Record<string, string> = {
-  ADMIN: "Administrator",
-  FINANCE_ADMIN: "Finanz-Administrator",
-  MEMBER: "Mitglied",
-  GUEST: "Gast",
-};
-
 export default async function MembersPage({
   params,
 }: {
@@ -28,6 +22,15 @@ export default async function MembersPage({
   const { bandId } = await params;
   const { user, membership } = await requireMembership(bandId);
   const isAdmin = canManageBand(membership.role);
+  const t = await getTranslations("bandMembers");
+  const tRoles = await getTranslations("dashboard.roles");
+  const format = await getFormatter();
+  const roleLabels: Record<string, string> = {
+    ADMIN: tRoles("ADMIN"),
+    FINANCE_ADMIN: tRoles("FINANCE_ADMIN"),
+    MEMBER: tRoles("MEMBER"),
+    GUEST: tRoles("GUEST"),
+  };
 
   const [members, invitations] = await Promise.all([
     prisma.membership.findMany({
@@ -54,7 +57,7 @@ export default async function MembersPage({
     <div className="space-y-8">
       {isAdmin && (
         <div>
-          <h2 className="font-semibold text-foreground">Bandprofil</h2>
+          <h2 className="font-semibold text-foreground">{t("profileTitle")}</h2>
           <Card className="mt-3">
             <ImageUploadForm
               action={updateBandImageAction.bind(null, bandId)}
@@ -74,7 +77,7 @@ export default async function MembersPage({
       )}
 
       <div>
-        <h2 className="font-semibold text-foreground">Mitglieder</h2>
+        <h2 className="font-semibold text-foreground">{t("membersTitle")}</h2>
         <div className="mt-3 space-y-2">
           {members.map((m) => (
             <Card key={m.id} className="flex items-center justify-between">
@@ -97,7 +100,7 @@ export default async function MembersPage({
                 <Badge variant="accent">
                   {roleLabels[m.role]}
                   {m.role === "GUEST" && m.guestUntil
-                    ? ` · bis ${new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(m.guestUntil)}`
+                    ? t("guestUntilSuffix", { date: format.dateTime(m.guestUntil, { dateStyle: "medium" }) })
                     : ""}
                 </Badge>
               )}
@@ -108,7 +111,7 @@ export default async function MembersPage({
 
       {isAdmin && (
         <div>
-          <h2 className="font-semibold text-foreground">Person einladen</h2>
+          <h2 className="font-semibold text-foreground">{t("inviteTitle")}</h2>
           <Card className="mt-3">
             <InviteForm bandId={bandId} defaultGuestUntil={defaultGuestUntil} />
           </Card>
@@ -117,7 +120,7 @@ export default async function MembersPage({
 
       {isAdmin && invitations.length > 0 && (
         <div>
-          <h2 className="font-semibold text-foreground">Offene Einladungen</h2>
+          <h2 className="font-semibold text-foreground">{t("openInvitationsTitle")}</h2>
           <div className="mt-3 space-y-2">
             {invitations.map((inv) => (
               <Card key={inv.id}>
@@ -125,10 +128,10 @@ export default async function MembersPage({
                   <div>
                     <p className="font-medium text-foreground">{inv.email}</p>
                     <p className="text-sm text-muted">
-                      Rolle: {roleLabels[inv.role]} · Gültig bis{" "}
-                      {new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" }).format(
-                        inv.expiresAt
-                      )}
+                      {t("invitationRole", {
+                        role: roleLabels[inv.role],
+                        date: format.dateTime(inv.expiresAt, { dateStyle: "medium" }),
+                      })}
                     </p>
                   </div>
                   <RevokeInvitationButton bandId={bandId} invitationId={inv.id} />

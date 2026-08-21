@@ -1,10 +1,11 @@
 "use server";
 
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
-import { equipmentSchema, packlistSchema } from "@/lib/validation";
+import { getEquipmentSchema, getPacklistSchema } from "@/lib/validation";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -37,14 +38,16 @@ export async function createEquipmentAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const ta = await getTranslations("equipment.actions");
   if (!getEnabledFeatures(membership.band).equipment) {
-    return { error: "Equipment ist für diese Band deaktiviert" };
+    return { error: ta("disabledForBand") };
   }
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können kein Equipment anlegen" };
+    return { error: ta("guestsCannotCreate") };
   }
 
-  const parsed = equipmentSchema.safeParse({
+  const t = await getTranslations("validation");
+  const parsed = getEquipmentSchema(t).safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     location: formData.get("location") || undefined,
@@ -53,14 +56,14 @@ export async function createEquipmentAction(
     category: formData.get("category") || "OTHER",
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const ownerUserId = parsed.data.ownerId || null;
   const responsibleId = parsed.data.responsibleId || null;
   for (const userId of [ownerUserId, responsibleId].filter((id): id is string => Boolean(id))) {
     const member = await prisma.membership.findUnique({ where: { userId_bandId: { userId, bandId } } });
-    if (!member) return { error: "Ungültiges Mitglied" };
+    if (!member) return { error: ta("invalidMember") };
   }
 
   await prisma.equipment.create({
@@ -86,14 +89,16 @@ export async function updateEquipmentAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const ta = await getTranslations("equipment.actions");
   if (!getEnabledFeatures(membership.band).equipment) {
-    return { error: "Equipment ist für diese Band deaktiviert" };
+    return { error: ta("disabledForBand") };
   }
   if (!(await canEditEquipment(bandId, equipmentId, user.id, membership.role))) {
-    return { error: "Keine Berechtigung, dieses Equipment zu bearbeiten" };
+    return { error: ta("noPermissionToEdit") };
   }
 
-  const parsed = equipmentSchema.safeParse({
+  const t = await getTranslations("validation");
+  const parsed = getEquipmentSchema(t).safeParse({
     name: formData.get("name"),
     description: formData.get("description") || undefined,
     location: formData.get("location") || undefined,
@@ -102,14 +107,14 @@ export async function updateEquipmentAction(
     category: formData.get("category") || "OTHER",
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const ownerUserId = parsed.data.ownerId || null;
   const responsibleId = parsed.data.responsibleId || null;
   for (const userId of [ownerUserId, responsibleId].filter((id): id is string => Boolean(id))) {
     const member = await prisma.membership.findUnique({ where: { userId_bandId: { userId, bandId } } });
-    if (!member) return { error: "Ungültiges Mitglied" };
+    if (!member) return { error: ta("invalidMember") };
   }
 
   await prisma.equipment.update({
@@ -144,19 +149,21 @@ export async function createPacklistAction(
   formData: FormData
 ): Promise<FormState> {
   const { membership } = await requireMembership(bandId);
+  const ta = await getTranslations("equipment.actions");
   if (!getEnabledFeatures(membership.band).packlists) {
-    return { error: "Packlisten sind für diese Band deaktiviert" };
+    return { error: ta("packlistsDisabled") };
   }
   if (!canManageContent(membership.role)) {
-    return { error: "Gäste können keine Packlisten erstellen" };
+    return { error: ta("guestsCannotCreatePacklist") };
   }
 
-  const parsed = packlistSchema.safeParse({
+  const t = await getTranslations("validation");
+  const parsed = getPacklistSchema(t).safeParse({
     name: formData.get("name"),
     eventId: formData.get("eventId") || undefined,
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
 
   const packlist = await prisma.packlist.create({
@@ -308,11 +315,12 @@ export async function uploadEquipmentFileAction(
   formData: FormData
 ): Promise<FormState> {
   const { user, membership } = await requireMembership(bandId);
+  const ta = await getTranslations("equipment.actions");
   if (!getEnabledFeatures(membership.band).equipment) {
-    return { error: "Equipment ist für diese Band deaktiviert" };
+    return { error: ta("disabledForBand") };
   }
   if (!(await canEditEquipment(bandId, equipmentId, user.id, membership.role))) {
-    return { error: "Keine Berechtigung, Dateien für dieses Equipment hochzuladen" };
+    return { error: ta("noPermissionToUpload") };
   }
 
   formData.set("equipmentId", equipmentId);

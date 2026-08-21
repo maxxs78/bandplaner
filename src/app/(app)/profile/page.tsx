@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { isMailConfigured } from "@/lib/mail";
@@ -29,20 +30,20 @@ export default async function ProfilePage({
     orderBy: { createdAt: "asc" },
   });
   const mailConfigured = isMailConfigured();
+  const t = await getTranslations("profile.page");
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="text-xl font-semibold text-foreground">Mein Profil</h1>
+      <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
 
       {(passwordReset || user.mustChangePassword) && (
         <Card className="mt-4 border-warning/40 bg-warning/10 text-sm text-foreground">
-          Dein Passwort wurde von einer Administratorperson zurückgesetzt. Bitte lege unten ein
-          neues Passwort fest, bevor du die App weiter nutzt.
+          {t("passwordResetNotice")}
         </Card>
       )}
 
       <Card className="mt-4">
-        <p className="mb-4 text-sm text-muted">Profilbild</p>
+        <p className="mb-4 text-sm text-muted">{t("avatarLabel")}</p>
         <ImageUploadForm
           action={updateAvatarAction}
           removeAction={removeAvatarAction}
@@ -51,11 +52,11 @@ export default async function ProfilePage({
         />
         <dl className="mt-6 space-y-3 text-sm">
           <div>
-            <dt className="text-muted">Name</dt>
+            <dt className="text-muted">{t("name")}</dt>
             <dd className="text-foreground">{user.name}</dd>
           </div>
           <div>
-            <dt className="text-muted">E-Mail</dt>
+            <dt className="text-muted">{t("email")}</dt>
             <dd className="text-foreground">{user.email}</dd>
           </div>
         </dl>
@@ -63,14 +64,11 @@ export default async function ProfilePage({
 
       {memberships.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-foreground">E-Mail-Benachrichtigungen</h2>
-          <p className="mt-1 text-sm text-muted">
-            Lege je Band fest, worüber du per E-Mail informiert werden möchtest.
-          </p>
+          <h2 className="text-lg font-semibold text-foreground">{t("notificationsTitle")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("notificationsHint")}</p>
           {!mailConfigured && (
             <Card className="mt-4 border-warning/40 bg-warning/10 text-sm text-foreground">
-              Für diese Installation ist noch kein Mailversand eingerichtet. Deine Einstellungen
-              werden gespeichert, es werden aber noch keine E-Mails verschickt.
+              {t("mailNotConfigured")}
             </Card>
           )}
           {memberships.map((m) => (
@@ -94,7 +92,7 @@ export default async function ProfilePage({
       )}
 
       <div className="mt-6">
-        <h2 className="text-lg font-semibold text-foreground">Passwort ändern</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("changePasswordTitle")}</h2>
         <Card className="mt-4">
           <ChangePasswordForm action={changePasswordAction} />
         </Card>

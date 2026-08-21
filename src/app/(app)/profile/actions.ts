@@ -1,10 +1,11 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/access";
 import { saveUploadedImage, deleteUploadedFile } from "@/lib/uploads";
-import { changePasswordSchema } from "@/lib/validation";
+import { getChangePasswordSchema } from "@/lib/validation";
 import { notificationEvents, type NotificationEvent } from "@/lib/notification-events";
 import { revalidatePath } from "next/cache";
 import type { ImageFormState } from "@/components/image-upload-form";
@@ -19,13 +20,14 @@ export async function updateNotificationPreferencesAction(
 ): Promise<NotificationFormState> {
   const user = await requireUser();
 
+  const t = await getTranslations("profile.notificationPreferences");
   const membership = await prisma.membership.findUnique({
     where: { userId_bandId: { userId: user.id, bandId } },
     select: { id: true, band: { select: { communicationEnabled: true } } },
   });
-  if (!membership) return { error: "Keine Mitgliedschaft in dieser Band" };
+  if (!membership) return { error: t("noMembership") };
   if (!membership.band.communicationEnabled) {
-    return { error: "Das Kommunikationsmodul ist für diese Band deaktiviert" };
+    return { error: t("disabled") };
   }
 
   const data = Object.fromEntries(
@@ -38,7 +40,7 @@ export async function updateNotificationPreferencesAction(
   await prisma.membership.update({ where: { id: membership.id }, data });
 
   revalidatePath("/profile");
-  return { success: "Benachrichtigungen gespeichert." };
+  return { success: t("saved") };
 }
 
 export async function changePasswordAction(
@@ -46,23 +48,24 @@ export async function changePasswordAction(
   formData: FormData
 ): Promise<PasswordFormState> {
   const sessionUser = await requireUser();
+  const t = await getTranslations("profile.changePassword");
 
-  const parsed = changePasswordSchema.safeParse({
+  const parsed = getChangePasswordSchema(t).safeParse({
     currentPassword: formData.get("currentPassword"),
     newPassword: formData.get("newPassword"),
     confirmPassword: formData.get("confirmPassword"),
   });
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+    return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
   }
   if (parsed.data.newPassword !== parsed.data.confirmPassword) {
-    return { error: "Die neuen Passwörter stimmen nicht überein" };
+    return { error: t("mismatch") };
   }
 
   const user = await prisma.user.findUniqueOrThrow({ where: { id: sessionUser.id } });
   const valid = await bcrypt.compare(parsed.data.currentPassword, user.passwordHash);
   if (!valid) {
-    return { error: "Aktuelles Passwort ist falsch" };
+    return { error: t("currentPasswordWrong") };
   }
 
   const passwordHash = await bcrypt.hash(parsed.data.newPassword, 10);
@@ -72,7 +75,7 @@ export async function changePasswordAction(
   });
 
   revalidatePath("/", "layout");
-  return { success: "Passwort geändert." };
+  return { success: t("success") };
 }
 
 export async function updateAvatarAction(
@@ -83,7 +86,8 @@ export async function updateAvatarAction(
 
   const file = formData.get("image") as File | null;
   if (!file || file.size === 0) {
-    return { error: "Bitte ein Bild auswählen" };
+    const t = await getTranslations("imageUpload");
+    return { error: t("imageRequired") };
   }
 
   const result = await saveUploadedImage(file, "avatars");

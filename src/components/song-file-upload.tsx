@@ -2,9 +2,10 @@
 
 import { useActionState } from "react";
 import { Upload } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Select, FieldError } from "@/components/ui/input";
-import { songFileVisibilityOptions } from "@/lib/band-file-categories";
+import { getSongFileVisibilityOptions } from "@/lib/band-file-categories";
 import type { FormState } from "@/app/(app)/bands/[bandId]/songs/actions";
 
 export function SongFileUpload({
@@ -13,6 +14,7 @@ export function SongFileUpload({
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
+  const t = useTranslations("songs.fileUpload");
 
   return (
     <form action={formAction} className="flex flex-wrap items-end gap-3">
@@ -26,7 +28,7 @@ export function SongFileUpload({
         />
       </div>
       <Select name="visibility" defaultValue="BAND" className="max-w-[14rem]">
-        {songFileVisibilityOptions.map((v) => (
+        {getSongFileVisibilityOptions(t).map((v) => (
           <option key={v.value} value={v.value}>
             {v.label}
           </option>
@@ -34,7 +36,7 @@ export function SongFileUpload({
       </Select>
       <Button type="submit" size="sm" disabled={pending}>
         <Upload className="h-4 w-4" />
-        {pending ? "Wird hochgeladen…" : "Hochladen"}
+        {pending ? t("uploading") : t("upload")}
       </Button>
       <div className="w-full">
         <FieldError>{state?.error}</FieldError>

@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
@@ -31,16 +32,13 @@ export default async function BandSettingsPage({
 
   const members = memberships.map((m) => m.user);
   const financeAdminIds = financeAdmins.map((f) => f.userId);
+  const t = await getTranslations("bandSettings");
 
   return (
     <div className="mx-auto max-w-lg space-y-8">
       <div>
-        <h1 className="text-xl font-semibold text-foreground">Verwaltung</h1>
-        <p className="mt-1 text-sm text-muted">
-          Funktionen für diese Band ein- oder ausschalten. Ausgeschaltete Funktionen verschwinden aus der
-          Navigation, vorhandene Daten bleiben dabei erhalten und stehen sofort wieder zur Verfügung, sobald du
-          die Funktion wieder einschaltest.
-        </p>
+        <h1 className="text-xl font-semibold text-foreground">{t("title")}</h1>
+        <p className="mt-1 text-sm text-muted">{t("hint")}</p>
         <Card className="mt-4">
           <FeatureTogglesForm
             key={`${membership.band.equipmentEnabled}-${membership.band.packlistsEnabled}-${membership.band.financeEnabled}-${membership.band.financeSettlementMode}-${membership.band.communicationEnabled}-${membership.band.mediaPlayerEnabled}-${membership.band.keyDetectionEnabled}`}
@@ -58,12 +56,8 @@ export default async function BandSettingsPage({
 
       {membership.band.financeEnabled && (
         <div>
-          <h2 className="text-lg font-semibold text-foreground">Finanzadmin:innen</h2>
-          <p className="mt-1 text-sm text-muted">
-            Nur diese Personen sehen die vollständige Finanzübersicht der Band und dürfen Einträge anlegen.
-            Sie bekommen dadurch außerdem admin-gleiche Rechte bei Songs, Equipment, Dateien und Terminen –
-            aber keinen Zugriff auf Mitgliederverwaltung oder diese Verwaltungsseite.
-          </p>
+          <h2 className="text-lg font-semibold text-foreground">{t("financeAdminsTitle")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("financeAdminsHint")}</p>
           <Card className="mt-4">
             <FinanceAdminsForm
               key={financeAdminIds.join(",")}
@@ -76,7 +70,7 @@ export default async function BandSettingsPage({
       )}
 
       <div>
-        <h2 className="text-lg font-semibold text-foreground">Weitere Einstellungen</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("moreSettingsTitle")}</h2>
         <Card className="mt-4">
           <BandSettingsForm
             key={`${membership.band.defaultGuestAccessDays}-${membership.band.publicFileLinksEnabled}`}
