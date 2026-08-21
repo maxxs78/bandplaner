@@ -452,6 +452,23 @@ export async function updateSongKeyAction(
   return undefined;
 }
 
+/** Übernimmt ein im Übungsmodus erkanntes Grundtempo in die Songdaten (nach Bestätigung durch die Person). */
+export async function updateSongBpmAction(
+  bandId: string,
+  songId: string,
+  bpm: number
+): Promise<{ error?: string } | undefined> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) {
+    const t = await getTranslations("songs.actions");
+    return { error: t("guestsCannotChangeBpm") };
+  }
+
+  await prisma.song.update({ where: { id: songId, bandId }, data: { bpm } });
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  return undefined;
+}
+
 /**
  * Wertet die Stimmen zu einem Vorschlag aus, sobald alle stimmberechtigten Mitglieder
  * (alle Rollen außer Gast) abgestimmt haben: einstimmig dafür -> "Neu", einstimmig

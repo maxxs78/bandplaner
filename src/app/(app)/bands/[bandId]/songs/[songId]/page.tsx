@@ -276,6 +276,7 @@ export default async function SongDetailPage({
             playerEnabled={features.mediaPlayer}
             keyDetectionEnabled={features.keyDetection}
             songKey={song.key}
+            songBpm={song.bpm}
           />
         </div>
         {canManage && (

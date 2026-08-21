@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { transposeKey, keysMatch } from "@/lib/music-key";
 import { detectKey, type DetectedKey } from "@/lib/key-detection";
-import { updateSongKeyAction } from "@/app/(app)/bands/[bandId]/songs/actions";
+import { updateSongKeyAction, updateSongBpmAction } from "@/app/(app)/bands/[bandId]/songs/actions";
 
 const WORKLET_URL = "/audio-worklet/soundtouch-processor.js";
 const MIN_TEMPO = 0.5;
@@ -58,6 +58,7 @@ function computePeaks(buffer: AudioBuffer, columns: number) {
 export function PracticePlayer({
   src,
   songKey,
+  songBpm,
   bandId,
   songId,
   keyDetectionEnabled,
@@ -66,6 +67,8 @@ export function PracticePlayer({
   src: string;
   /** Bandweit hinterlegte Tonart des Songs (freies Kurzschreibweise-Format, z. B. "Am"). */
   songKey?: string | null;
+  /** Bandweit hinterlegtes Grundtempo des Songs. */
+  songBpm?: number | null;
   bandId: string;
   songId: string;
   keyDetectionEnabled?: boolean;
@@ -92,7 +95,10 @@ export function PracticePlayer({
   >({ status: "idle" });
   const [keyAdopted, setKeyAdopted] = useState(false);
   const [keyBannerDismissed, setKeyBannerDismissed] = useState(false);
+  const [bpmAdopted, setBpmAdopted] = useState(false);
+  const [bpmBannerDismissed, setBpmBannerDismissed] = useState(false);
   const [adoptPending, startAdopt] = useTransition();
+  const [adoptBpmPending, startAdoptBpm] = useTransition();
   const t = useTranslations("practicePlayer");
 
   const contextRef = useRef<AudioContext | null>(null);
@@ -443,7 +449,19 @@ export function PracticePlayer({
     [bandId, songId]
   );
 
+  const handleAdoptBpm = useCallback(
+    (bpm: number) => {
+      startAdoptBpm(async () => {
+        await updateSongBpmAction(bandId, songId, bpm);
+        setBpmAdopted(true);
+      });
+    },
+    [bandId, songId]
+  );
+
   const loopActive = loopStart !== null && loopEnd !== null && loopEnd > loopStart;
+  const detectedBaseBpm = baseBpm !== null ? Math.round(baseBpm) : null;
+  const bpmDiffers = detectedBaseBpm !== null && detectedBaseBpm !== songBpm;
   const transposedKey = songKey ? transposeKey(songKey, semitones) : null;
 
   if (status === "error") {
@@ -542,6 +560,21 @@ export function PracticePlayer({
           />
         </label>
       </div>
+
+      {detectedBaseBpm !== null && bpmDiffers && !bpmAdopted && !bpmBannerDismissed && (
+        <div className="flex flex-wrap items-center gap-2 rounded-md border border-primary/40 bg-primary/5 p-2 text-sm">
+          <span className="text-foreground">
+            {t("bpmDiffers", { detected: detectedBaseBpm, current: songBpm != null ? `${songBpm} BPM` : t("noBpm") })}
+          </span>
+          <Button size="sm" onClick={() => handleAdoptBpm(detectedBaseBpm)} disabled={adoptBpmPending}>
+            {t("adopt")}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => setBpmBannerDismissed(true)}>
+            {t("discard")}
+          </Button>
+        </div>
+      )}
+      {bpmAdopted && <p className="text-xs text-muted">{t("bpmAdopted")}</p>}
 
       <div className="flex flex-wrap items-center gap-2 border-t border-border pt-2">
         <span className="text-xs font-medium text-foreground">{t("section")}</span>

@@ -107,6 +107,10 @@ model User {
   financeAdminOf         BandFinanceAdmin[]
   createdFinanceEntries  FinanceEntry[]
   financeAllocations     FinanceAllocation[]
+
+  assignedPacklistItemEventStatuses PacklistItemEventStatus[]
+  setlistItemEventAnnotations       SetlistItemEventAnnotation[]
+  setlistEventNotes                 SetlistEventNote[]
 }
 
 model Band {
@@ -347,6 +351,12 @@ model Event {
   files          BandFile[]
   packlists      Packlist[]
   financeEntries FinanceEntry[]
+
+  packlistItemEventStatuses  PacklistItemEventStatus[]
+  setlistItemEventAnnotations SetlistItemEventAnnotation[]
+  setlistEventNotes          SetlistEventNote[]
+  setlistEventSnapshots      SetlistEventSnapshot[]
+  packlistEventSnapshots     PacklistEventSnapshot[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
@@ -495,17 +505,13 @@ model BandFile {
   uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   uploadedById String
 
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  eventId String?
-
-  song   Song?   @relation(fields: [songId], references: [id], onDelete: SetNull)
-  songId String?
-
-  equipment   Equipment? @relation(fields: [equipmentId], references: [id], onDelete: SetNull)
-  equipmentId String?
-
-  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
-  locationId String?
+  /// Mehrfachverknuepfung (m:n): eine Datei kann an beliebig viele Termine,
+  /// Songs, Equipment-Eintraege und Orte gleichzeitig gehaengt werden, z. B.
+  /// ein am Ort hinterlegter Rider zusaetzlich an einen konkreten Termin.
+  events    Event[]
+  songs     Song[]
+  equipment Equipment[]
+  locations Location[]
 }
 
 model SongNote {
@@ -535,11 +541,16 @@ model Setlist {
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
 
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  eventId String?
+  /// Mehrfachverknuepfung (m:n): dieselbe Setlist kann fuer mehrere Termine
+  /// wiederverwendet werden. Abhak-/notizfreier terminloser Zustand bleibt
+  /// SetlistItemAnnotation/SetlistNote; terminspezifischer Zustand liegt in
+  /// SetlistItemEventAnnotation/SetlistEventNote (siehe dort).
+  events Event[]
 
-  items SetlistItem[]
-  notes SetlistNote[]
+  items      SetlistItem[]
+  notes      SetlistNote[]
+  eventNotes SetlistEventNote[]
+  eventSnapshots SetlistEventSnapshot[]
 }
 
 model SetlistNote {
@@ -569,7 +580,8 @@ model SetlistItem {
   song   Song?   @relation(fields: [songId], references: [id], onDelete: SetNull)
   songId String?
 
-  annotations SetlistItemAnnotation[]
+  annotations      SetlistItemAnnotation[]
+  eventAnnotations SetlistItemEventAnnotation[]
 }
 
 /// Persönliche, nur für das jeweilige Mitglied sichtbare Markierung eines Setlist-Eintrags
@@ -588,6 +600,70 @@ model SetlistItemAnnotation {
   userId String
 
   @@unique([itemId, userId])
+}
+
+/// Terminspezifisches Pendant zu SetlistItemAnnotation - nur relevant, wenn die
+/// Setlist an mehr als einen Termin gehaengt ist (siehe Kommentar an Setlist.events).
+/// Bewusst ein eigenes Modell statt eines nullable eventId auf
+/// SetlistItemAnnotation: mehrere NULL-Werte gelten in SQL als "verschieden",
+/// der bestehende Unique-Constraint (ein allgemeiner Hinweis je Person) waere
+/// sonst nicht mehr geschuetzt.
+model SetlistItemEventAnnotation {
+  id        String   @id @default(cuid())
+  note      String?
+  color     String?
+  cues      String?
+  updatedAt DateTime @updatedAt
+
+  item    SetlistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId  String
+  event   Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId  String
+
+  @@unique([itemId, eventId, userId])
+}
+
+/// Terminspezifisches Pendant zu SetlistNote, aus denselben Gruenden ein
+/// eigenes Modell statt eines nullable eventId auf SetlistNote.
+model SetlistEventNote {
+  id        String   @id @default(cuid())
+  content   String
+  updatedAt DateTime @updatedAt
+
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  setlistId String
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId    String
+
+  @@unique([setlistId, eventId, userId])
+}
+
+/// "Wie gespielt"-Momentaufnahme der Setlist fuer einen vergangenen Termin.
+/// Entsteht automatisch unmittelbar VOR der ersten Aenderung an der Liste
+/// (Song hinzufuegen/entfernen/umsortieren), nachdem ein verknuepfter Termin
+/// in die Vergangenheit gerueckt ist, sowie beim nachtraeglichen Verknuepfen
+/// eines bereits vergangenen Termins - siehe freezePastSetlistSnapshotsIfNeeded()
+/// in setlists/actions.ts. Bis zur ersten Aenderung entspricht der Live-Stand
+/// noch exakt dem Stand beim Termin, ein Snapshot ist dann unnoetig.
+/// itemsJson denormalisiert Titel/Tonart/Tempo bewusst als Text (wie
+/// SetlistItem.customTitle/songDeleted), damit der Snapshot unabhaengig davon
+/// bleibt, ob der Song spaeter aus der Bibliothek geloescht oder das Item
+/// entfernt wird.
+model SetlistEventSnapshot {
+  id        String   @id @default(cuid())
+  itemsJson String
+  createdAt DateTime @default(now())
+
+  setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
+  setlistId String
+  event     Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId   String
+
+  @@unique([setlistId, eventId])
 }
 
 enum EquipmentCategory {
@@ -639,10 +715,14 @@ model Packlist {
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
 
-  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
-  eventId String?
+  /// Mehrfachverknuepfung (m:n): dieselbe Packliste kann fuer mehrere Termine
+  /// wiederverwendet werden. Der globale Abhak-/Zustaendigkeits-Zustand auf
+  /// PacklistItem bleibt der terminlose Standard; terminspezifischer Zustand
+  /// liegt in PacklistItemEventStatus (siehe dort).
+  events Event[]
 
   items PacklistItem[]
+  eventSnapshots PacklistEventSnapshot[]
 }
 
 /// Eintrag einer Packliste - entweder mit einem Equipment-Katalogeintrag verknüpft
@@ -662,6 +742,46 @@ model PacklistItem {
 
   assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
   assignedToId String?
+
+  eventStatuses PacklistItemEventStatus[]
+}
+
+/// Analoges "wie gepackt"-Pendant zu SetlistEventSnapshot, mit derselben
+/// Vor-jeder-Aenderung-einfrieren-Logik (siehe dort und
+/// freezePastPacklistSnapshotsIfNeeded() in equipment/actions.ts). Haelt
+/// Name, Abhak- und Zustaendigkeits-Stand denormalisiert fest, weil
+/// PacklistItemEventStatus beim Entfernen eines Eintrags kaskadierend
+/// mitgeloescht wird.
+model PacklistEventSnapshot {
+  id        String   @id @default(cuid())
+  itemsJson String
+  createdAt DateTime @default(now())
+
+  packlist   Packlist @relation(fields: [packlistId], references: [id], onDelete: Cascade)
+  packlistId String
+  event      Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId    String
+
+  @@unique([packlistId, eventId])
+}
+
+/// Terminspezifischer Abhak-/Zustaendigkeits-Status eines Packlisten-Eintrags -
+/// nur relevant, wenn die Packliste an mehr als einen Termin gehaengt ist.
+/// Ohne aktiven Termin-Kontext in der UI gilt weiterhin PacklistItem.checked/
+/// assignedToId direkt (siehe Kommentar an Packlist.events).
+model PacklistItemEventStatus {
+  id      String  @id @default(cuid())
+  checked Boolean @default(false)
+
+  item   PacklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId String
+  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId String?
+
+  @@unique([itemId, eventId])
 }
 
 /// Orte-Katalog (Venues) - Advanced Feature, siehe Band.locationsEnabled. Adresse

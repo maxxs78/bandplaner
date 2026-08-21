@@ -14,14 +14,14 @@ Aktuell umgesetzte Module:
 
 - **Kalender & Termine** – Proben, Auftritte, Meetings und sonstige Termine inkl. Terminserien; je Terminart vorbelegter Teilnehmerkreis (bei Proben/Auftritten standardmäßig alle Mitglieder, bei Meetings nur die erstellende Person), individuell anpassbar. Abonnierbar als ICS-Feed für externe Kalender-Apps.
 - **Verfügbarkeiten** – Rückmeldung je Termin (Zusage/Absage/Vielleicht) sowie Eintragen längerfristiger persönlicher Abwesenheiten, unabhängig von konkreten Terminen.
-- **Songbibliothek** – zentrale, bandweit geteilte Songs mit Metadaten (Tonart, BPM, Taktart, Dauer, Genre, Interpret bei Coversongs), Song-Dokumenten (Audiodateien, Songtexte, Tabulaturen/Noten) mit je Datei einstellbarer Sichtbarkeit, externen Links sowie persönlichen Notizen je Mitglied. Ein in der Audiodatei eingebettetes Coverbild (ID3-Tags) wird beim Upload automatisch übernommen. Songs durchlaufen einen Status-Workflow von „vorgeschlagen" bis „archiviert"; Vorschläge werden per Daumen-hoch/-runter mit sichtbarem Namen abgestimmt, bei einstimmigem Downvote automatisch abgelehnt.
-- **Setlisten** – Zusammenstellung aus der Songbibliothek, personalisierte Kennzeichnung einzelner Einträge je Mitglied (Farbe, Notiz, Bühnen-Hinweis-Icons wie Umstimmen/Instrumentwechsel/Programmwechsel), persönliche Gesamt-Anmerkung sowie PDF-/Druckexport – auch personalisiert je Mitglied.
-- **Equipment & Packlisten** – Katalog mit Eigentum (Band oder Einzelperson) und optional zuständiger Person, Packlisten je Termin mit Abhak-Fortschritt und Druckexport. Beide Module lassen sich je Band ein-/ausschalten.
+- **Songbibliothek** – zentrale, bandweit geteilte Songs mit Metadaten (Tonart, BPM, Taktart, Dauer, Genre, Interpret bei Coversongs), Song-Dokumenten (Audiodateien, Songtexte, Tabulaturen/Noten) mit je Datei einstellbarer Sichtbarkeit, externen Links sowie persönlichen Notizen je Mitglied. Songs durchlaufen einen Status-Workflow von „vorgeschlagen" bis „archiviert"; Vorschläge werden per Daumen-hoch/-runter mit sichtbarem Namen abgestimmt, bei einstimmigem Downvote automatisch abgelehnt. Beim Neuanlegen unterstützt ein **Anlageassistent**: Aus einer ausgewählten Audiodatei werden Titel, Interpret, Genre, Album, Erscheinungsjahr, BPM, Spieldauer und ein eingebettetes Coverbild (ID3-/Vorbis-Tags) automatisch vorbefüllt, ohne bereits ausgefüllte Felder zu überschreiben. Optional lässt sich per Knopfdruck zusätzlich online recherchieren – MusicBrainz als Primärquelle, Discogs als Fallback für Genre/Jahr/Cover, Spotify für einen ergänzenden Track-Link; bei mehreren Treffern erscheint eine Auswahlliste zur Bestätigung. Alle drei Online-Quellen sind einzeln optional konfigurierbar (siehe [INSTALLATION.md](INSTALLATION.md)) und degradieren ohne Zugangsdaten still, ohne die Song-Erfassung zu blockieren.
+- **Setlisten** – Zusammenstellung aus der Songbibliothek, personalisierte Kennzeichnung einzelner Einträge je Mitglied (Farbe, Notiz, Bühnen-Hinweis-Icons wie Umstimmen/Instrumentwechsel/Programmwechsel), persönliche Gesamt-Anmerkung sowie PDF-/Druckexport – auch personalisiert je Mitglied. Dieselbe Setlist lässt sich mit mehreren Terminen verknüpfen (Songliste geteilt, persönliche Hinweise/Notizen je nach im Termin-Auswähler gewähltem Termin getrennt); liegt ein verknüpfter Termin in der Vergangenheit, wird die Songliste beim nächsten Änderungsversuch automatisch als „wie gespielt"-Stand eingefroren und bleibt für diesen Termin unverändert, auch wenn die (weiterhin geteilte) Liste danach weiterbearbeitet wird.
+- **Equipment & Packlisten** – Katalog mit Eigentum (Band oder Einzelperson) und optional zuständiger Person, Packlisten mit Abhak-Fortschritt und Druckexport. Eine Packliste lässt sich wie Setlisten mit mehreren Terminen verknüpfen; Abhak-Status und Zuständigkeit sind dabei je Termin getrennt, und die Eintragsliste vergangener Termine wird beim nächsten Änderungsversuch analog eingefroren. Beide Module lassen sich je Band ein-/ausschalten.
 - **Finanzen** – Einnahmen und Ausgaben je Band bzw. Termin, anteilige Zuordnung an Mitglieder (Gagen bzw. Kostenanteile) mit Bestätigung durch die jeweils zuständige Seite, CSV-Export. Wahlweise ohne Bandkonto (alles wird zu 100 % verteilt) oder mit Bandkonto, das nicht verteilte Restbeträge hält; im Bandkonto-Modus sind zusätzlich direkte Aus- und Einzahlungen möglich. Je Band ein-/ausschaltbar.
 - **Kommunikation** – E-Mail-Benachrichtigungen zu neuen/geänderten Terminen, Songvorschlägen, neuen Dateien und eigenen Gagen/Kostenanteilen; jede Person legt im eigenen Profil je Band fest, worüber sie informiert wird. Dazu Teilen-Buttons für WhatsApp bei Terminen und Setlisten. Je Band ein-/ausschaltbar; der Mailversand benötigt zusätzlich einen konfigurierten SMTP-Server (siehe [INSTALLATION.md](INSTALLATION.md)).
-- **Medienplayer** – hinterlegte Audiodateien direkt in der App abspielen. Der zuschaltbare Übungsmodus bietet Tempo von 50–150 % bei gleichbleibender Tonhöhe, Transponieren um ±12 Halbtöne unabhängig vom Tempo (bei hinterlegter Tonart wird die transponierte Zieltonart mit angezeigt) sowie einen A/B-Abschnitts-Loop mit Wellenformdarstellung, der sich auch per Ziehen mit Maus oder Finger direkt markieren lässt. Dazu Anzeige von Spielzeit/Restzeit inklusive Millisekunden sowie automatisch erkanntes Tempo (BPM), das sich mit dem Tempo-Regler mitändert. Auf Knopfdruck lässt sich zusätzlich die Tonart der Datei schätzen (**Tonart-Erkennung**, eigener Unterschalter) – weicht das Ergebnis von der hinterlegten Tonart ab, fragt die App nach, ob sie übernommen werden soll; die Songdaten ändern sich nie automatisch. Verlinkte YouTube- und Spotify-Quellen werden über den offiziellen Player eingebettet – dort allerdings ohne Übungsfunktionen (siehe unten). Je Band ein-/ausschaltbar.
+- **Medienplayer** – hinterlegte Audiodateien direkt in der App abspielen. Der zuschaltbare Übungsmodus bietet Tempo von 50–150 % bei gleichbleibender Tonhöhe, Transponieren um ±12 Halbtöne unabhängig vom Tempo (bei hinterlegter Tonart wird die transponierte Zieltonart mit angezeigt) sowie einen A/B-Abschnitts-Loop mit Wellenformdarstellung, der sich auch per Ziehen mit Maus oder Finger direkt markieren lässt. Dazu Anzeige von Spielzeit/Restzeit inklusive Millisekunden sowie automatisch erkanntes Tempo (BPM), das sich mit dem Tempo-Regler mitändert und sich – weicht es vom hinterlegten Songtempo ab – auf Bestätigung in die Songdaten übernehmen lässt. Auf Knopfdruck lässt sich zusätzlich die Tonart der Datei schätzen (**Tonart-Erkennung**, eigener Unterschalter) – weicht das Ergebnis von der hinterlegten Tonart ab, fragt die App ebenso nach, ob sie übernommen werden soll; die Songdaten ändern sich nie automatisch. Verlinkte YouTube- und Spotify-Quellen werden über den offiziellen Player eingebettet – dort allerdings ohne Übungsfunktionen (siehe unten). Je Band ein-/ausschaltbar.
 - **Orte** – bandweiter Katalog von Veranstaltungsorten (Adresse, Ansprechpartner:in, Kontakt, Website, Fassungsvermögen, Bühne/Technik- und Anfahrt/Parken-Notizen) mit Datei-Upload je Ort und Kartendarstellung (OpenStreetMap/Leaflet, umschaltbar zwischen Straßenkarte und Satellitenbild). Die Adresse lässt sich eingeben (automatische Geokodierung über Nominatim) oder direkt auf der Karte per Klick/Ziehen setzen (automatische Rückwärts-Geokodierung ins Adressfeld); Geokoordinaten werden zusätzlich als Text angezeigt. Termine verweisen über ein einziges Ortsfeld wahlweise per Freitext, Verknüpfung zu einem bestehenden Ort oder Neuanlage eines Orts direkt beim Anlegen des Termins; verknüpfte Termine zeigen Name, Adresse und eine Kartenvorschau. Je Band ein-/ausschaltbar.
-- **Dateiverwaltung** – bandinterner Dateispeicher, verknüpfbar mit Songs, Terminen, Equipment und Orten; einzelne Dateien können optional über einen nicht erratbaren Link ohne Login freigegeben werden (Funktion je Band abschaltbar).
+- **Dateiverwaltung** – bandinterner Dateispeicher, verknüpfbar mit Songs, Terminen, Equipment und Orten – auch mehrfach gleichzeitig (z. B. ein am Ort hinterlegter Technical Rider zusätzlich an einen konkreten Termin); Verknüpfungen lassen sich einzeln über „Bestehende Datei verknüpfen“ ergänzen bzw. gezielt wieder lösen, ohne die Datei zu löschen. Einzelne Dateien können optional über einen nicht erratbaren Link ohne Login freigegeben werden (Funktion je Band abschaltbar).
 - **Bandprofil** – Genre, Kurzbeschreibung, Standort, Kontakt-E-Mail, Links zu Website/Social-Media/Streaming sowie Bandbild.
 - **Benutzerprofil** – Anzeigename, E-Mail und Avatar, kontobezogen und unabhängig von der jeweiligen Bandzugehörigkeit; dazu Passwortänderung und Benachrichtigungs-Einstellungen.
 
@@ -65,28 +65,28 @@ erDiagram
     MITGLIED }o--o{ FINANZEINTRAG : "Gage / Kostenanteil"
 
     TERMIN |o--o| ORT : "findet statt an"
-    TERMIN ||--o{ SETLISTE : nutzt
-    TERMIN ||--o{ PACKLISTE : nutzt
+    TERMIN }o--o{ SETLISTE : nutzt
+    TERMIN }o--o{ PACKLISTE : nutzt
     TERMIN ||--o{ FINANZEINTRAG : verursacht
-    TERMIN ||--o{ DATEI : hat
+    TERMIN }o--o{ DATEI : hat
 
     SETLISTE }o--o{ SONG : "enthält (mit Reihenfolge)"
 
-    SONG ||--o{ DATEI : hat
+    SONG }o--o{ DATEI : hat
 
     PACKLISTE }o--o{ EQUIPMENT : enthält
 
-    EQUIPMENT ||--o{ DATEI : hat
+    EQUIPMENT }o--o{ DATEI : hat
 
-    ORT ||--o{ DATEI : hat
+    ORT }o--o{ DATEI : hat
 ```
 
 Lesehilfe:
 
-- **Dateien** sind das einzige Objekt, das an vier verschiedene Stellen andocken kann – an einen Termin, einen Song, ein Equipment-Teil oder einen Ort –, dabei aber jeweils an höchstens eine davon gleichzeitig (oder an keine, als reine bandweite Ablage).
+- **Dateien** können an mehrere Stellen gleichzeitig andocken – Termin, Song, Equipment-Teil und/oder Ort, in beliebiger Kombination (oder an keine, als reine bandweite Ablage) –, statt wie früher an höchstens eine davon.
 - **Equipment** gehört entweder der Band oder einer einzelnen Person, nie beidem.
 - Ein **Termin** kann null oder einen Ort haben; derselbe Ort lässt sich für mehrere Termine wiederverwenden.
-- **Setlisten** und **Packlisten** lassen sich optional mit einem Termin verknüpfen (müssen es aber nicht).
+- **Setlisten** und **Packlisten** lassen sich mit mehreren Terminen gleichzeitig verknüpfen (oder mit keinem); die Song- bzw. Eintragsliste ist dabei geteilt, während Abhak-Status, Zuständigkeit und persönliche Hinweise je Termin getrennt gespeichert werden. Für bereits vergangene Termine wird die Liste beim nächsten Änderungsversuch automatisch als historischer Stand eingefroren, damit spätere Bearbeitungen die Dokumentation vergangener Auftritte/Proben nicht verfälschen.
 - **Mitglieder** melden sich pro Termin mit ihrer Verfügbarkeit zurück, stimmen über Song-Vorschläge ab und bekommen Gagen bzw. Kostenanteile aus Finanzeinträgen zugeordnet.
 
 *(Nicht dargestellt, um die Übersicht lesbar zu halten: Einladungen, persönliche Song-Notizen, Bühnen-Hinweise auf Setlist-Einträgen, Finanzadmin-Zuordnung.)*

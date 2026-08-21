@@ -26,7 +26,7 @@ export default async function PacklistsPage({
   const [packlists, events] = await Promise.all([
     prisma.packlist.findMany({
       where: { bandId },
-      include: { event: true, items: { select: { checked: true } } },
+      include: { events: true, items: { select: { checked: true } } },
       orderBy: { createdAt: "desc" },
     }),
     prisma.event.findMany({
@@ -71,7 +71,7 @@ export default async function PacklistsPage({
                   <p className="font-medium text-foreground">{p.name}</p>
                   <p className="text-sm text-muted">
                     {total === 0 ? t("noEntries") : t("packedOf", { checked, total })}
-                    {p.event ? t("linkedWith", { title: p.event.title }) : ""}
+                    {p.events.length > 0 ? t("linkedWith", { title: p.events.map((e) => e.title).join(", ") }) : ""}
                   </p>
                 </div>
               </Card>

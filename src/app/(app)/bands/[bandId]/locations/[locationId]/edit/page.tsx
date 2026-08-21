@@ -4,7 +4,12 @@ import { requireMembership, canManageBandContent, canManageContent } from "@/lib
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { updateLocationAction, uploadLocationFileAction, geocodeAddressAction, reverseGeocodeAction } from "../../actions";
-import { deleteBandFileAction, updateBandFileAction } from "../../../files/actions";
+import {
+  deleteBandFileAction,
+  updateBandFileAction,
+  linkBandFileToLocationAction,
+  unlinkBandFileFromLocationAction,
+} from "../../../files/actions";
 import { LocationForm } from "@/components/location-form";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
@@ -21,16 +26,29 @@ export default async function EditLocationPage({
   if (!canManageContent(membership.role)) redirect(`/bands/${bandId}/locations`);
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
   const t = await getTranslations("locations");
+  const tFiles = await getTranslations("bandFiles.linkExisting");
 
-  const location = await prisma.location.findUnique({
-    where: { id: locationId, bandId },
-    include: {
-      files: {
-        orderBy: { createdAt: "desc" },
-        include: { uploadedBy: { select: { name: true } } },
+  const [location, otherFiles] = await Promise.all([
+    prisma.location.findUnique({
+      where: { id: locationId, bandId },
+      include: {
+        files: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            uploadedBy: { select: { name: true } },
+            songs: { select: { id: true, title: true } },
+            events: { select: { id: true, title: true } },
+            equipment: { select: { id: true, name: true } },
+          },
+        },
       },
-    },
-  });
+    }),
+    prisma.bandFile.findMany({
+      where: { bandId, NOT: { locations: { some: { id: locationId } } } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, filename: true },
+    }),
+  ]);
   if (!location) notFound();
 
   const boundAction = updateLocationAction.bind(null, bandId, locationId);
@@ -46,9 +64,13 @@ export default async function EditLocationPage({
     shareToken: f.shareToken,
     uploadedBy: f.uploadedBy,
     uploadedById: f.uploadedById,
+    songs: f.songs,
+    events: f.events,
+    equipment: f.equipment,
     downloadHref: `/api/band-files/${f.id}`,
     deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
     updateAction: updateBandFileAction.bind(null, bandId, f.id),
+    unlinkAction: unlinkBandFileFromLocationAction.bind(null, bandId, f.id, locationId),
   }));
 
   return (
@@ -96,6 +118,34 @@ export default async function EditLocationPage({
             publicLinksEnabled={membership.band.publicFileLinksEnabled}
           />
         </div>
+        {otherFiles.length > 0 && (
+          <form
+            action={linkBandFileToLocationAction.bind(null, bandId, locationId)}
+            className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          >
+            <select
+              name="fileId"
+              defaultValue=""
+              required
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="" disabled>
+                {tFiles("placeholder")}
+              </option>
+              {otherFiles.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.filename}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
+            >
+              {tFiles("button")}
+            </button>
+          </form>
+        )}
       </Card>
     </div>
   );

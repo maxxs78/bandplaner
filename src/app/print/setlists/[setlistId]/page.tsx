@@ -8,10 +8,13 @@ import { parseCues } from "@/lib/setlist-cues";
 
 export default async function SetlistPrintPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ setlistId: string }>;
+  searchParams: Promise<{ eventId?: string }>;
 }) {
   const { setlistId } = await params;
+  const { eventId } = await searchParams;
 
   const setlistMeta = await prisma.setlist.findUnique({
     where: { id: setlistId },
@@ -26,15 +29,29 @@ export default async function SetlistPrintPage({
     include: {
       items: {
         orderBy: { order: "asc" },
-        include: { song: true, annotations: { where: { userId: user.id } } },
+        include: {
+          song: true,
+          annotations: { where: { userId: user.id } },
+          eventAnnotations: { where: { userId: user.id, eventId: eventId ?? "" } },
+        },
       },
+      events: { where: { id: eventId ?? "" }, select: { title: true } },
+      eventSnapshots: { where: { eventId: eventId ?? "" } },
       band: true,
     },
   });
   if (!setlist) notFound();
+  const eventTitle = eventId ? setlist.events?.[0]?.title : undefined;
+  // Fuer bereits eingefrorene vergangene Termine den historischen Stand
+  // drucken statt der (moeglicherweise seither veraenderten) Live-Liste.
+  const frozenSnapshot = setlist.eventSnapshots?.[0];
+  const frozenItems: { title: string; key: string | null; bpm: number | null; durationSec: number | null }[] | null =
+    frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
 
   const t = await getTranslations("setlists.detail");
-  const totalDurationSec = setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
+  const totalDurationSec = frozenItems
+    ? frozenItems.reduce((sum, item) => sum + (item.durationSec ?? 0), 0)
+    : setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
   const formatTotalDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -70,57 +87,86 @@ export default async function SetlistPrintPage({
             </span>
           )}
         </div>
-        <span className="text-lg text-gray-600">{setlist.band.name}</span>
+        <span className="text-lg text-gray-600">
+          {setlist.band.name}
+          {eventTitle ? ` · ${eventTitle}` : ""}
+        </span>
       </div>
 
       <ol className="space-y-1">
-        {setlist.items.map((item, index) => {
-          const annotation = item.annotations[0];
-          const cues = parseCues(annotation?.cues);
-          return (
-            <li
-              key={item.id}
-              className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
-              style={
-                annotation?.color
-                  ? { borderLeft: `12px solid ${annotation.color}`, paddingLeft: "14px" }
-                  : { paddingLeft: "26px" }
-              }
-            >
-              <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
-                {index + 1}.
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span className="text-4xl font-extrabold leading-tight break-words">
-                    {item.song?.title ?? item.customTitle}
-                  </span>
-                  {item.song?.key && (
-                    <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
-                      {item.song.key}
-                    </span>
-                  )}
-                  {item.song?.bpm && (
-                    <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
-                      {item.song.bpm}
-                      <span className="ml-1 text-base font-medium">BPM</span>
-                    </span>
-                  )}
-                </div>
-                {(annotation?.note || cues.length > 0) && (
-                  <div className="mt-2 flex flex-wrap items-center gap-3">
-                    {annotation?.note && (
-                      <span className="text-xl italic text-gray-800">{annotation.note}</span>
+        {frozenItems
+          ? frozenItems.map((item, index) => (
+              <li
+                key={index}
+                className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
+                style={{ paddingLeft: "26px" }}
+              >
+                <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">{index + 1}.</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <span className="text-4xl font-extrabold leading-tight break-words">{item.title}</span>
+                    {item.key && (
+                      <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                        {item.key}
+                      </span>
                     )}
-                    <CueBadges cues={cues} size="lg" />
+                    {item.bpm && (
+                      <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                        {item.bpm}
+                        <span className="ml-1 text-base font-medium">BPM</span>
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-            </li>
-          );
-        })}
+                </div>
+              </li>
+            ))
+          : setlist.items.map((item, index) => {
+              const annotation = eventId ? item.eventAnnotations?.[0] : item.annotations[0];
+              const cues = parseCues(annotation?.cues);
+              return (
+                <li
+                  key={item.id}
+                  className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
+                  style={
+                    annotation?.color
+                      ? { borderLeft: `12px solid ${annotation.color}`, paddingLeft: "14px" }
+                      : { paddingLeft: "26px" }
+                  }
+                >
+                  <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
+                    {index + 1}.
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-4xl font-extrabold leading-tight break-words">
+                        {item.song?.title ?? item.customTitle}
+                      </span>
+                      {item.song?.key && (
+                        <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                          {item.song.key}
+                        </span>
+                      )}
+                      {item.song?.bpm && (
+                        <span className="rounded-md border-2 border-black px-2.5 py-0.5 text-2xl font-bold leading-none">
+                          {item.song.bpm}
+                          <span className="ml-1 text-base font-medium">BPM</span>
+                        </span>
+                      )}
+                    </div>
+                    {(annotation?.note || cues.length > 0) && (
+                      <div className="mt-2 flex flex-wrap items-center gap-3">
+                        {annotation?.note && (
+                          <span className="text-xl italic text-gray-800">{annotation.note}</span>
+                        )}
+                        <CueBadges cues={cues} size="lg" />
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
       </ol>
-      {setlist.items.length === 0 && <p className="text-gray-600">{t("printEmpty")}</p>}
+      {(frozenItems ?? setlist.items).length === 0 && <p className="text-gray-600">{t("printEmpty")}</p>}
     </main>
   );
 }

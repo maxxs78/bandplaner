@@ -377,6 +377,7 @@
       "guestsCannotVote": "Gäste können nicht abstimmen",
       "votingClosed": "Über diesen Song kann nicht mehr abgestimmt werden",
       "guestsCannotChangeKey": "Gäste können die Tonart nicht ändern",
+      "guestsCannotChangeBpm": "Gäste können das Tempo nicht ändern",
       "proposalSubject": "Neuer Songvorschlag: {title}",
       "proposalBody": "{name} schlägt einen neuen Song vor:\n\n{title}{artistSuffix}\n\nDu kannst darüber abstimmen."
     }
@@ -407,6 +408,9 @@
     "adopt": "Übernehmen",
     "discard": "Verwerfen",
     "keyAdopted": "Tonart in den Songdaten aktualisiert.",
+    "bpmDiffers": "Erkanntes Grundtempo ({detected} BPM) weicht vom hinterlegten Tempo ({current}) ab. In Songdaten übernehmen?",
+    "noBpm": "kein Tempo hinterlegt",
+    "bpmAdopted": "Tempo in den Songdaten aktualisiert.",
     "hint": "Tempo und Tonart lassen sich unabhängig voneinander einstellen. Klick in die Wellenform springt an die Stelle, Ziehen (Maus oder Finger) markiert einen Loop-Bereich."
   },
   "bandFiles": {
@@ -462,12 +466,19 @@
       "noEquipmentLink": "Ohne Equipment-Verknüpfung",
       "noLocationLink": "Ohne Ort-Verknüpfung",
       "deleteConfirm": "Datei wirklich löschen?",
+      "unlink": "Verknüpfung lösen",
+      "unlinkConfirm": "Verknüpfung wirklich lösen? Die Datei selbst bleibt erhalten.",
       "visibilityPrivate": "Privat",
       "visibilityPrivateTitle": "Nur für die hochladende Person (und Admins) sichtbar",
       "visibilityInternal": "Intern",
       "visibilityInternalTitle": "Nur bandintern sichtbar",
       "visibilityPublic": "Öffentlich",
       "visibilityPublicTitle": "Öffentlich abrufbar"
+    },
+    "linkExisting": {
+      "label": "Bestehende Datei verknüpfen",
+      "placeholder": "Datei auswählen…",
+      "button": "Verknüpfen"
     },
     "actions": {
       "guestsCannotUpload": "Gäste können keine Dateien hochladen",
@@ -565,14 +576,15 @@
       "setlistButton": "Setlist",
       "noSetlistLinked": "Noch keine Setlist verknüpft.",
       "linkExistingSetlist": "Bestehende Setlist verknüpfen…",
-      "currentLabel": " (aktuell: {title})",
+      "alsoLinkedLabel": " (auch verknüpft mit: {titles})",
       "unlink": "Trennen",
       "link": "Verknüpfen",
       "packlists": "Packlisten",
       "packlistButton": "Packliste",
       "noPacklistLinked": "Noch keine Packliste verknüpft.",
       "linkExistingPacklist": "Bestehende Packliste verknüpfen…",
-      "files": "Dateien"
+      "files": "Dateien",
+      "linkExistingFile": "Bestehende Datei verknüpfen…"
     },
     "availability": {
       "YES": "Zusage",
@@ -645,6 +657,13 @@
     "detail": {
       "backToSetlists": "Zurück zu Setlisten",
       "linkedWithPrefix": "Verknüpft mit",
+      "eventContextLabel": "Termin-Kontext",
+      "eventContextHint": "Persönliche Hinweise gelten je nach gewähltem Termin - beim nächsten anstehenden verknüpften Termin voreingestellt.",
+      "noEventContext": "Ohne Termin (allgemein)",
+      "sharedListHint": "Die Songliste wird von allen verknüpften Terminen geteilt - Änderungen wirken sich auf alle aus (außer bei bereits vergangenen, siehe unten).",
+      "frozenTitle": "Songliste zu diesem Termin",
+      "frozenBadge": "Eingefroren",
+      "frozenHint": "Dieser Termin liegt in der Vergangenheit. Gezeigt wird der Stand, wie er zuletzt vor Änderungen an der (weiterhin geteilten) Songliste war.",
       "totalDuration": "Gesamtdauer: {duration}",
       "printEmpty": "Diese Setlist ist noch leer.",
       "share": "Teilen",
@@ -925,6 +944,13 @@
     "detail": {
       "backToPacklists": "Zurück zu Packlisten",
       "linkedWithPrefix": "Verknüpft mit",
+      "eventContextLabel": "Termin-Kontext",
+      "eventContextHint": "Abhak-Status und Zuständigkeit gelten je nach gewähltem Termin - beim nächsten anstehenden verknüpften Termin voreingestellt.",
+      "noEventContext": "Ohne Termin (allgemein)",
+      "sharedListHint": "Die Eintragsliste wird von allen verknüpften Terminen geteilt - Änderungen wirken sich auf alle aus (außer bei bereits vergangenen, siehe unten).",
+      "frozenTitle": "Packliste zu diesem Termin",
+      "frozenBadge": "Eingefroren",
+      "frozenHint": "Dieser Termin liegt in der Vergangenheit. Gezeigt wird der Stand, wie er zuletzt vor Änderungen an der (weiterhin geteilten) Liste war.",
       "print": "Drucken",
       "delete": "Löschen",
       "printEmpty": "Diese Packliste ist noch leer."

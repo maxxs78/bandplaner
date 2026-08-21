@@ -377,6 +377,7 @@
       "guestsCannotVote": "Guests can't vote",
       "votingClosed": "Voting on this song is closed",
       "guestsCannotChangeKey": "Guests can't change the key",
+      "guestsCannotChangeBpm": "Guests can't change the tempo",
       "proposalSubject": "New song proposal: {title}",
       "proposalBody": "{name} is proposing a new song:\n\n{title}{artistSuffix}\n\nYou can vote on it."
     }
@@ -407,6 +408,9 @@
     "adopt": "Adopt",
     "discard": "Discard",
     "keyAdopted": "Key updated in the song data.",
+    "bpmDiffers": "Detected base tempo ({detected} BPM) differs from the stored tempo ({current}). Adopt into song data?",
+    "noBpm": "no tempo stored",
+    "bpmAdopted": "Tempo updated in the song data.",
     "hint": "Tempo and key can be adjusted independently. Clicking the waveform jumps to that point, dragging (mouse or finger) marks a loop section."
   },
   "bandFiles": {
@@ -462,12 +466,19 @@
       "noEquipmentLink": "No equipment link",
       "noLocationLink": "No location link",
       "deleteConfirm": "Really delete this file?",
+      "unlink": "Remove link",
+      "unlinkConfirm": "Really remove this link? The file itself stays.",
       "visibilityPrivate": "Private",
       "visibilityPrivateTitle": "Visible only to the uploader (and admins)",
       "visibilityInternal": "Internal",
       "visibilityInternalTitle": "Visible only within the band",
       "visibilityPublic": "Public",
       "visibilityPublicTitle": "Publicly accessible"
+    },
+    "linkExisting": {
+      "label": "Link an existing file",
+      "placeholder": "Select a file…",
+      "button": "Link"
     },
     "actions": {
       "guestsCannotUpload": "Guests cannot upload files",
@@ -565,14 +576,15 @@
       "setlistButton": "Setlist",
       "noSetlistLinked": "No setlist linked yet.",
       "linkExistingSetlist": "Link an existing setlist…",
-      "currentLabel": " (currently: {title})",
+      "alsoLinkedLabel": " (also linked with: {titles})",
       "unlink": "Unlink",
       "link": "Link",
       "packlists": "Packlists",
       "packlistButton": "Packlist",
       "noPacklistLinked": "No packlist linked yet.",
       "linkExistingPacklist": "Link an existing packlist…",
-      "files": "Files"
+      "files": "Files",
+      "linkExistingFile": "Link an existing file…"
     },
     "availability": {
       "YES": "Yes",
@@ -645,6 +657,13 @@
     "detail": {
       "backToSetlists": "Back to Setlists",
       "linkedWithPrefix": "Linked to",
+      "eventContextLabel": "Event context",
+      "eventContextHint": "Personal notes apply per selected event - preset to the next upcoming linked event.",
+      "noEventContext": "No event (general)",
+      "sharedListHint": "The song list is shared across all linked events - changes apply to all of them (except already-past ones, see below).",
+      "frozenTitle": "Song list for this event",
+      "frozenBadge": "Frozen",
+      "frozenHint": "This event is in the past. Shown is the state right before the last change to the (still shared) song list.",
       "totalDuration": "Total duration: {duration}",
       "printEmpty": "This setlist is still empty.",
       "share": "Share",
@@ -925,6 +944,13 @@
     "detail": {
       "backToPacklists": "Back to packing lists",
       "linkedWithPrefix": "Linked with",
+      "eventContextLabel": "Event context",
+      "eventContextHint": "Checked status and responsibility apply per selected event - preset to the next upcoming linked event.",
+      "noEventContext": "No event (general)",
+      "sharedListHint": "The entry list is shared across all linked events - changes apply to all of them (except already-past ones, see below).",
+      "frozenTitle": "Packing list for this event",
+      "frozenBadge": "Frozen",
+      "frozenHint": "This event is in the past. Shown is the state right before the last change to the (still shared) list.",
       "print": "Print",
       "delete": "Delete",
       "printEmpty": "This packing list is still empty."

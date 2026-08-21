@@ -26,23 +26,26 @@ export type FileListItem = {
   shareToken?: string;
   uploadedBy: { name: string };
   uploadedById: string;
-  songTitle?: string;
-  eventTitle?: string;
-  equipmentName?: string;
-  locationName?: string;
+  /** Mehrfachverknuepfung (m:n) - eine Datei kann an mehrere Objekte je Typ gleichzeitig haengen. */
+  songs?: { id: string; title: string }[];
+  events?: { id: string; title: string }[];
+  equipment?: { id: string; name: string }[];
+  locations?: { id: string; name: string }[];
   downloadHref: string;
   deleteAction: () => Promise<void>;
   updateAction?: (data: { filename: string; category?: string; visibility: string }) => Promise<void>;
+  /** Nur die Verknüpfung zum aktuellen Kontext lösen (z. B. "von diesem Termin trennen"), ohne die Datei zu löschen. */
+  unlinkAction?: () => Promise<void>;
 };
 
 type GroupBy = "none" | "song" | "event" | "equipment" | "location";
 
-function groupValue(file: FileListItem, groupBy: GroupBy): string | undefined {
-  if (groupBy === "song") return file.songTitle;
-  if (groupBy === "event") return file.eventTitle;
-  if (groupBy === "equipment") return file.equipmentName;
-  if (groupBy === "location") return file.locationName;
-  return undefined;
+function groupLabels(file: FileListItem, groupBy: GroupBy): string[] {
+  if (groupBy === "song") return (file.songs ?? []).map((s) => s.title);
+  if (groupBy === "event") return (file.events ?? []).map((e) => e.title);
+  if (groupBy === "equipment") return (file.equipment ?? []).map((e) => e.name);
+  if (groupBy === "location") return (file.locations ?? []).map((l) => l.name);
+  return [];
 }
 
 function fileIcon(filename: string) {
@@ -106,7 +109,14 @@ export function FileList({
     const query = search.trim().toLowerCase();
     if (!query) return files;
     return files.filter((f) =>
-      [f.filename, f.songTitle, f.eventTitle, f.equipmentName, f.locationName, f.uploadedBy.name]
+      [
+        f.filename,
+        f.uploadedBy.name,
+        ...(f.songs ?? []).map((s) => s.title),
+        ...(f.events ?? []).map((e) => e.title),
+        ...(f.equipment ?? []).map((e) => e.name),
+        ...(f.locations ?? []).map((l) => l.name),
+      ]
         .filter(Boolean)
         .some((v) => v!.toLowerCase().includes(query))
     );
@@ -116,9 +126,18 @@ export function FileList({
     if (groupBy === "none") return null;
     const map = new Map<string, FileListItem[]>();
     for (const file of filtered) {
-      const label = groupValue(file, groupBy) ?? NO_LINK_LABEL[groupBy];
-      if (!map.has(label)) map.set(label, []);
-      map.get(label)!.push(file);
+      const labels = groupLabels(file, groupBy);
+      if (labels.length === 0) {
+        const label = NO_LINK_LABEL[groupBy];
+        if (!map.has(label)) map.set(label, []);
+        map.get(label)!.push(file);
+        continue;
+      }
+      // Eine Datei mit mehreren Verknuepfungen desselben Typs erscheint in jeder passenden Gruppe.
+      for (const label of labels) {
+        if (!map.has(label)) map.set(label, []);
+        map.get(label)!.push(file);
+      }
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], locale));
   }, [filtered, groupBy, NO_LINK_LABEL, locale]);
@@ -145,10 +164,18 @@ export function FileList({
           </a>
           <p className="truncate text-xs text-muted">
             {categoryLabels[file.category]} · {formatSize(file.size)} · {file.uploadedBy.name}
-            {file.songTitle && tList("songSuffix", { title: file.songTitle })}
-            {file.eventTitle && tList("eventSuffix", { title: file.eventTitle })}
-            {file.equipmentName && tList("equipmentSuffix", { name: file.equipmentName })}
-            {file.locationName && tList("locationSuffix", { name: file.locationName })}
+            {(file.songs ?? []).map((s) => (
+              <span key={s.id}>{tList("songSuffix", { title: s.title })}</span>
+            ))}
+            {(file.events ?? []).map((e) => (
+              <span key={e.id}>{tList("eventSuffix", { title: e.title })}</span>
+            ))}
+            {(file.equipment ?? []).map((e) => (
+              <span key={e.id}>{tList("equipmentSuffix", { name: e.name })}</span>
+            ))}
+            {(file.locations ?? []).map((l) => (
+              <span key={l.id}>{tList("locationSuffix", { name: l.name })}</span>
+            ))}
           </p>
         </div>
         {canDelete && file.updateAction && (
@@ -170,6 +197,9 @@ export function FileList({
         </span>
         {publicLinksEnabled && file.visibility === "PUBLIC" && file.shareToken && (
           <CopyLinkButton path={`/api/band-files/public/${file.shareToken}`} />
+        )}
+        {canDelete && file.unlinkAction && (
+          <DeleteButton action={file.unlinkAction} label={tList("unlink")} confirmMessage={tList("unlinkConfirm")} />
         )}
         {canDelete && (
           <DeleteButton action={file.deleteAction} label="" confirmMessage={tList("deleteConfirm")} />

@@ -21,6 +21,8 @@ export type AudioMetadataPreview = {
   year?: number;
   genre?: string;
   bpm?: number;
+  /** Spieldauer in Sekunden (aus den Container-Metadaten, nicht aus Tags). */
+  durationSec?: number;
   /** data:-URL, direkt als <img src> nutzbar */
   coverDataUrl?: string;
 };
@@ -54,6 +56,7 @@ export async function previewAudioMetadata(file: File): Promise<AudioMetadataPre
       year: common.year || undefined,
       genre: common.genre?.[0] || undefined,
       bpm: common.bpm ? Math.round(common.bpm) : undefined,
+      durationSec: metadata.format.duration ? Math.round(metadata.format.duration) : undefined,
       coverDataUrl,
     };
 

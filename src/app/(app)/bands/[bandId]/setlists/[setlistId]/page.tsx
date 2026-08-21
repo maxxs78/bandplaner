@@ -6,6 +6,7 @@ import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { SetlistBuilder } from "@/components/setlist-builder";
+import { EventContextSelector } from "@/components/event-context-selector";
 import { deleteSetlistAction, saveSetlistNoteAction } from "../actions";
 import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
@@ -15,10 +16,13 @@ import { Textarea } from "@/components/ui/input";
 
 export default async function SetlistDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ bandId: string; setlistId: string }>;
+  searchParams: Promise<{ eventId?: string }>;
 }) {
   const { bandId, setlistId } = await params;
+  const { eventId: requestedEventId } = await searchParams;
   const { user, membership } = await requireMembership(bandId);
   const canManage = canManageContent(membership.role);
   const features = getEnabledFeatures(membership.band);
@@ -27,15 +31,20 @@ export default async function SetlistDetailPage({
   const setlist = await prisma.setlist.findUnique({
     where: { id: setlistId, bandId },
     include: {
-      event: true,
+      events: { orderBy: { startsAt: "asc" } },
       items: {
         orderBy: { order: "asc" },
         include: {
           song: true,
           annotations: { where: { userId: user.id } },
+          eventAnnotations: { where: { userId: user.id } },
         },
       },
       notes: { where: { userId: user.id } },
+      eventNotes: { where: { userId: user.id } },
+      // Unbescheidet nach Termin gefetcht (kleine Menge) - Auswahl per
+      // activeEventId erst weiter unten, sobald der Termin-Kontext feststeht.
+      eventSnapshots: true,
     },
   });
   if (!setlist) notFound();
@@ -46,22 +55,53 @@ export default async function SetlistDetailPage({
     select: { id: true, title: true, key: true, bpm: true, status: true },
   });
 
-  const myNote = setlist.notes[0];
+  // Termin-Kontext: explizite Auswahl aus der URL, sonst der naechste anstehende
+  // verknuepfte Termin, sonst terminlos (siehe EventContextSelector).
+  const linkedEventIds = new Set(setlist.events.map((e) => e.id));
+  const now = new Date();
+  const upcomingEvent = setlist.events.find((e) => e.startsAt >= now);
+  const activeEventId =
+    requestedEventId === "none"
+      ? null
+      : requestedEventId && linkedEventIds.has(requestedEventId)
+        ? requestedEventId
+        : (upcomingEvent?.id ?? null);
+  const activeEvent = activeEventId ? setlist.events.find((e) => e.id === activeEventId) : null;
+  // Eingefrorener "wie gespielt"-Stand statt der Live-Liste, sobald der aktive
+  // Termin vergangen ist und bereits eine Aenderung danach eingefroren wurde
+  // (siehe freezePastSetlistSnapshotsIfNeeded in ../actions.ts). Ohne Snapshot
+  // stimmt die Live-Liste noch exakt mit dem Stand beim Termin ueberein.
+  const isPastActiveEvent = Boolean(activeEvent && activeEvent.startsAt < now);
+  const frozenSnapshot = activeEventId
+    ? setlist.eventSnapshots.find((s) => s.eventId === activeEventId)
+    : undefined;
+  const frozenItems: { title: string; key: string | null; bpm: number | null; durationSec: number | null }[] | null =
+    frozenSnapshot ? JSON.parse(frozenSnapshot.itemsJson) : null;
+
+  const myNote = activeEventId
+    ? (setlist.eventNotes.find((n) => n.eventId === activeEventId)?.content ?? "")
+    : (setlist.notes[0]?.content ?? "");
   const items = setlist.items.map((item) => ({
     ...item,
-    myAnnotation: item.annotations[0] ?? null,
+    myAnnotation: activeEventId
+      ? (item.eventAnnotations.find((a) => a.eventId === activeEventId) ?? null)
+      : (item.annotations[0] ?? null),
   }));
 
   const shareText = [
     `${membership.band.name} – ${setlist.name}`,
-    setlist.event ? setlist.event.title : null,
+    activeEvent ? activeEvent.title : null,
     "",
-    ...setlist.items.map((item, index) => `${index + 1}. ${item.song?.title ?? item.customTitle ?? ""}`),
+    ...(frozenItems ?? setlist.items).map(
+      (item, index) => `${index + 1}. ${"title" in item ? item.title : (item.song?.title ?? item.customTitle ?? "")}`
+    ),
   ]
     .filter((line) => line !== null)
     .join("\n");
 
-  const totalDurationSec = setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
+  const totalDurationSec = frozenItems
+    ? frozenItems.reduce((sum, item) => sum + (item.durationSec ?? 0), 0)
+    : setlist.items.reduce((sum, item) => sum + (item.song?.durationSec ?? 0), 0);
   const formatTotalDuration = (sec: number) => {
     const h = Math.floor(sec / 3600);
     const m = Math.floor((sec % 3600) / 60);
@@ -84,13 +124,21 @@ export default async function SetlistDetailPage({
         <div className="mt-2 flex items-start justify-between gap-4">
           <div>
             <h1 className="text-2xl font-semibold text-foreground">{setlist.name}</h1>
-            {setlist.event && (
+            {setlist.events.length > 0 && (
               <p className="mt-1 text-sm text-muted">
                 {t("linkedWithPrefix")}{" "}
-                <Link href={`/bands/${bandId}/calendar/${setlist.event.id}`} className="text-primary hover:underline">
-                  {setlist.event.title}
-                </Link>
+                {setlist.events.map((e, i) => (
+                  <span key={e.id}>
+                    {i > 0 && ", "}
+                    <Link href={`/bands/${bandId}/calendar/${e.id}`} className="text-primary hover:underline">
+                      {e.title}
+                    </Link>
+                  </span>
+                ))}
               </p>
+            )}
+            {canManage && setlist.events.length > 0 && (
+              <p className="mt-1 text-xs text-muted">{t("sharedListHint")}</p>
             )}
             {totalDurationSec > 0 && (
               <p className="mt-1 flex items-center gap-1 text-sm text-muted">
@@ -114,25 +162,67 @@ export default async function SetlistDetailPage({
         </div>
       </div>
 
+      {setlist.events.length > 0 && (
+        <Card className="mt-4">
+          <h2 className="text-sm font-semibold text-foreground">{t("eventContextLabel")}</h2>
+          <p className="mt-1 text-xs text-muted">{t("eventContextHint")}</p>
+          <div className="mt-2">
+            <EventContextSelector
+              events={setlist.events}
+              activeEventId={activeEventId}
+              noEventLabel={t("noEventContext")}
+              basePath={`/bands/${bandId}/setlists/${setlistId}`}
+            />
+          </div>
+        </Card>
+      )}
+
       <div className="mt-6">
-        <SetlistBuilder
-          key={setlist.items.map((i) => i.id).join(",")}
-          bandId={bandId}
-          setlistId={setlistId}
-          initialItems={items}
-          librarySongs={songs}
-          readOnly={!canManage}
-        />
+        {frozenItems ? (
+          <Card>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-foreground">{t("frozenTitle")}</h2>
+              <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted">
+                {t("frozenBadge")}
+              </span>
+            </div>
+            <p className="mt-1 text-sm text-muted">{t("frozenHint")}</p>
+            <ol className="mt-3 space-y-1.5">
+              {frozenItems.map((item, index) => (
+                <li key={index} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                  <span className="w-6 shrink-0 text-muted">{index + 1}.</span>
+                  <span className="min-w-0 flex-1 truncate text-foreground">{item.title}</span>
+                  {item.key && <span className="shrink-0 text-xs text-muted">{item.key}</span>}
+                  {item.bpm && <span className="shrink-0 text-xs text-muted">{item.bpm} BPM</span>}
+                </li>
+              ))}
+              {frozenItems.length === 0 && <p className="text-sm text-muted">{t("printEmpty")}</p>}
+            </ol>
+          </Card>
+        ) : (
+          <SetlistBuilder
+            key={`${setlist.items.map((i) => i.id).join(",")}-${activeEventId ?? "none"}`}
+            bandId={bandId}
+            setlistId={setlistId}
+            eventId={activeEventId}
+            initialItems={items}
+            librarySongs={songs}
+            readOnly={!canManage || isPastActiveEvent}
+          />
+        )}
       </div>
 
       <Card className="mt-6">
         <h2 className="font-semibold text-foreground">{t("myNotes")}</h2>
         <p className="mt-1 text-sm text-muted">{t("myNotesVisibility")}</p>
-        <form action={saveSetlistNoteAction.bind(null, bandId, setlistId)} className="mt-3 space-y-3">
+        <form
+          action={saveSetlistNoteAction.bind(null, bandId, setlistId, activeEventId)}
+          className="mt-3 space-y-3"
+        >
           <Textarea
             name="content"
             rows={3}
-            defaultValue={myNote?.content ?? ""}
+            defaultValue={myNote}
             placeholder={t("notesPlaceholder")}
           />
           <Button type="submit" size="sm">

@@ -8,7 +8,12 @@ import { getEnabledFeatures } from "@/lib/features";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction } from "../actions";
-import { deleteBandFileAction, updateBandFileAction } from "../../files/actions";
+import {
+  deleteBandFileAction,
+  updateBandFileAction,
+  linkBandFileToEventAction,
+  unlinkBandFileFromEventAction,
+} from "../../files/actions";
 import { linkSetlistToEventAction, unlinkSetlistFromEventAction } from "../../setlists/actions";
 import { linkPacklistToEventAction, unlinkPacklistFromEventAction } from "../../equipment/actions";
 import { AvailabilityButtons } from "@/components/availability-buttons";
@@ -50,7 +55,12 @@ export default async function EventDetailPage({
       place: { select: { id: true, name: true, address: true, latitude: true, longitude: true } },
       files: {
         orderBy: { createdAt: "desc" },
-        include: { uploadedBy: { select: { name: true } } },
+        include: {
+          uploadedBy: { select: { name: true } },
+          songs: { select: { id: true, title: true } },
+          equipment: { select: { id: true, name: true } },
+          locations: { select: { id: true, name: true } },
+        },
       },
     },
   });
@@ -85,19 +95,26 @@ export default async function EventDetailPage({
   const features = getEnabledFeatures(membership.band);
   const otherSetlists = canManage
     ? await prisma.setlist.findMany({
-        where: { bandId, OR: [{ eventId: null }, { eventId: { not: eventId } }] },
-        include: { event: { select: { title: true } } },
+        where: { bandId, NOT: { events: { some: { id: eventId } } } },
+        include: { events: { select: { title: true } } },
         orderBy: { createdAt: "desc" },
       })
     : [];
   const otherPacklists =
     canManage && features.packlists
       ? await prisma.packlist.findMany({
-          where: { bandId, OR: [{ eventId: null }, { eventId: { not: eventId } }] },
-          include: { event: { select: { title: true } } },
+          where: { bandId, NOT: { events: { some: { id: eventId } } } },
+          include: { events: { select: { title: true } } },
           orderBy: { createdAt: "desc" },
         })
       : [];
+  const otherFiles = canManage
+    ? await prisma.bandFile.findMany({
+        where: { bandId, NOT: { events: { some: { id: eventId } } } },
+        orderBy: { createdAt: "desc" },
+        select: { id: true, filename: true },
+      })
+    : [];
   const canEdit = canManageBandContent(membership.role, isFinanceAdmin) || (canManage && event.createdById === user.id);
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
 
@@ -120,9 +137,13 @@ export default async function EventDetailPage({
     shareToken: f.shareToken,
     uploadedBy: f.uploadedBy,
     uploadedById: f.uploadedById,
+    songs: f.songs,
+    equipment: f.equipment,
+    locations: f.locations,
     downloadHref: `/api/band-files/${f.id}`,
     deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
     updateAction: updateBandFileAction.bind(null, bandId, f.id),
+    unlinkAction: unlinkBandFileFromEventAction.bind(null, bandId, f.id, eventId),
   }));
 
   return (
@@ -254,7 +275,10 @@ export default async function EventDetailPage({
               key={s.id}
               className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
             >
-              <Link href={`/bands/${bandId}/setlists/${s.id}`} className="flex-1 text-foreground hover:text-primary">
+              <Link
+                href={`/bands/${bandId}/setlists/${s.id}?eventId=${eventId}`}
+                className="flex-1 text-foreground hover:text-primary"
+              >
                 {s.name}
               </Link>
               {canManage && (
@@ -284,7 +308,9 @@ export default async function EventDetailPage({
               {otherSetlists.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}
-                  {s.event ? t("currentLabel", { title: s.event.title }) : ""}
+                  {s.events.length > 0
+                    ? t("alsoLinkedLabel", { titles: s.events.map((e) => e.title).join(", ") })
+                    : ""}
                 </option>
               ))}
             </select>
@@ -321,7 +347,7 @@ export default async function EventDetailPage({
                 className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
               >
                 <Link
-                  href={`/bands/${bandId}/equipment/packlists/${p.id}`}
+                  href={`/bands/${bandId}/equipment/packlists/${p.id}?eventId=${eventId}`}
                   className="flex-1 text-foreground hover:text-primary"
                 >
                   {p.name}
@@ -353,7 +379,9 @@ export default async function EventDetailPage({
                 {otherPacklists.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
-                    {p.event ? t("currentLabel", { title: p.event.title }) : ""}
+                    {p.events.length > 0
+                      ? t("alsoLinkedLabel", { titles: p.events.map((e) => e.title).join(", ") })
+                      : ""}
                   </option>
                 ))}
               </select>
@@ -384,9 +412,38 @@ export default async function EventDetailPage({
             currentUserId={user.id}
             isAdmin={isAdmin}
             equipmentEnabled={features.equipment}
+            locationsEnabled={features.locations}
             publicLinksEnabled={membership.band.publicFileLinksEnabled}
           />
         </div>
+        {canManage && otherFiles.length > 0 && (
+          <form
+            action={linkBandFileToEventAction.bind(null, bandId, eventId)}
+            className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          >
+            <select
+              name="fileId"
+              defaultValue=""
+              required
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="" disabled>
+                {t("linkExistingFile")}
+              </option>
+              {otherFiles.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.filename}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
+            >
+              {t("link")}
+            </button>
+          </form>
+        )}
       </Card>
     </div>
   );

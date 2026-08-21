@@ -216,12 +216,15 @@ function SortableRow({
 export function SetlistBuilder({
   bandId,
   setlistId,
+  eventId = null,
   initialItems,
   librarySongs,
   readOnly = false,
 }: {
   bandId: string;
   setlistId: string;
+  /** Aktiver Termin-Kontext (siehe EventContextSelector) - steuert, ob persönliche Hinweise termin- oder allgemein gespeichert werden. */
+  eventId?: string | null;
   initialItems: SetlistItem[];
   librarySongs: LibrarySong[];
   readOnly?: boolean;
@@ -290,7 +293,7 @@ export function SetlistBuilder({
   }
 
   async function handleSaveAnnotation(itemId: string, data: AnnotationValues) {
-    const result = await saveItemAnnotationAction(bandId, setlistId, itemId, data);
+    const result = await saveItemAnnotationAction(bandId, setlistId, itemId, eventId, data);
     if (!result?.error) {
       setItems((current) =>
         current.map((i) =>

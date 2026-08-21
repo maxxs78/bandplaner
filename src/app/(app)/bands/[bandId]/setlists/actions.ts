@@ -38,6 +38,85 @@ async function upsertOrPruneItemAnnotation(
   });
 }
 
+/**
+ * Terminspezifisches Pendant zu upsertOrPruneItemAnnotation - genutzt, wenn im
+ * Termin-Auswaehler auf der Setlist-Seite ein Termin aktiv gewaehlt ist (siehe
+ * SetlistItemEventAnnotation in schema.prisma). Ohne aktiven Termin gilt
+ * weiterhin die terminlose Variante oben.
+ */
+async function upsertOrPruneItemEventAnnotation(
+  itemId: string,
+  eventId: string,
+  userId: string,
+  patch: Partial<{ note: string | null; color: string | null; cues: string | null }>
+) {
+  const existing = await prisma.setlistItemEventAnnotation.findUnique({
+    where: { itemId_eventId_userId: { itemId, eventId, userId } },
+  });
+  const merged = {
+    note: patch.note !== undefined ? patch.note : (existing?.note ?? null),
+    color: patch.color !== undefined ? patch.color : (existing?.color ?? null),
+    cues: patch.cues !== undefined ? patch.cues : (existing?.cues ?? null),
+  };
+  const isEmpty = !merged.note && !merged.color && !merged.cues;
+
+  if (isEmpty) {
+    if (existing) await prisma.setlistItemEventAnnotation.delete({ where: { id: existing.id } });
+    return;
+  }
+
+  await prisma.setlistItemEventAnnotation.upsert({
+    where: { itemId_eventId_userId: { itemId, eventId, userId } },
+    create: { itemId, eventId, userId, ...merged },
+    update: merged,
+  });
+}
+
+/**
+ * Friert fuer jeden verknuepften Termin, der inzwischen in der Vergangenheit
+ * liegt und noch keinen Snapshot hat, den aktuellen Listenstand ("wie
+ * gespielt") ein. Wird VOR jeder Aenderung an der Song-Zusammensetzung/
+ * -Reihenfolge aufgerufen (siehe SetlistEventSnapshot-Kommentar im Schema):
+ * Solange niemand die Liste bearbeitet, entspricht der Live-Stand noch exakt
+ * dem Stand beim Termin - ein Snapshot wird deshalb nicht "beim Termin
+ * selbst", sondern spaetestens unmittelbar vor der ersten nachtraeglichen
+ * Aenderung erzeugt, was ohne Hintergrundjob zum selben Ergebnis fuehrt.
+ */
+async function freezePastSetlistSnapshotsIfNeeded(setlistId: string) {
+  const setlist = await prisma.setlist.findUnique({
+    where: { id: setlistId },
+    include: {
+      events: { where: { startsAt: { lt: new Date() } }, select: { id: true } },
+      items: {
+        orderBy: { order: "asc" },
+        include: { song: { select: { title: true, key: true, bpm: true, durationSec: true } } },
+      },
+    },
+  });
+  if (!setlist || setlist.events.length === 0) return;
+
+  const existing = await prisma.setlistEventSnapshot.findMany({
+    where: { setlistId, eventId: { in: setlist.events.map((e) => e.id) } },
+    select: { eventId: true },
+  });
+  const alreadyFrozen = new Set(existing.map((s) => s.eventId));
+  const toFreeze = setlist.events.filter((e) => !alreadyFrozen.has(e.id));
+  if (toFreeze.length === 0) return;
+
+  const itemsJson = JSON.stringify(
+    setlist.items.map((item) => ({
+      title: item.song?.title ?? item.customTitle ?? "",
+      key: item.song?.key ?? null,
+      bpm: item.song?.bpm ?? null,
+      durationSec: item.song?.durationSec ?? null,
+    }))
+  );
+
+  await prisma.setlistEventSnapshot.createMany({
+    data: toFreeze.map((e) => ({ setlistId, eventId: e.id, itemsJson })),
+  });
+}
+
 export async function createSetlistAction(
   bandId: string,
   _prevState: FormState,
@@ -64,7 +143,7 @@ export async function createSetlistAction(
     data: {
       bandId,
       name: parsed.data.name,
-      eventId: parsed.data.eventId || null,
+      events: parsed.data.eventId ? { connect: { id: parsed.data.eventId } } : undefined,
     },
   });
 
@@ -86,6 +165,12 @@ export async function createSetlistAction(
     }
   }
 
+  if (parsed.data.eventId) {
+    // Retroaktive Verknuepfung mit einem bereits vergangenen Termin: der Stand
+    // direkt bei Anlage ist hier der einzig sinnvolle "wie gespielt"-Zeitpunkt.
+    await freezePastSetlistSnapshotsIfNeeded(setlist.id);
+  }
+
   revalidatePath(`/bands/${bandId}/setlists`);
   redirect(`/bands/${bandId}/setlists/${setlist.id}`);
 }
@@ -97,7 +182,13 @@ export async function linkSetlistToEventAction(bandId: string, eventId: string, 
   const setlistId = formData.get("setlistId") as string;
   if (!setlistId) return;
 
-  await prisma.setlist.update({ where: { id: setlistId, bandId }, data: { eventId } });
+  await prisma.setlist.update({
+    where: { id: setlistId, bandId },
+    data: { events: { connect: { id: eventId } } },
+  });
+  // Falls der frisch verknuepfte Termin bereits vergangen ist: sofort einfrieren,
+  // analog zur retroaktiven Verknuepfung in createSetlistAction.
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   revalidatePath(`/bands/${bandId}/setlists`);
 }
@@ -106,7 +197,10 @@ export async function unlinkSetlistFromEventAction(bandId: string, setlistId: st
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) return;
 
-  await prisma.setlist.update({ where: { id: setlistId, bandId }, data: { eventId: null } });
+  await prisma.setlist.update({
+    where: { id: setlistId, bandId },
+    data: { events: { disconnect: { id: eventId } } },
+  });
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   revalidatePath(`/bands/${bandId}/setlists`);
 }
@@ -123,6 +217,7 @@ export async function deleteSetlistAction(bandId: string, setlistId: string) {
 export async function addSongToSetlistAction(bandId: string, setlistId: string, songId: string) {
   const { user, membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
 
   const [maxOrder, songNote] = await Promise.all([
     prisma.setlistItem.aggregate({ where: { setlistId }, _max: { order: true } }),
@@ -158,6 +253,7 @@ export async function addCustomItemAction(bandId: string, setlistId: string, for
 
   const customTitle = (formData.get("customTitle") as string)?.trim();
   if (!customTitle) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
 
   const maxOrder = await prisma.setlistItem.aggregate({
     where: { setlistId },
@@ -178,6 +274,7 @@ export async function addCustomItemAction(bandId: string, setlistId: string, for
 export async function removeSetlistItemAction(bandId: string, setlistId: string, itemId: string) {
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
 
   await prisma.setlistItem.delete({ where: { id: itemId, setlistId } });
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
@@ -190,6 +287,7 @@ export async function reorderSetlistItemsAction(
 ) {
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
 
   await prisma.$transaction(
     orderedItemIds.map((id, index) =>
@@ -203,11 +301,26 @@ export async function reorderSetlistItemsAction(
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
 }
 
-export async function saveSetlistNoteAction(bandId: string, setlistId: string, formData: FormData) {
+export async function saveSetlistNoteAction(
+  bandId: string,
+  setlistId: string,
+  eventId: string | null,
+  formData: FormData
+) {
   const { user } = await requireMembership(bandId);
   const content = ((formData.get("content") as string) ?? "").trim();
 
-  if (content === "") {
+  if (eventId) {
+    if (content === "") {
+      await prisma.setlistEventNote.deleteMany({ where: { setlistId, eventId, userId: user.id } });
+    } else {
+      await prisma.setlistEventNote.upsert({
+        where: { setlistId_eventId_userId: { setlistId, eventId, userId: user.id } },
+        create: { setlistId, eventId, userId: user.id, content },
+        update: { content },
+      });
+    }
+  } else if (content === "") {
     await prisma.setlistNote.deleteMany({ where: { setlistId, userId: user.id } });
   } else {
     await prisma.setlistNote.upsert({
@@ -224,15 +337,21 @@ export async function saveItemAnnotationAction(
   bandId: string,
   setlistId: string,
   itemId: string,
+  eventId: string | null,
   data: AnnotationValues
 ): Promise<{ error?: string } | undefined> {
   const { user } = await requireMembership(bandId);
 
-  await upsertOrPruneItemAnnotation(itemId, user.id, {
+  const patch = {
     note: data.note.trim() || null,
     color: data.color,
     cues: serializeCues(data.cues as Cue[]),
-  });
+  };
+  if (eventId) {
+    await upsertOrPruneItemEventAnnotation(itemId, eventId, user.id, patch);
+  } else {
+    await upsertOrPruneItemAnnotation(itemId, user.id, patch);
+  }
 
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
   return undefined;

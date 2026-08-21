@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.7 — Stand 21.08.2026
+Version 1.9 — Stand 21.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -15,6 +15,10 @@ Version 1.7 — Stand 21.08.2026
 *Änderungen gegenüber Version 1.5: Mehrsprachigkeit (Abschnitt 4) umgesetzt — Deutsch und Englisch, umschaltbar über einen Sprachwähler im Kopfbereich, dauerhaft im Benutzerprofil hinterlegt; vor dem Login wird die Sprache aus den Browser-Einstellungen erkannt. Architektur ist auf weitere Sprachen erweiterbar.*
 
 *Änderungen gegenüber Version 1.6: Veranstaltungsorte (3.5) als eigenständiges, abschaltbares Modul umgesetzt — bandweiter Ortskatalog mit Kartendarstellung (OpenStreetMap/Leaflet, Straßenkarte und Satellitenbild umschaltbar), Adress-Geokodierung sowie Punktsetzung direkt auf der Karte inklusive automatischer Rückwärts-Geokodierung, Datei-Upload je Ort und ein einziges, im Terminformular kombiniertes Ortsfeld (Freitext, Verknüpfung oder Neuanlage); neuer Unterschalter in Abschnitt 2.1. Gig-spezifische Detailinformationen und Statusverfolgung sind demgegenüber weiterhin nicht umgesetzt und als Ausbaustufe markiert.*
+
+*Änderungen gegenüber Version 1.7: Umsetzungsstand des Anlageassistenten (3.3) nachgeführt und korrigiert — die zuvor als „geplant" beschriebene URL-basierte Erfassung (Spotify-/YouTube-Link) wurde nicht so umgesetzt; tatsächlich umgesetzt ist stattdessen eine ID3-/Vorbis-Tag-Vorschau aus einer ausgewählten Audiodatei (Titel, Interpret, Genre, Album, Jahr, BPM, Cover) sowie eine ergänzende Online-Recherche auf Knopfdruck anhand von Titel/Interpret (MusicBrainz primär, Discogs-Fallback, Spotify-Link), beide mit stillem Degradieren bei fehlender Konfiguration.*
+
+*Änderungen gegenüber Version 1.8: ID3-/Vorbis-Tag-Vorschau (3.3) um Spieldauer ergänzt; im Übungsmodus erkanntes Grundtempo (3.12) lässt sich analog zur Tonart-Erkennung nach Bestätigung in die Songdaten übernehmen. Größere Erweiterung: Dateien, Setlisten und Packlisten lassen sich jetzt mit mehreren Objekten bzw. Terminen gleichzeitig verknüpfen statt wie zuvor mit höchstens einem (3.4, 3.7, 3.9) — bei Setlisten/Packlisten bleibt die Song- bzw. Eintragsliste dabei geteilt, während Abhak-Status, Zuständigkeit und persönliche Hinweise je Termin getrennt geführt werden; für bereits vergangene Termine wird die Liste beim nächsten Änderungsversuch automatisch als historischer Stand eingefroren, damit spätere Bearbeitungen die Dokumentation vergangener Auftritte/Proben nicht verfälschen.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -80,8 +84,10 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 ### 3.3 Song- und Repertoireverwaltung
 
 - Zentrale, bandweit geteilte Songbibliothek mit Metadaten: Titel, Tonart, Tempo (BPM), Taktart, Dauer, Genre, Lead-Gesang/Besetzung, Album und Erscheinungsjahr sowie optionalem Coverbild.
-- Coverbild-Übernahme aus Datei-Metadaten: Enthält eine hochgeladene Audiodatei ein eingebettetes Coverbild (ID3v2 bei MP3, entsprechende Felder bei M4A/OGG/FLAC), wird dieses automatisch als Coverbild des Songs übernommen, sofern noch keines hinterlegt ist. Ein bereits vorhandenes Cover wird nicht überschrieben. Das Coverbild gehört zu den Song-Stammdaten und wird unabhängig davon angezeigt, ob der Medienplayer (3.12) aktiviert ist.
-- Erleichterte Titelerfassung (geplant): Wird beim Anlegen eines Songs eine Spotify- oder YouTube-URL angegeben, werden die Datenfelder, soweit sinnvoll recherchierbar, automatisch aus den Online-Informationen befüllt; ergänzend kann die Suche auch in Musikdatenbanken wie MusicBrainz oder Discogs erfolgen. Übernommen werden dabei u. a. Coverbild, Erscheinungsjahr und Album, sofern verfügbar. Bei mehreren Suchtreffern wird eine Auswahlliste zur Bestätigung angezeigt; sämtliche Felder bleiben zusätzlich vollständig manuell erfassbar bzw. änderbar. Ergänzend zur bereits umgesetzten Übernahme aus Datei-Metadaten (siehe oben) lassen sich damit auch Songs befüllen, zu denen keine Datei, sondern nur ein Link vorliegt.
+- **Anlageassistent beim Neuanlegen eines Songs:**
+  - ID3-/Vorbis-Tag-Vorschau: Wird beim Anlegen eine Audiodatei ausgewählt (auch vor dem eigentlichen Hochladen), werden Titel, Interpret, Genre, Album, Erscheinungsjahr, BPM und Spieldauer aus den Datei-Metadaten ausgelesen und tragen sich automatisch in noch leere Formularfelder ein; bereits ausgefüllte Felder werden nicht überschrieben. Ein eingebettetes Coverbild (ID3v2 bei MP3, entsprechende Felder bei M4A/OGG/FLAC) wird ebenso übernommen, sofern noch keines hinterlegt ist. Das Coverbild gehört zu den Song-Stammdaten und wird unabhängig davon angezeigt, ob der Medienplayer (3.12) aktiviert ist.
+  - Online-Recherche auf Knopfdruck: Titel und optional Interpret (aus den bereits erfassten oder per ID3 vorbefüllten Feldern) werden gegen Musikdatenbanken abgeglichen. MusicBrainz dient als Primärquelle und liefert bis zu fünf Kandidaten (Titel, Interpret, Album, Jahr, Genre); liefert MusicBrainz keinen Treffer, springt Discogs als Fallback für Genre/Jahr/Cover ein; ergänzend liefert eine Spotify-Suche einen Track-Link, der als externer Link am Song hinterlegt wird. Bei mehreren Treffern erscheint eine Auswahlliste zur Bestätigung; die Übernahme befüllt wie bei der ID3-Vorschau nur leere Felder, sämtliche Angaben bleiben zusätzlich vollständig manuell erfassbar bzw. änderbar.
+  - Alle drei Online-Quellen sind einzeln optional konfigurierbar (Zugangsdaten je Instanz in den Umgebungsvariablen) und degradieren bei fehlender Konfiguration oder einem Fehler still, ohne die manuelle Song-Erfassung oder die ID3-Vorschau zu blockieren.
 - Persönliche Notizen einzelner Mitglieder je Song (z. B. eigene Spielhinweise), getrennt von bandweiten Informationen. Diese persönliche Notiz kann zusätzlich eine kurze Bühnennotiz, eine Farbe sowie Hinweis-Icons enthalten, die als Vorgabewert übernommen werden, sobald der Song einer Setlist hinzugefügt wird (siehe 3.4).
 - **Song-Dokumente je Song:**
   - Audiodateien mit integriertem Player zur direkten Wiedergabe in der App (z. B. Referenzaufnahmen, Proberaum-Mitschnitte); geplante Erweiterungen des Players (Streaming-Wiedergabe, Übungsfunktionen) siehe Abschnitt 3.12.
@@ -96,14 +102,15 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 ### 3.4 Setlisten-Verwaltung
 
 - Erstellung von Setlisten per Drag-and-Drop aus der Songbibliothek oder aus zuvor gespeicherten Setlisten heraus.
-- Mehrere Setlisten pro Termin/Auftritt möglich (z. B. Alternativversionen, mehrere Sets an einem Abend).
+- Mehrere Setlisten pro Termin/Auftritt möglich (z. B. Alternativversionen, mehrere Sets an einem Abend) — ebenso lässt sich dieselbe Setlist mit mehreren Terminen verknüpfen, etwa für ein wiederkehrendes Set.
 - Automatisierte bzw. regelbasierte Vorschläge zur Zusammenstellung (z. B. nach Kriterien wie Instrumentenwechsel, Tempo- oder Stimmungsverlauf) als Unterstützung, nicht als Ersatz für manuelle Bearbeitung.
 - Anzeige der geschätzten Gesamtspieldauer einer Setlist als Summe der hinterlegten Songdauern.
 - Persönliche Kennzeichnung einzelner Setlist-Einträge je Mitglied: individuelle Farbe, kurze Notiz sowie Bühnen-Hinweis-Icons (Umstimmen, Instrumentwechsel mit optionaler Instrumentangabe, Programmwechsel mit Programmnummer, freier Hinweis) — nur für das jeweilige Mitglied sichtbar und unabhängig von den bandweiten Songdaten.
 - Persönliche, freitextliche Anmerkung je Mitglied zur gesamten Setlist, unabhängig von den einzelnen Einträgen.
 - PDF-/Druckexport der Setlist in konfigurierbaren Layouts (z. B. für die Bühne, für Technik/FOH, als Ansage-/Cue-Liste); der Bühnen-Layout-Export ist personalisiert und berücksichtigt die individuellen Farb-, Notiz- und Hinweis-Icon-Einstellungen des jeweiligen Mitglieds.
 - Kopieren und Wiederverwenden bestehender Setlisten als Vorlage für neue Termine.
-- Verknüpfung der Setlist mit dem jeweiligen Termin und den zugehörigen Song-Dokumenten.
+- **Mehrfachverknüpfung mit Terminen:** Eine Setlist kann gleichzeitig mit mehreren Terminen verknüpft sein; die Songliste ist dabei geteilt (Änderungen wirken sich auf alle verknüpften Termine aus), während persönliche Hinweise/Notizen je nach im Termin-Auswähler gewähltem Termin getrennt geführt werden — voreingestellt auf den nächsten anstehenden verknüpften Termin. Wird ein verknüpfter Termin nachträglich zu einem vergangenen (bzw. war er es bereits bei der Verknüpfung), friert die App die Songliste beim nächsten Änderungsversuch automatisch als „wie gespielt"-Stand für diesen Termin ein; die eingefrorene Fassung bleibt danach unverändert sichtbar und druckbar, unabhängig von weiteren Änderungen an der (für zukünftige Termine weiterhin geteilten) Liste.
+- Verknüpfung der Setlist mit den zugehörigen Song-Dokumenten.
 
 ### 3.5 Veranstaltungsorte und Gigs
 
@@ -128,7 +135,7 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 
 - Zentraler, bandbezogener Dateispeicher mit Kategorisierung (z. B. Noten, Verträge, Fotos, Aufnahmen, Sonstiges).
 - Unterscheidung zwischen bandintern sichtbaren und öffentlich freigegebenen Dateien. Öffentlich freigegebene Dateien erhalten einen eindeutigen, nicht erratbaren Freigabelink, über den sie ohne Login abrufbar sind; bandintern sichtbare Dateien bleiben ausschließlich angemeldeten Mitgliedern vorbehalten.
-- Verknüpfung von Dateien mit anderen Objekten (Songs, Termine, Veranstaltungsorte, Equipment).
+- Verknüpfung von Dateien mit anderen Objekten (Songs, Termine, Veranstaltungsorte, Equipment) — auch mehrfach gleichzeitig, z. B. ein am Veranstaltungsort hinterlegter Technical Rider zusätzlich an einen konkreten Termin. Verknüpfungen lassen sich nachträglich über eine „Bestehende Datei verknüpfen"-Auswahl je Objekt ergänzen sowie einzeln wieder lösen, ohne die Datei selbst zu löschen.
 - Kontingentbasierter Speicherplatz pro Band mit Übersicht der aktuellen Auslastung.
 
 ### 3.8 Finanzverwaltung
@@ -149,7 +156,8 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 - Verknüpfung von Dateien (z. B. Fotos, Anleitungen) mit einzelnen Equipment-Einträgen.
 - Erstellung von Packlisten für einzelne Gigs oder Proben, inklusive Zuweisung an Mitglieder.
 - Abhak-/Fortschrittsfunktion beim Packen, um Vollständigkeit vor der Abfahrt zu prüfen.
-- Export der Packliste (z. B. als PDF) zum Ausdrucken.
+- **Mehrfachverknüpfung mit Terminen:** Eine Packliste kann gleichzeitig mit mehreren Terminen verknüpft sein; die Eintragsliste ist dabei geteilt, während Abhak-Status und Zuständigkeit je nach im Termin-Auswähler gewähltem Termin getrennt geführt werden — voreingestellt auf den nächsten anstehenden verknüpften Termin. Wie bei Setlisten (3.4) wird die Eintragsliste für bereits vergangene Termine beim nächsten Änderungsversuch automatisch als „wie gepackt"-Stand eingefroren.
+- Export der Packliste (z. B. als PDF) zum Ausdrucken — bei vergangenen Terminen mit eingefrorenem Stand basierend auf der historischen statt der aktuellen Liste.
 
 ### 3.10 KI-gestützte Unterstützungsfunktionen
 
@@ -170,7 +178,7 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 - Übungsfunktionen für hochgeladene Audiodateien: Wiedergabegeschwindigkeit prozentual regelbar bei gleichbleibender Tonhöhe sowie Tonart in Halbtonschritten transponierbar, unabhängig von der Wiedergabegeschwindigkeit — vergleichbar mit Grundfunktionen bekannter Übungswerkzeuge wie Anytune. Ist am Song eine Tonart hinterlegt, zeigt die App bei aktiver Transposition die sich daraus ergebende Zieltonart mit an.
 - Markieren eines Abschnitts innerhalb eines Songs sowie dessen Endlos-Wiedergabe (Loop) zum gezielten Üben einzelner Passagen, ergänzt um eine Wellenformdarstellung zur Orientierung und zum Anspringen einzelner Stellen. Der Loop-Bereich lässt sich sowohl über Buttons ("ab hier"/"bis hier") als auch direkt per Ziehen mit Maus oder Finger in der Wellenform festlegen.
 - Anzeige von verstrichener Zeit und Restzeit inklusive Millisekunden während der Wiedergabe.
-- Automatische Tempoerkennung: Das Grundtempo (BPM) der Datei wird beim Laden ermittelt und angezeigt, die Anzeige aktualisiert sich live entsprechend der eingestellten Wiedergabegeschwindigkeit.
+- Automatische Tempoerkennung: Das Grundtempo (BPM) der Datei wird beim Laden ermittelt und angezeigt, die Anzeige aktualisiert sich live entsprechend der eingestellten Wiedergabegeschwindigkeit. Weicht das erkannte Grundtempo vom am Song hinterlegten BPM-Wert ab, fragt die App nach, ob es in die Songdaten übernommen werden soll — wie bei der Tonart-Erkennung ausschließlich nach aktiver Bestätigung, nie automatisch.
 - Tonart-Erkennung auf Knopfdruck (eigener, granularer Unterschalter unter dem Medienplayer-Modul, siehe Abschnitt 2.1): Schätzt die Tonart der Audiodatei per Chromagramm-Analyse. Weicht das Ergebnis von der am Song hinterlegten Tonart ab, fragt die App nach, ob es in die Songdaten übernommen werden soll — die Übernahme erfolgt ausschließlich nach aktiver Bestätigung, nie automatisch. Da sich Dur-Tonarten von ihrer parallelen Molltonart (z. B. C-Dur/a-Moll) anhand der reinen Tonhöhen kaum unterscheiden lassen, weist die App in solchen Fällen im Ergebnis auf die naheliegende Alternative hin, statt eine falsche Eindeutigkeit vorzutäuschen.
 - Zweistufige Wiedergabe: Standardmäßig läuft ein schlanker, streamender Player. Der Übungsmodus wird bewusst erst auf Anforderung geladen, da er die Datei vollständig verarbeitet im Speicher hält.
 

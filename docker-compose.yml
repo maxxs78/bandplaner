@@ -27,6 +27,15 @@ services:
       SMTP_PASSWORD: "${SMTP_PASSWORD:-}"
       SMTP_FROM: "${SMTP_FROM:-}"
       SMTP_SECURE: "${SMTP_SECURE:-}"
+      # Anlageassistent beim Song-Neuanlegen (optional): Ohne diese Variablen
+      # bleibt nur die ID3-Vorschau aus hochgeladenen Dateien aktiv, die
+      # Online-Recherche wird dann uebersprungen statt zu fehlschlagen.
+      MUSICBRAINZ_USER_AGENT: "${MUSICBRAINZ_USER_AGENT:-}"
+      DISCOGS_TOKEN: "${DISCOGS_TOKEN:-}"
+      SPOTIFY_CLIENT_ID: "${SPOTIFY_CLIENT_ID:-}"
+      SPOTIFY_CLIENT_SECRET: "${SPOTIFY_CLIENT_SECRET:-}"
+      # Adresssuche fuer Orte (optional): leer = oeffentliche Nominatim-Instanz.
+      NOMINATIM_BASE_URL: "${NOMINATIM_BASE_URL:-}"
     volumes:
       # Datenbank, hochgeladene Song-/Band-Dateien sowie Profil-/Bandbilder
       # liegen in benannten Volumes und überleben damit Image-Updates/Neustarts.

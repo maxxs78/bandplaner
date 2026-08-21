@@ -38,6 +38,7 @@ export function SongFileList({
   playerEnabled,
   keyDetectionEnabled,
   songKey,
+  songBpm,
 }: {
   bandId: string;
   songId: string;
@@ -47,6 +48,7 @@ export function SongFileList({
   playerEnabled: boolean;
   keyDetectionEnabled?: boolean;
   songKey?: string | null;
+  songBpm?: number | null;
 }) {
   const t = useTranslations("songs.fileList");
   const tUpload = useTranslations("songs.fileUpload");
@@ -110,6 +112,7 @@ export function SongFileList({
                 src={`/api/song-files/${file.id}`}
                 filename={file.filename}
                 songKey={songKey}
+                songBpm={songBpm}
                 bandId={bandId}
                 songId={songId}
                 keyDetectionEnabled={keyDetectionEnabled}

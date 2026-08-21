@@ -67,6 +67,8 @@ export function SongForm({
   const albumRef = useRef<HTMLInputElement>(null);
   const releaseYearRef = useRef<HTMLInputElement>(null);
   const bpmRef = useRef<HTMLInputElement>(null);
+  const durationMinRef = useRef<HTMLInputElement>(null);
+  const durationSecPartRef = useRef<HTMLInputElement>(null);
 
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const [pendingCoverDataUrl, setPendingCoverDataUrl] = useState<string | null>(null);
@@ -85,6 +87,14 @@ export function SongForm({
     }
   }
 
+  /** Nur befuellen, wenn BEIDE Teilfelder noch leer sind, um ein manuell erfasstes Ergebnis nie teilweise zu ueberschreiben. */
+  function fillDurationIfEmpty(totalSec: number | undefined) {
+    if (totalSec === undefined || !durationMinRef.current || !durationSecPartRef.current) return;
+    if (durationMinRef.current.value || durationSecPartRef.current.value) return;
+    durationMinRef.current.value = String(Math.floor(totalSec / 60));
+    durationSecPartRef.current.value = String(totalSec % 60);
+  }
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file || !previewMetadataAction) return;
@@ -100,6 +110,7 @@ export function SongForm({
         fillIfEmpty(albumRef, result.album);
         fillIfEmpty(releaseYearRef, result.year);
         fillIfEmpty(bpmRef, result.bpm);
+        fillDurationIfEmpty(result.durationSec);
         if (result.coverDataUrl) setCoverPreview(result.coverDataUrl);
       }
     } finally {
@@ -252,6 +263,7 @@ export function SongForm({
               placeholder={tf("durationMinPlaceholder")}
               className="w-full"
               defaultValue={defaultDurationMin}
+              ref={durationMinRef}
             />
             <span className="text-muted">:</span>
             <Input
@@ -263,6 +275,7 @@ export function SongForm({
               placeholder={tf("durationSecPlaceholder")}
               className="w-full"
               defaultValue={defaultDurationSecPart}
+              ref={durationSecPartRef}
             />
           </div>
         </div>

@@ -5,7 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { updateEquipmentAction, uploadEquipmentFileAction } from "../../actions";
-import { deleteBandFileAction, updateBandFileAction } from "../../../files/actions";
+import {
+  deleteBandFileAction,
+  updateBandFileAction,
+  linkBandFileToEquipmentAction,
+  unlinkBandFileFromEquipmentAction,
+} from "../../../files/actions";
 import { EquipmentForm } from "@/components/equipment-form";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
@@ -20,16 +25,29 @@ export default async function EditEquipmentPage({
   const { user, membership, isFinanceAdmin } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).equipment) redirect(`/bands/${bandId}`);
   const t = await getTranslations("equipment");
+  const tFiles = await getTranslations("bandFiles.linkExisting");
 
-  const equipment = await prisma.equipment.findFirst({
-    where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
-    include: {
-      files: {
-        orderBy: { createdAt: "desc" },
-        include: { uploadedBy: { select: { name: true } } },
+  const [equipment, otherFiles] = await Promise.all([
+    prisma.equipment.findFirst({
+      where: { id: equipmentId, ...equipmentVisibleInBand(bandId) },
+      include: {
+        files: {
+          orderBy: { createdAt: "desc" },
+          include: {
+            uploadedBy: { select: { name: true } },
+            songs: { select: { id: true, title: true } },
+            events: { select: { id: true, title: true } },
+            locations: { select: { id: true, name: true } },
+          },
+        },
       },
-    },
-  });
+    }),
+    prisma.bandFile.findMany({
+      where: { bandId, NOT: { equipment: { some: { id: equipmentId } } } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, filename: true },
+    }),
+  ]);
   if (!equipment) notFound();
 
   // Band-Equipment darf jede inhalte-berechtigte Person dieser Band bearbeiten;
@@ -62,9 +80,13 @@ export default async function EditEquipmentPage({
     shareToken: f.shareToken,
     uploadedBy: f.uploadedBy,
     uploadedById: f.uploadedById,
+    songs: f.songs,
+    events: f.events,
+    locations: f.locations,
     downloadHref: `/api/band-files/${f.id}`,
     deleteAction: deleteBandFileAction.bind(null, bandId, f.id),
     updateAction: updateBandFileAction.bind(null, bandId, f.id),
+    unlinkAction: unlinkBandFileFromEquipmentAction.bind(null, bandId, f.id, equipmentId),
   }));
 
   return (
@@ -105,6 +127,34 @@ export default async function EditEquipmentPage({
             publicLinksEnabled={membership.band.publicFileLinksEnabled}
           />
         </div>
+        {otherFiles.length > 0 && (
+          <form
+            action={linkBandFileToEquipmentAction.bind(null, bandId, equipmentId)}
+            className="mt-3 flex flex-wrap items-center gap-2 border-t border-border pt-3"
+          >
+            <select
+              name="fileId"
+              defaultValue=""
+              required
+              className="min-w-0 flex-1 rounded-lg border border-border bg-surface px-2 py-1.5 text-sm text-foreground"
+            >
+              <option value="" disabled>
+                {tFiles("placeholder")}
+              </option>
+              {otherFiles.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.filename}
+                </option>
+              ))}
+            </select>
+            <button
+              type="submit"
+              className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:border-primary"
+            >
+              {tFiles("button")}
+            </button>
+          </form>
+        )}
       </Card>
     </div>
   );

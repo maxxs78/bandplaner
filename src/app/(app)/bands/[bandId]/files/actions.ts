@@ -87,10 +87,10 @@ export async function uploadBandFileAction(
       size: result.size,
       category,
       visibility,
-      eventId,
-      songId,
-      equipmentId,
-      locationId,
+      events: eventId ? { connect: { id: eventId } } : undefined,
+      songs: songId ? { connect: { id: songId } } : undefined,
+      equipment: equipmentId ? { connect: { id: equipmentId } } : undefined,
+      locations: locationId ? { connect: { id: locationId } } : undefined,
     },
   });
 
@@ -147,5 +147,90 @@ export async function deleteBandFileAction(bandId: string, fileId: string) {
 
   await prisma.bandFile.delete({ where: { id: fileId } });
   await deleteStoredFile(file.storageKey);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+/**
+ * Nachtraegliche Mehrfachverknuepfung: eine bereits hochgeladene Datei kann
+ * zusaetzlich mit einem weiteren Termin/Ort/Equipment verknuepft werden (m:n,
+ * siehe BandFile.events/locations/equipment in schema.prisma). Songs sind
+ * hier bewusst ausgeklammert - die Song-Detailseite zeigt BandFile-Verknuepfungen
+ * schon heute nicht an (separates SongFile-System dort).
+ */
+export async function linkBandFileToEventAction(bandId: string, eventId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  const fileId = formData.get("fileId") as string;
+  if (!fileId) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { events: { connect: { id: eventId } } },
+  });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function unlinkBandFileFromEventAction(bandId: string, fileId: string, eventId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { events: { disconnect: { id: eventId } } },
+  });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function linkBandFileToLocationAction(bandId: string, locationId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  const fileId = formData.get("fileId") as string;
+  if (!fileId) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { locations: { connect: { id: locationId } } },
+  });
+  revalidatePath(`/bands/${bandId}/locations/${locationId}/edit`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function unlinkBandFileFromLocationAction(bandId: string, fileId: string, locationId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { locations: { disconnect: { id: locationId } } },
+  });
+  revalidatePath(`/bands/${bandId}/locations/${locationId}/edit`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function linkBandFileToEquipmentAction(bandId: string, equipmentId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  const fileId = formData.get("fileId") as string;
+  if (!fileId) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { equipment: { connect: { id: equipmentId } } },
+  });
+  revalidatePath(`/bands/${bandId}/equipment/${equipmentId}/edit`);
+  revalidatePath(`/bands/${bandId}/files`);
+}
+
+export async function unlinkBandFileFromEquipmentAction(bandId: string, fileId: string, equipmentId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  await prisma.bandFile.update({
+    where: { id: fileId, bandId },
+    data: { equipment: { disconnect: { id: equipmentId } } },
+  });
+  revalidatePath(`/bands/${bandId}/equipment/${equipmentId}/edit`);
   revalidatePath(`/bands/${bandId}/files`);
 }

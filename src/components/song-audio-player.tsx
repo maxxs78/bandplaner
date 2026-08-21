@@ -16,6 +16,7 @@ export function SongAudioPlayer({
   src,
   filename,
   songKey,
+  songBpm,
   bandId,
   songId,
   keyDetectionEnabled,
@@ -23,6 +24,7 @@ export function SongAudioPlayer({
   src: string;
   filename: string;
   songKey?: string | null;
+  songBpm?: number | null;
   bandId: string;
   songId: string;
   keyDetectionEnabled?: boolean;
@@ -35,6 +37,7 @@ export function SongAudioPlayer({
       <PracticePlayer
         src={src}
         songKey={songKey}
+        songBpm={songBpm}
         bandId={bandId}
         songId={songId}
         keyDetectionEnabled={keyDetectionEnabled}

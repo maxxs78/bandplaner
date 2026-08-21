@@ -143,6 +143,56 @@ export async function deleteEquipmentAction(bandId: string, equipmentId: string)
   revalidatePath(`/bands/${bandId}/equipment`);
 }
 
+/**
+ * Analoges "wie gepackt"-Pendant zu freezePastSetlistSnapshotsIfNeeded (siehe
+ * dortigen Kommentar in setlists/actions.ts) - wird vor jeder Aenderung an der
+ * Zusammensetzung der Packliste aufgerufen. checked/assignedToName werden je
+ * verknuepftem Termin aus PacklistItemEventStatus geloest (sonst dem globalen
+ * PacklistItem-Stand), da diese Zeilen beim spaeteren Entfernen des Eintrags
+ * kaskadierend mitgeloescht wuerden.
+ */
+async function freezePastPacklistSnapshotsIfNeeded(packlistId: string) {
+  const packlist = await prisma.packlist.findUnique({
+    where: { id: packlistId },
+    include: {
+      events: { where: { startsAt: { lt: new Date() } }, select: { id: true } },
+      items: {
+        orderBy: { order: "asc" },
+        include: {
+          equipment: { select: { name: true } },
+          assignedTo: { select: { name: true } },
+          eventStatuses: { include: { assignedTo: { select: { name: true } } } },
+        },
+      },
+    },
+  });
+  if (!packlist || packlist.events.length === 0) return;
+
+  const existing = await prisma.packlistEventSnapshot.findMany({
+    where: { packlistId, eventId: { in: packlist.events.map((e) => e.id) } },
+    select: { eventId: true },
+  });
+  const alreadyFrozen = new Set(existing.map((s) => s.eventId));
+  const toFreeze = packlist.events.filter((e) => !alreadyFrozen.has(e.id));
+  if (toFreeze.length === 0) return;
+
+  await prisma.packlistEventSnapshot.createMany({
+    data: toFreeze.map((e) => {
+      const itemsJson = JSON.stringify(
+        packlist.items.map((item) => {
+          const status = item.eventStatuses.find((s) => s.eventId === e.id);
+          return {
+            name: item.equipment?.name ?? item.customName ?? "",
+            checked: status ? status.checked : item.checked,
+            assignedToName: status ? (status.assignedTo?.name ?? null) : (item.assignedTo?.name ?? null),
+          };
+        })
+      );
+      return { packlistId, eventId: e.id, itemsJson };
+    }),
+  });
+}
+
 export async function createPacklistAction(
   bandId: string,
   _prevState: FormState,
@@ -170,9 +220,15 @@ export async function createPacklistAction(
     data: {
       bandId,
       name: parsed.data.name,
-      eventId: parsed.data.eventId || null,
+      events: parsed.data.eventId ? { connect: { id: parsed.data.eventId } } : undefined,
     },
   });
+
+  if (parsed.data.eventId) {
+    // Retroaktive Verknuepfung mit einem bereits vergangenen Termin: der Stand
+    // direkt bei Anlage ist hier der einzig sinnvolle "wie gepackt"-Zeitpunkt.
+    await freezePastPacklistSnapshotsIfNeeded(packlist.id);
+  }
 
   revalidatePath(`/bands/${bandId}/equipment/packlists`);
   redirect(`/bands/${bandId}/equipment/packlists/${packlist.id}`);
@@ -196,7 +252,13 @@ export async function linkPacklistToEventAction(bandId: string, eventId: string,
   const packlistId = formData.get("packlistId") as string;
   if (!packlistId) return;
 
-  await prisma.packlist.update({ where: { id: packlistId, bandId }, data: { eventId } });
+  await prisma.packlist.update({
+    where: { id: packlistId, bandId },
+    data: { events: { connect: { id: eventId } } },
+  });
+  // Falls der frisch verknuepfte Termin bereits vergangen ist: sofort einfrieren,
+  // analog zur retroaktiven Verknuepfung in createPacklistAction.
+  await freezePastPacklistSnapshotsIfNeeded(packlistId);
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   revalidatePath(`/bands/${bandId}/equipment/packlists`);
 }
@@ -206,7 +268,10 @@ export async function unlinkPacklistFromEventAction(bandId: string, packlistId: 
   if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
-  await prisma.packlist.update({ where: { id: packlistId, bandId }, data: { eventId: null } });
+  await prisma.packlist.update({
+    where: { id: packlistId, bandId },
+    data: { events: { disconnect: { id: eventId } } },
+  });
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   revalidatePath(`/bands/${bandId}/equipment/packlists`);
 }
@@ -215,6 +280,7 @@ export async function addPacklistEquipmentAction(bandId: string, packlistId: str
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
+  await freezePastPacklistSnapshotsIfNeeded(packlistId);
 
   const [maxOrder, equipment] = await Promise.all([
     prisma.packlistItem.aggregate({ where: { packlistId }, _max: { order: true } }),
@@ -248,6 +314,7 @@ export async function addPacklistCustomItemAction(bandId: string, packlistId: st
 
   const customName = (formData.get("customName") as string)?.trim();
   if (!customName) return;
+  await freezePastPacklistSnapshotsIfNeeded(packlistId);
 
   const maxOrder = await prisma.packlistItem.aggregate({
     where: { packlistId },
@@ -269,6 +336,7 @@ export async function removePacklistItemAction(bandId: string, packlistId: strin
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
+  await freezePastPacklistSnapshotsIfNeeded(packlistId);
 
   await prisma.packlistItem.delete({ where: { id: itemId, packlistId } });
   revalidatePath(`/bands/${bandId}/equipment/packlists/${packlistId}`);
@@ -278,16 +346,25 @@ export async function togglePacklistItemAction(
   bandId: string,
   packlistId: string,
   itemId: string,
+  eventId: string | null,
   checked: boolean
 ) {
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
-  await prisma.packlistItem.update({
-    where: { id: itemId, packlistId },
-    data: { checked },
-  });
+  if (eventId) {
+    await prisma.packlistItemEventStatus.upsert({
+      where: { itemId_eventId: { itemId, eventId } },
+      create: { itemId, eventId, checked },
+      update: { checked },
+    });
+  } else {
+    await prisma.packlistItem.update({
+      where: { id: itemId, packlistId },
+      data: { checked },
+    });
+  }
   revalidatePath(`/bands/${bandId}/equipment/packlists/${packlistId}`);
 }
 
@@ -295,16 +372,25 @@ export async function assignPacklistItemAction(
   bandId: string,
   packlistId: string,
   itemId: string,
+  eventId: string | null,
   assignedToId: string
 ) {
   const { membership } = await requireMembership(bandId);
   if (!getEnabledFeatures(membership.band).packlists) return;
   if (!canManageContent(membership.role)) return;
 
-  await prisma.packlistItem.update({
-    where: { id: itemId, packlistId },
-    data: { assignedToId: assignedToId || null },
-  });
+  if (eventId) {
+    await prisma.packlistItemEventStatus.upsert({
+      where: { itemId_eventId: { itemId, eventId } },
+      create: { itemId, eventId, assignedToId: assignedToId || null },
+      update: { assignedToId: assignedToId || null },
+    });
+  } else {
+    await prisma.packlistItem.update({
+      where: { id: itemId, packlistId },
+      data: { assignedToId: assignedToId || null },
+    });
+  }
   revalidatePath(`/bands/${bandId}/equipment/packlists/${packlistId}`);
 }
 

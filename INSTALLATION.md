@@ -57,6 +57,12 @@ Diese kommen aus einer `.env`-Datei, die **neben** der `docker-compose.yml` lieg
 | `SMTP_USER` / `SMTP_PASSWORD` | Zugangsdaten des Mailkontos, falls der Server Authentifizierung verlangt | `bandplaner@example.com` |
 | `SMTP_FROM` | Absenderadresse der Benachrichtigungen (leer = `SMTP_USER`) | `Bandplaner <noreply@example.com>` |
 | `SMTP_SECURE` | Nur nötig, wenn abweichend: `true` erzwingt TLS ab Verbindungsaufbau. Sonst automatisch aus dem Port abgeleitet (465 = TLS, sonst STARTTLS). | `true` |
+| `MUSICBRAINZ_USER_AGENT` | Aktiviert die Online-Recherche des Anlageassistenten (MusicBrainz als Primärquelle) beim Song-Neuanlegen. **Optional** – ohne gesetzten Wert bleibt nur die ID3-Vorschau aus hochgeladenen Dateien aktiv. MusicBrainz verlangt laut Nutzungsbedingungen einen identifizierenden Wert aus Name und Kontakt, kein generischer String. | `Bandplaner/1.0 (kontakt@example.com)` |
+| `DISCOGS_TOKEN` | Personal Access Token für Discogs, dient dem Anlageassistenten als Fallback für Genre/Jahr/Cover, falls MusicBrainz keinen Treffer liefert. **Optional.** | über den eigenen Discogs-Account unter „Developer Settings" erzeugen |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Zugangsdaten einer Spotify-App (Client-Credentials-Flow), liefert dem Anlageassistenten ergänzend einen Track-Link zum recherchierten Song. **Optional.** | über das [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) erzeugen |
+| `NOMINATIM_BASE_URL` | Adresssuche/Kartenabgleich im Modul **Orte**. **Optional** – leer nutzt die öffentliche OpenStreetMap-Nominatim-Instanz; nur bei eigenem Nominatim-Betrieb anzupassen. | `https://nominatim.example.com` |
+
+Die drei Anlageassistent-Quellen sind unabhängig voneinander optional konfigurierbar und degradieren bei fehlender Konfiguration still – die manuelle Song-Erfassung sowie die ID3-Vorschau bleiben davon unberührt.
 
 Damit tatsächlich Mails verschickt werden, müssen **beide** Bedingungen erfüllt sein:
 
@@ -156,6 +162,7 @@ Darin anpassen:
 - `AUTH_SECRET` – eigenen Zufallswert erzeugen (siehe [2.3](#23-umgebungsvariablen))
 - `NEXT_PUBLIC_APP_URL` – die später genutzte Adresse, z. B. `http://diskstation.local:3000` oder die spätere HTTPS-Domain (siehe [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung))
 - `SMTP_*` – optional, nur falls E-Mail-Benachrichtigungen gewünscht sind (siehe [2.3](#23-umgebungsvariablen)); kann auch später jederzeit nachgetragen werden
+- `MUSICBRAINZ_USER_AGENT` / `DISCOGS_TOKEN` / `SPOTIFY_CLIENT_*` / `NOMINATIM_BASE_URL` – ebenfalls optional (Anlageassistent bzw. Orte-Adresssuche, siehe [2.3](#23-umgebungsvariablen)); ohne sie funktionieren die jeweiligen Grundfunktionen unverändert weiter
 
 `DATABASE_URL` unverändert lassen – wird im Container ohnehin auf `/data` umgebogen.
 

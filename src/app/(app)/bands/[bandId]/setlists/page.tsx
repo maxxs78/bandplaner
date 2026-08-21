@@ -18,7 +18,7 @@ export default async function SetlistsPage({
 
   const setlists = await prisma.setlist.findMany({
     where: { bandId },
-    include: { event: true, _count: { select: { items: true } } },
+    include: { events: true, _count: { select: { items: true } } },
     orderBy: { createdAt: "desc" },
   });
 
@@ -45,7 +45,7 @@ export default async function SetlistsPage({
                 <p className="font-medium text-foreground">{s.name}</p>
                 <p className="text-sm text-muted">
                   {t("songCount", { count: s._count.items })}
-                  {s.event ? t("linkedWith", { title: s.event.title }) : ""}
+                  {s.events.length > 0 ? t("linkedWith", { title: s.events.map((e) => e.title).join(", ") }) : ""}
                 </p>
               </div>
             </Card>
