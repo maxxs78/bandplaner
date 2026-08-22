@@ -9,6 +9,18 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "30mb",
     },
   },
+  webpack: (config) => {
+    // Deterministische, gehashte Modul-IDs koennen bei diesem Modulgraphen
+    // kollidieren: der Server-Build hat vereinzelt "use client"-Komponenten
+    // (bandNav, copyLinkButton, practicePlayer) erzeugt, deren Code zwar im
+    // Client-Bundle landet, aber nicht im React Client Manifest eingetragen
+    // wurde ("Could not find the module ... in the React Client Manifest") -
+    // reproduzierbar bei jedem Build, nicht durch Cache verursacht. Benannte
+    // Modul-IDs vermeiden Hash-Kollisionen, auf Kosten minimal groesserer
+    // Chunk-Bezeichner, was fuer diese App irrelevant ist.
+    config.optimization.moduleIds = "named";
+    return config;
+  },
 };
 
 // Kein URL-Locale-Routing (kein [locale]-Segment) - die Sprache wird stattdessen
