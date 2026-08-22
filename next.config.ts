@@ -21,6 +21,14 @@ const nextConfig: NextConfig = {
     config.optimization.moduleIds = "named";
     return config;
   },
+  async rewrites() {
+    // Next.js liefert public/-Dateien, die erst nach dem Build (also durch
+    // Server Actions wie storeRemoteImage/saveUploadedImage) hinzukommen, im
+    // Produktionsmodus nicht zuverlaessig aus - betroffen waeren Profil-,
+    // Band- und Song-Coverbilder. Die eigene Route liest stattdessen bei
+    // jedem Request frisch von der Platte (siehe src/app/api/uploads).
+    return [{ source: "/uploads/:path*", destination: "/api/uploads/:path*" }];
+  },
 };
 
 // Kein URL-Locale-Routing (kein [locale]-Segment) - die Sprache wird stattdessen
