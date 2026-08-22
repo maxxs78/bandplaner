@@ -6,6 +6,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
+# postinstall (patch-package, copy-audio-worklet.mjs) braucht beide Verzeichnisse
+# bereits waehrend "npm ci" - ohne sie bricht der postinstall-Hook mit
+# MODULE_NOT_FOUND ab, noch bevor der eigentliche Quellcode kopiert wird.
+COPY patches ./patches
+COPY scripts ./scripts
 RUN npm ci
 
 # ---- builder: Prisma-Client generieren und Next.js-App bauen ----
