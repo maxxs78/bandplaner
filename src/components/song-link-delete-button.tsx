@@ -14,7 +14,11 @@ export function SongLinkDeleteButton({ action }: { action: () => Promise<void> }
       aria-label={t("remove")}
       disabled={pending}
       className="shrink-0 text-muted hover:text-danger disabled:opacity-50"
-      onClick={() => startTransition(() => action())}
+      onClick={() => {
+        if (confirm(t("removeConfirm"))) {
+          startTransition(() => action());
+        }
+      }}
     >
       <X className="h-4 w-4" />
     </button>

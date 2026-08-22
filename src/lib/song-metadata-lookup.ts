@@ -19,6 +19,21 @@ export type SongMetadataCandidate = {
   coverImageUrl?: string;
 };
 
+const REFRESHABLE_SONG_FIELDS = ["artist", "album", "genre", "releaseYear", "bpm", "durationSec", "coverUrl"] as const;
+
+/** Prüft, ob für einen Song überhaupt etwas Sinnvolles nachzuladen wäre (siehe refreshSongMetadataAction in actions.ts). */
+export function hasRefreshableSongGaps(song: {
+  artist?: string | null;
+  album?: string | null;
+  genre?: string | null;
+  releaseYear?: number | null;
+  bpm?: number | null;
+  durationSec?: number | null;
+  coverUrl?: string | null;
+}): boolean {
+  return REFRESHABLE_SONG_FIELDS.some((field) => !song[field]);
+}
+
 function parseYear(dateOrYear: string | undefined | null): number | undefined {
   const match = dateOrYear?.match(/^\d{4}/);
   return match ? Number(match[0]) : undefined;

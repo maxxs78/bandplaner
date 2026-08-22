@@ -296,7 +296,10 @@
       "saveNote": "Spara anteckning",
       "myCues": "Mina scenmarkeringar",
       "myCuesVisibility": "Synligt endast för dig. Förs automatiskt över när låten läggs till i en ny låtlista.",
-      "noValue": "—"
+      "noValue": "—",
+      "refreshInfo": "Fyll i saknad information",
+      "refreshInfoPending": "Söker…",
+      "refreshInfoNotFound": "Inget hittades (varken i en länkad ljudfil eller online)."
     },
     "vote": {
       "commentPlaceholder": "Kommentar (valfritt, synlig för alla)",
@@ -313,7 +316,8 @@
       "labelPlaceholder": "Etikett (valfritt)",
       "adding": "Lägger till…",
       "add": "Lägg till",
-      "remove": "Ta bort länk"
+      "remove": "Ta bort länk",
+      "removeConfirm": "Verkligen ta bort den här länken?"
     },
     "fileUpload": {
       "uploading": "Laddar upp…",

@@ -16,8 +16,11 @@ import {
   uploadSongFileAction,
   voteSongAction,
   adminDecideProposalAction,
+  refreshSongMetadataAction,
 } from "../actions";
+import { hasRefreshableSongGaps } from "@/lib/song-metadata-lookup";
 import { DeleteButton } from "@/components/delete-button";
+import { RefreshCoverButton } from "@/components/refresh-cover-button";
 import { CueAnnotationEditor } from "@/components/cue-annotation-editor";
 import { SongLinkForm } from "@/components/song-link-form";
 import { SongLinkDeleteButton } from "@/components/song-link-delete-button";
@@ -145,6 +148,9 @@ export default async function SongDetailPage({
                 {td("edit")}
               </Button>
             </Link>
+            {hasRefreshableSongGaps(song) && (
+              <RefreshCoverButton action={refreshSongMetadataAction.bind(null, bandId, songId)} />
+            )}
             {canDeleteSong && (
               <DeleteButton
                 action={deleteSongAction.bind(null, bandId, songId)}

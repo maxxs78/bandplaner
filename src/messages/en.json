@@ -296,7 +296,10 @@
       "saveNote": "Save Note",
       "myCues": "My Stage Cues",
       "myCuesVisibility": "Only visible to you. Automatically carried over when added to a new setlist.",
-      "noValue": "—"
+      "noValue": "—",
+      "refreshInfo": "Fill in missing info",
+      "refreshInfoPending": "Searching…",
+      "refreshInfoNotFound": "Nothing found (neither in a linked audio file nor online)."
     },
     "vote": {
       "commentPlaceholder": "Comment (optional, visible to everyone)",
@@ -313,7 +316,8 @@
       "labelPlaceholder": "Label (optional)",
       "adding": "Adding…",
       "add": "Add",
-      "remove": "Remove link"
+      "remove": "Remove link",
+      "removeConfirm": "Really remove this link?"
     },
     "fileUpload": {
       "uploading": "Uploading…",

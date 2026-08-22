@@ -296,7 +296,10 @@
       "saveNote": "Notiz sichere",
       "myCues": "Meini Bihne-Hiweis",
       "myCuesVisibility": "Nur fer disch sichtbar. Werd beim Dobeimache zu re neie Setlist automatisch iwwernumm.",
-      "noValue": "—"
+      "noValue": "—",
+      "refreshInfo": "Fählendi Angabe ergänze",
+      "refreshInfoPending": "Sucht grad…",
+      "refreshInfoNotFound": "Nix gfunn (nit in re verknippde Audiodatei un nit online)."
     },
     "vote": {
       "commentPlaceholder": "Kommentar (optional, fer alli sichtbar)",
@@ -313,7 +316,8 @@
       "labelPlaceholder": "Bezeichnung (optional)",
       "adding": "Werd dobei gemacht…",
       "add": "Dobei mache",
-      "remove": "Link fottmache"
+      "remove": "Link fottmache",
+      "removeConfirm": "Soll de Link wärklich fott?"
     },
     "fileUpload": {
       "uploading": "Werd uffgelade…",

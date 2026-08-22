@@ -42,14 +42,15 @@ export function SongForm({
   /** Nur Admins dürfen den Status setzen/ändern - andere reichen Songs als Vorschlag ein. */
   canEditStatus?: boolean;
   /**
-   * Anlageassistent (ID3-Vorschau + Online-Recherche) - nur beim Neuanlegen
-   * verfügbar (siehe new/page.tsx), daher optional. Alle drei bereits mit der
-   * Band-ID gebundenen Server Actions werden zusammen gereicht oder gar nicht.
+   * Anlageassistent (ID3-Vorschau + Online-Recherche) - sowohl beim Neuanlegen
+   * (new/page.tsx) als auch beim Bearbeiten ([songId]/edit/page.tsx) verkabelt,
+   * daher optional statt Pflichtprop. Alle drei bereits mit der Band-ID
+   * gebundenen Server Actions werden zusammen gereicht oder gar nicht.
    */
   previewMetadataAction?: (formData: FormData) => Promise<AudioMetadataPreview | null>;
   searchMetadataAction?: (title: string, artist?: string) => Promise<SongMetadataSearchResult>;
   fetchCoverAction?: (
-    candidate: { releaseMbid?: string; coverImageUrl?: string }
+    candidate: { releaseMbid?: string; coverImageUrl?: string; title: string; artist?: string }
   ) => Promise<{ dataUrl: string } | null>;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
@@ -150,6 +151,8 @@ export function SongForm({
         const cover = await fetchCoverAction({
           releaseMbid: candidate.releaseMbid,
           coverImageUrl: candidate.coverImageUrl,
+          title: candidate.title,
+          artist: candidate.artist,
         });
         if (cover) {
           setCoverPreview(cover.dataUrl);

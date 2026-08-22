@@ -296,7 +296,10 @@
       "saveNote": "Notiz speichern",
       "myCues": "Meine Bühnen-Hinweise",
       "myCuesVisibility": "Nur für dich sichtbar. Wird beim Hinzufügen zu einer neuen Setlist automatisch übernommen.",
-      "noValue": "—"
+      "noValue": "—",
+      "refreshInfo": "Fehlende Angaben ergänzen",
+      "refreshInfoPending": "Suche läuft…",
+      "refreshInfoNotFound": "Nichts gefunden (weder in einer verknüpften Audiodatei noch online)."
     },
     "vote": {
       "commentPlaceholder": "Kommentar (optional, für alle sichtbar)",
@@ -313,7 +316,8 @@
       "labelPlaceholder": "Bezeichnung (optional)",
       "adding": "Wird hinzugefügt…",
       "add": "Hinzufügen",
-      "remove": "Link entfernen"
+      "remove": "Link entfernen",
+      "removeConfirm": "Diesen Link wirklich entfernen?"
     },
     "fileUpload": {
       "uploading": "Wird hochgeladen…",

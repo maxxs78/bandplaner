@@ -18,6 +18,12 @@ FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+# Wird durch postinstall (scripts/copy-audio-worklet.mjs) im deps-Stage aus
+# node_modules erzeugt und ist bewusst nicht im Repository (siehe dort) -
+# "COPY . ." aus dem Quellbaum bringt die Datei deshalb nicht mit, obwohl sie
+# im deps-Stage bereits existiert. Ohne diese Zeile fehlt public/audio-worklet
+# im fertigen Image komplett und der Uebungsmodus kann das Worklet nicht laden.
+COPY --from=deps /app/public/audio-worklet ./public/audio-worklet
 RUN npx prisma generate
 RUN npm run build
 

@@ -2,7 +2,12 @@ import { notFound, redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageBandContent, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
-import { updateSongAction } from "../../actions";
+import {
+  updateSongAction,
+  previewAudioMetadataAction,
+  searchSongMetadataAction,
+  fetchCandidateCoverAction,
+} from "../../actions";
 import { SongForm } from "@/components/song-form";
 import { Card } from "@/components/ui/card";
 
@@ -32,6 +37,9 @@ export default async function EditSongPage({
           action={boundAction}
           submitLabel={t("editSubmit")}
           canEditStatus={isAdmin}
+          previewMetadataAction={previewAudioMetadataAction.bind(null, bandId)}
+          searchMetadataAction={searchSongMetadataAction.bind(null, bandId)}
+          fetchCoverAction={fetchCandidateCoverAction.bind(null, bandId)}
           defaultValues={{
             title: song.title,
             key: song.key ?? "",

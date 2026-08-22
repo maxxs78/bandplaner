@@ -27,6 +27,38 @@ export type AudioMetadataPreview = {
   coverDataUrl?: string;
 };
 
+// music-metadata liefert je nach Container einen von mehreren "IAudioMetadata"-
+// Typen zurueck; wir greifen nur auf die format-/common-unabhaengigen Felder
+// zu, die previewAudioMetadata() und previewStoredAudioMetadata() teilen.
+type ParsedAudioMetadata = Awaited<ReturnType<typeof import("music-metadata").parseBuffer>>;
+
+function buildPreviewFromParsed(metadata: ParsedAudioMetadata): AudioMetadataPreview | null {
+  const { common } = metadata;
+
+  const picture = common.picture?.find((p) => /front/i.test(p.type ?? "")) ?? common.picture?.[0];
+  let coverDataUrl: string | undefined;
+  if (picture) {
+    const extension = ALLOWED_IMAGE_MIME_TO_EXT[picture.format];
+    if (extension) {
+      coverDataUrl = `data:${picture.format};base64,${Buffer.from(picture.data).toString("base64")}`;
+    }
+  }
+
+  const result: AudioMetadataPreview = {
+    title: common.title || undefined,
+    artist: common.artist || undefined,
+    album: common.album || undefined,
+    year: common.year || undefined,
+    genre: common.genre?.[0] || undefined,
+    bpm: common.bpm ? Math.round(common.bpm) : undefined,
+    durationSec: metadata.format.duration ? Math.round(metadata.format.duration) : undefined,
+    coverDataUrl,
+  };
+
+  const hasAnyValue = Object.values(result).some((v) => v !== undefined);
+  return hasAnyValue ? result : null;
+}
+
 /**
  * Gibt null zurück, wenn die Datei nicht lesbar ist oder keine brauchbaren
  * Tags enthält - ein nicht lesbarer Tag darf das Anlegen eines Songs nie
@@ -38,30 +70,24 @@ export async function previewAudioMetadata(file: File): Promise<AudioMetadataPre
     const { parseBuffer } = await import("music-metadata");
     const buffer = new Uint8Array(await file.arrayBuffer());
     const metadata = await parseBuffer(buffer, file.type || undefined);
-    const { common } = metadata;
+    return buildPreviewFromParsed(metadata);
+  } catch {
+    return null;
+  }
+}
 
-    const picture = common.picture?.find((p) => /front/i.test(p.type ?? "")) ?? common.picture?.[0];
-    let coverDataUrl: string | undefined;
-    if (picture) {
-      const extension = ALLOWED_IMAGE_MIME_TO_EXT[picture.format];
-      if (extension) {
-        coverDataUrl = `data:${picture.format};base64,${Buffer.from(picture.data).toString("base64")}`;
-      }
-    }
-
-    const result: AudioMetadataPreview = {
-      title: common.title || undefined,
-      artist: common.artist || undefined,
-      album: common.album || undefined,
-      year: common.year || undefined,
-      genre: common.genre?.[0] || undefined,
-      bpm: common.bpm ? Math.round(common.bpm) : undefined,
-      durationSec: metadata.format.duration ? Math.round(metadata.format.duration) : undefined,
-      coverDataUrl,
-    };
-
-    const hasAnyValue = Object.values(result).some((v) => v !== undefined);
-    return hasAnyValue ? result : null;
+/**
+ * Wie previewAudioMetadata(), aber fuer eine bereits gespeicherte Datei
+ * (storageKey statt frisch hochgeladenem File) - genutzt, um beim Bearbeiten
+ * eines bestehenden Songs fehlende Angaben aus einer schon verknuepften
+ * Audiodatei nachzutragen, ohne dass die Datei erneut ausgewaehlt werden muss.
+ */
+export async function previewStoredAudioMetadata(storageKey: string): Promise<AudioMetadataPreview | null> {
+  try {
+    const { parseFile } = await import("music-metadata");
+    const { resolveStoredFilePath } = await import("./uploads");
+    const metadata = await parseFile(resolveStoredFilePath(storageKey));
+    return buildPreviewFromParsed(metadata);
   } catch {
     return null;
   }
