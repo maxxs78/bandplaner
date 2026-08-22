@@ -52,5 +52,12 @@
     "patch-package": "^8.0.1",
     "tailwindcss": "^4",
     "typescript": "^5"
+  },
+  "overrides": {
+    "next-intl": {
+      "@swc/core": {
+        "@swc/helpers": "0.5.17"
+      }
+    }
   }
 }
