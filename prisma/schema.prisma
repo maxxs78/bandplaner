@@ -714,6 +714,11 @@ model Equipment {
   category    EquipmentCategory @default(OTHER)
   /// Lagerort, z. B. "Proberaum-Schrank", "Kofferraum Max"
   location    String?
+  /// Schluessel aus dem Icon-Katalog (siehe src/lib/equipment-icons.tsx), z. B.
+  /// "guitar-strat" - rein optisch, ohne fachliche Bedeutung; null = Platzhalter.
+  icon        String?
+  /// Frei waehlbarer Hex-Farbwert fuers Icon (z. B. "#3b82f6") - null = Standardfarbe.
+  color       String?
   createdAt   DateTime          @default(now())
 
   ownerUser   User?   @relation("EquipmentOwnerUser", fields: [ownerUserId], references: [id], onDelete: Cascade)

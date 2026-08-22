@@ -12,6 +12,7 @@ import { DeleteButton } from "@/components/delete-button";
 import { EquipmentForm } from "@/components/equipment-form";
 import { EquipmentSubNav } from "@/components/equipment-sub-nav";
 import { getEquipmentCategoryLabels } from "@/lib/equipment-categories";
+import { EQUIPMENT_ICONS, isEquipmentIconKey } from "@/lib/equipment-icons";
 import { createEquipmentAction, deleteEquipmentAction } from "./actions";
 
 export default async function EquipmentPage({
@@ -106,16 +107,25 @@ export default async function EquipmentPage({
         )}
         {equipment.map((item) => {
           const canEdit = item.ownerUser ? item.ownerUser.id === user.id : canManage;
+          const ItemIcon = isEquipmentIconKey(item.icon) ? EQUIPMENT_ICONS[item.icon] : null;
           return (
             <Card key={item.id} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-medium text-foreground">{item.name}</p>
-                <p className="truncate text-sm text-muted">
-                  {[equipmentCategoryLabels[item.category], item.location, item.description]
-                    .filter(Boolean)
-                    .join(" · ") || t("noFurtherInfo")}
-                  {item.responsible && t("responsiblePrefix", { name: item.responsible.name })}
-                </p>
+              <div className="flex min-w-0 items-center gap-3">
+                {ItemIcon && (
+                  <ItemIcon
+                    className="h-8 w-8 shrink-0"
+                    style={{ color: item.color ?? undefined }}
+                  />
+                )}
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{item.name}</p>
+                  <p className="truncate text-sm text-muted">
+                    {[equipmentCategoryLabels[item.category], item.location, item.description]
+                      .filter(Boolean)
+                      .join(" · ") || t("noFurtherInfo")}
+                    {item.responsible && t("responsiblePrefix", { name: item.responsible.name })}
+                  </p>
+                </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
                 <Badge variant={item.ownerUser ? "accent" : "default"}>

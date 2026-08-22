@@ -2,7 +2,17 @@ import { RefreshCw, Repeat, Hash, AlertCircle, type LucideIcon } from "lucide-re
 
 export type CueType = "RETUNE" | "INSTRUMENT_CHANGE" | "PROGRAM_CHANGE" | "CUSTOM";
 
-export type Cue = { type: CueType; value?: string };
+export type Cue = {
+  type: CueType;
+  value?: string;
+  /** Nur bei INSTRUMENT_CHANGE, wenn ein Equipment-Katalogeintrag gewaehlt wurde
+   * statt Freitext. icon/color sind zum Anzeigezeitpunkt denormalisiert
+   * mitgespeichert (siehe CueBadges), damit sie nicht bei jedem Setlist-Render
+   * per Equipment-Lookup nachgeladen werden muessen. */
+  equipmentId?: string;
+  equipmentIcon?: string | null;
+  equipmentColor?: string | null;
+};
 
 export function getCueDefinitions(
   t: (key: string) => string

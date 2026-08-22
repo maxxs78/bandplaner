@@ -6,6 +6,7 @@ import { requireMembership, canManageContent } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { getEquipmentSchema, getPacklistSchema } from "@/lib/validation";
+import { isEquipmentIconKey } from "@/lib/equipment-icons";
 import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -54,6 +55,8 @@ export async function createEquipmentAction(
     ownerId: formData.get("ownerId") || undefined,
     responsibleId: formData.get("responsibleId") || undefined,
     category: formData.get("category") || "OTHER",
+    icon: formData.get("icon") || undefined,
+    color: formData.get("color") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
@@ -66,6 +69,8 @@ export async function createEquipmentAction(
     if (!member) return { error: ta("invalidMember") };
   }
 
+  const icon = isEquipmentIconKey(parsed.data.icon) ? parsed.data.icon : null;
+
   await prisma.equipment.create({
     data: {
       name: parsed.data.name,
@@ -75,6 +80,8 @@ export async function createEquipmentAction(
       ownerUserId,
       ownerBandId: ownerUserId ? null : bandId,
       responsibleId,
+      icon,
+      color: icon ? parsed.data.color || null : null,
     },
   });
 
@@ -105,6 +112,8 @@ export async function updateEquipmentAction(
     ownerId: formData.get("ownerId") || undefined,
     responsibleId: formData.get("responsibleId") || undefined,
     category: formData.get("category") || "OTHER",
+    icon: formData.get("icon") || undefined,
+    color: formData.get("color") || undefined,
   });
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? t("invalidInput") };
@@ -117,6 +126,8 @@ export async function updateEquipmentAction(
     if (!member) return { error: ta("invalidMember") };
   }
 
+  const icon = isEquipmentIconKey(parsed.data.icon) ? parsed.data.icon : null;
+
   await prisma.equipment.update({
     where: { id: equipmentId },
     data: {
@@ -127,6 +138,8 @@ export async function updateEquipmentAction(
       ownerUserId,
       ownerBandId: ownerUserId ? null : bandId,
       responsibleId,
+      icon,
+      color: icon ? parsed.data.color || null : null,
     },
   });
 

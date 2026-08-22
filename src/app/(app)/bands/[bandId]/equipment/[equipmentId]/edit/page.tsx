@@ -105,6 +105,8 @@ export default async function EditEquipmentPage({
               ownerId: equipment.ownerUserId ?? "",
               responsibleId: equipment.responsibleId ?? "",
               category: equipment.category,
+              icon: equipment.icon,
+              color: equipment.color,
             }}
           />
         </Card>

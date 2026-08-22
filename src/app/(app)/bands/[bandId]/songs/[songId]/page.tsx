@@ -31,6 +31,7 @@ import { SongVoteList } from "@/components/song-vote-list";
 import { AdminProposalDecision } from "@/components/admin-proposal-decision";
 import { parseCues } from "@/lib/setlist-cues";
 import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { detectStreamingEmbed } from "@/lib/media";
 import { SongEmbed } from "@/components/song-embed";
 
@@ -87,6 +88,13 @@ export default async function SongDetailPage({
 
   const myNote = song.notes[0];
   const myVote = song.votes.find((v) => v.userId === user.id);
+  const equipmentOptions = features.equipment
+    ? await prisma.equipment.findMany({
+        where: equipmentVisibleInBand(bandId),
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, icon: true, color: true },
+      })
+    : [];
   const eligibleVoterCount =
     song.status === "PROPOSED"
       ? await prisma.membership.count({ where: { bandId, role: { not: "GUEST" } } })
@@ -315,6 +323,7 @@ export default async function SongDetailPage({
               cues: parseCues(myNote?.cues),
             }}
             onSave={saveSongCueAction.bind(null, bandId, songId)}
+            equipmentOptions={equipmentOptions}
           />
         </div>
       </Card>

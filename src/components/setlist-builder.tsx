@@ -30,7 +30,7 @@ import {
 } from "@/app/(app)/bands/[bandId]/setlists/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { CueAnnotationEditor, type AnnotationValues } from "@/components/cue-annotation-editor";
+import { CueAnnotationEditor, type AnnotationValues, type EquipmentOption } from "@/components/cue-annotation-editor";
 import { CueBadges } from "@/components/cue-badges";
 import { parseCues } from "@/lib/setlist-cues";
 import { computeSetlistNumbers, type SetlistItemKind } from "@/lib/setlist-items";
@@ -294,6 +294,7 @@ export function SetlistBuilder({
   initialItems,
   librarySongs,
   readOnly = false,
+  equipmentOptions,
 }: {
   bandId: string;
   setlistId: string;
@@ -302,6 +303,8 @@ export function SetlistBuilder({
   initialItems: SetlistItem[];
   librarySongs: LibrarySong[];
   readOnly?: boolean;
+  /** Katalog an waehlbarem Equipment fuer den INSTRUMENT_CHANGE-Hinweis - siehe CueAnnotationEditor. */
+  equipmentOptions?: EquipmentOption[];
 }) {
   const [items, setItems] = useState(initialItems);
   const [search, setSearch] = useState("");
@@ -500,6 +503,7 @@ export function SetlistBuilder({
                       }}
                       onSave={(data) => handleSaveAnnotation(item.id, data)}
                       compact
+                      equipmentOptions={equipmentOptions}
                     />
                   </div>
                 )}
@@ -532,6 +536,7 @@ export function SetlistBuilder({
                           }}
                           onSave={(data) => handleSaveAnnotation(item.id, data)}
                           compact
+                          equipmentOptions={equipmentOptions}
                         />
                       </div>
                     )}

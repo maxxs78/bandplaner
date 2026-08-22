@@ -4,20 +4,27 @@ import { useState, useTransition } from "react";
 import { Check } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
-import { Input } from "@/components/ui/input";
+import { Input, Select } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { CUE_TYPES, getCueDefinitions, COLOR_PALETTE, type Cue } from "@/lib/setlist-cues";
+import { EQUIPMENT_ICONS, isEquipmentIconKey } from "@/lib/equipment-icons";
 
 export type AnnotationValues = { note: string; color: string | null; cues: Cue[] };
+
+export type EquipmentOption = { id: string; name: string; icon: string | null; color: string | null };
 
 export function CueAnnotationEditor({
   defaultValues,
   onSave,
   compact = false,
+  equipmentOptions,
 }: {
   defaultValues: AnnotationValues;
   onSave: (data: AnnotationValues) => Promise<{ error?: string } | void>;
   compact?: boolean;
+  /** Katalog an waehlbarem Equipment fuer den INSTRUMENT_CHANGE-Hinweis (persoenliches
+   * Equipment + Band-Equipment) - ohne diese Liste bleibt es beim reinen Freitext. */
+  equipmentOptions?: EquipmentOption[];
 }) {
   const t = useTranslations("cues");
   const cueDefinitions = getCueDefinitions(t);
@@ -36,7 +43,32 @@ export function CueAnnotationEditor({
   }
 
   function setCueValue(type: Cue["type"], value: string) {
-    setCues((current) => current.map((c) => (c.type === type ? { ...c, value } : c)));
+    setCues((current) =>
+      current.map((c) =>
+        c.type === type
+          ? { ...c, value, equipmentId: undefined, equipmentIcon: undefined, equipmentColor: undefined }
+          : c
+      )
+    );
+  }
+
+  function setCueEquipment(type: Cue["type"], equipmentId: string) {
+    const option = equipmentOptions?.find((o) => o.id === equipmentId);
+    setCues((current) =>
+      current.map((c) =>
+        c.type === type
+          ? option
+            ? {
+                ...c,
+                value: option.name,
+                equipmentId: option.id,
+                equipmentIcon: option.icon,
+                equipmentColor: option.color,
+              }
+            : { ...c, equipmentId: undefined, equipmentIcon: undefined, equipmentColor: undefined }
+          : c
+      )
+    );
   }
 
   function handleSave() {
@@ -105,13 +137,43 @@ export function CueAnnotationEditor({
                 <def.icon className="h-3.5 w-3.5" />
                 {def.label}
               </button>
-              {active && def.hasValue && (
-                <Input
-                  value={active.value ?? ""}
-                  onChange={(e) => setCueValue(type, e.target.value)}
-                  placeholder={def.placeholder}
-                  className="h-7 w-36 text-xs"
-                />
+              {active && def.hasValue && type === "INSTRUMENT_CHANGE" && equipmentOptions && equipmentOptions.length > 0 ? (
+                <>
+                  <Select
+                    value={active.equipmentId ?? ""}
+                    onChange={(e) => setCueEquipment(type, e.target.value)}
+                    className="h-7 w-40 text-xs"
+                  >
+                    <option value="">{t("equipmentFreeText")}</option>
+                    {equipmentOptions.map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                  </Select>
+                  {active.equipmentId ? (
+                    isEquipmentIconKey(active.equipmentIcon) && (
+                      <EquipmentIconPreview iconKey={active.equipmentIcon} color={active.equipmentColor} />
+                    )
+                  ) : (
+                    <Input
+                      value={active.value ?? ""}
+                      onChange={(e) => setCueValue(type, e.target.value)}
+                      placeholder={def.placeholder}
+                      className="h-7 w-36 text-xs"
+                    />
+                  )}
+                </>
+              ) : (
+                active &&
+                def.hasValue && (
+                  <Input
+                    value={active.value ?? ""}
+                    onChange={(e) => setCueValue(type, e.target.value)}
+                    placeholder={def.placeholder}
+                    className="h-7 w-36 text-xs"
+                  />
+                )
               )}
             </div>
           );
@@ -125,4 +187,10 @@ export function CueAnnotationEditor({
       </Button>
     </div>
   );
+}
+
+function EquipmentIconPreview({ iconKey, color }: { iconKey: string; color?: string | null }) {
+  if (!isEquipmentIconKey(iconKey)) return null;
+  const Icon = EQUIPMENT_ICONS[iconKey];
+  return <Icon className="h-5 w-5 shrink-0" style={{ color: color ?? undefined }} />;
 }

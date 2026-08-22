@@ -138,6 +138,8 @@ export function getEquipmentSchema(t: (key: string) => string) {
       "PERSONAL",
       "OTHER",
     ]),
+    icon: z.string().optional().or(z.literal("")),
+    color: z.string().optional().or(z.literal("")),
   });
 }
 

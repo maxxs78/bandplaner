@@ -7,7 +7,15 @@ import { getSongSchema, getSongLinkSchema, getSongVoteSchema } from "@/lib/valid
 import { notifyBand } from "@/lib/notifications";
 import { serializeCues, type Cue } from "@/lib/setlist-cues";
 import type { AnnotationValues } from "@/components/cue-annotation-editor";
-import { saveSongFile, deleteStoredFile, extractEmbeddedCover, storeRemoteImage } from "@/lib/uploads";
+import {
+  saveSongFile,
+  deleteStoredFile,
+  extractEmbeddedCover,
+  storeRemoteImage,
+  saveUploadedImage,
+  deleteUploadedFile,
+} from "@/lib/uploads";
+import type { ImageFormState } from "@/components/image-upload-form";
 import { previewAudioMetadata, previewStoredAudioMetadata, type AudioMetadataPreview } from "@/lib/audio-metadata";
 import { isPlayableAudio } from "@/lib/media";
 import {
@@ -823,4 +831,61 @@ export async function refreshSongMetadataAction(
   await prisma.song.update({ where: { id: songId }, data: patch });
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   return { found: true };
+}
+
+/** Manuelles Setzen/Ersetzen des Songcovers - gleiches Muster wie bei Band-/Profilbildern. */
+export async function updateSongCoverAction(
+  bandId: string,
+  songId: string,
+  _prevState: ImageFormState,
+  formData: FormData
+): Promise<ImageFormState> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) {
+    const t = await getTranslations("songs.actions");
+    return { error: t("guestsCannotEdit") };
+  }
+
+  const file = formData.get("image") as File | null;
+  if (!file || file.size === 0) {
+    const t = await getTranslations("imageUpload");
+    return { error: t("imageRequired") };
+  }
+
+  const result = await saveUploadedImage(file, "songs");
+  if ("error" in result) return { error: result.error };
+
+  const previous = await prisma.song.findUnique({
+    where: { id: songId, bandId },
+    select: { coverUrl: true },
+  });
+
+  await prisma.song.update({
+    where: { id: songId, bandId },
+    data: { coverUrl: result.url },
+  });
+  await deleteUploadedFile(previous?.coverUrl);
+
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  revalidatePath(`/bands/${bandId}/songs`);
+  return { success: true };
+}
+
+export async function removeSongCoverAction(bandId: string, songId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const previous = await prisma.song.findUnique({
+    where: { id: songId, bandId },
+    select: { coverUrl: true },
+  });
+
+  await prisma.song.update({
+    where: { id: songId, bandId },
+    data: { coverUrl: null },
+  });
+  await deleteUploadedFile(previous?.coverUrl);
+
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  revalidatePath(`/bands/${bandId}/songs`);
 }

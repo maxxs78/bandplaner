@@ -7,8 +7,11 @@ import {
   previewAudioMetadataAction,
   searchSongMetadataAction,
   fetchCandidateCoverAction,
+  updateSongCoverAction,
+  removeSongCoverAction,
 } from "../../actions";
 import { SongForm } from "@/components/song-form";
+import { SongCoverUploadForm } from "@/components/song-cover-upload-form";
 import { Card } from "@/components/ui/card";
 
 export default async function EditSongPage({
@@ -32,6 +35,13 @@ export default async function EditSongPage({
   return (
     <div className="mx-auto max-w-lg">
       <h1 className="text-xl font-semibold text-foreground">{t("editTitle")}</h1>
+      <Card className="mt-4">
+        <SongCoverUploadForm
+          action={updateSongCoverAction.bind(null, bandId, songId)}
+          removeAction={removeSongCoverAction.bind(null, bandId, songId)}
+          currentSrc={song.coverUrl}
+        />
+      </Card>
       <Card className="mt-4">
         <SongForm
           action={boundAction}

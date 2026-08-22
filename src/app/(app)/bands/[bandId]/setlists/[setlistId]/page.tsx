@@ -5,6 +5,7 @@ import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
+import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { SetlistBuilder } from "@/components/setlist-builder";
 import { EventContextSelector } from "@/components/event-context-selector";
 import { computeSetlistNumbers, totalSetlistDurationSec, formatSetlistAsText, type SetlistDisplayItem } from "@/lib/setlist-items";
@@ -55,6 +56,14 @@ export default async function SetlistDetailPage({
     orderBy: { title: "asc" },
     select: { id: true, title: true, key: true, bpm: true, status: true },
   });
+
+  const equipmentOptions = features.equipment
+    ? await prisma.equipment.findMany({
+        where: equipmentVisibleInBand(bandId),
+        orderBy: { name: "asc" },
+        select: { id: true, name: true, icon: true, color: true },
+      })
+    : [];
 
   // Termin-Kontext: explizite Auswahl aus der URL, sonst der naechste anstehende
   // verknuepfte Termin, sonst terminlos (siehe EventContextSelector).
@@ -240,6 +249,7 @@ export default async function SetlistDetailPage({
             initialItems={items}
             librarySongs={songs}
             readOnly={!canManage || isPastActiveEvent}
+            equipmentOptions={equipmentOptions}
           />
         )}
       </div>
