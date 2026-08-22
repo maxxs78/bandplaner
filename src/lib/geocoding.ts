@@ -27,6 +27,11 @@ export async function searchAddress(query: string): Promise<GeocodeCandidate[]> 
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, "Accept-Language": "de" },
       signal: AbortSignal.timeout(5000),
+      // Next.js' Fetch-Cache wuerde diese Live-Abfrage sonst pro Query-String
+      // zwischenspeichern - eine einmal leere Antwort (z. B. durch einen
+      // kurzzeitigen Ausfall) bliebe dann dauerhaft "leer", auch wenn Nominatim
+      // spaeter wieder Treffer liefert.
+      cache: "no-store",
     });
     if (!res.ok) return [];
 
@@ -48,6 +53,7 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, "Accept-Language": "de" },
       signal: AbortSignal.timeout(5000),
+      cache: "no-store",
     });
     if (!res.ok) return null;
 
