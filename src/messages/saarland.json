@@ -46,7 +46,10 @@
       "notificationsTitle": "E-Mail-Bscheid",
       "notificationsHint": "Leg fier jedi Band fescht, iwwer was de per E-Mail Bscheid wisse willscht.",
       "mailNotConfigured": "Fier die Installation is noch kän Mailversand inngericht. Dei Innstellunge werre gespeichert, awwer E-Mails gebbt's noch kään.",
-      "changePasswordTitle": "Passwort ännere"
+      "changePasswordTitle": "Passwort ännere",
+      "dataExportTitle": "Meine Daten",
+      "dataExportHint": "Lade alle personenbezogenen Daten herunter, die zu deinem Konto gespeichert sind (Profil, Mitgliedschaften, persönliche Notizen und Hinweise, hochgeladene Dateien als Liste, Finanzzuordnungen u. a.) als JSON-Datei.",
+      "dataExportButton": "Daten herunterladen"
     },
     "changePasswordForm": {
       "current": "Aktuellet Passwort",

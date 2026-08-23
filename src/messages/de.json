@@ -46,7 +46,10 @@
       "notificationsTitle": "E-Mail-Benachrichtigungen",
       "notificationsHint": "Lege je Band fest, worüber du per E-Mail informiert werden möchtest.",
       "mailNotConfigured": "Für diese Installation ist noch kein Mailversand eingerichtet. Deine Einstellungen werden gespeichert, es werden aber noch keine E-Mails verschickt.",
-      "changePasswordTitle": "Passwort ändern"
+      "changePasswordTitle": "Passwort ändern",
+      "dataExportTitle": "Meine Daten",
+      "dataExportHint": "Lade alle personenbezogenen Daten herunter, die zu deinem Konto gespeichert sind (Profil, Mitgliedschaften, persönliche Notizen und Hinweise, hochgeladene Dateien als Liste, Finanzzuordnungen u. a.) als JSON-Datei.",
+      "dataExportButton": "Daten herunterladen"
     },
     "changePasswordForm": {
       "current": "Aktuelles Passwort",

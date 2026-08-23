@@ -46,7 +46,10 @@
       "notificationsTitle": "Notifications par e-mail",
       "notificationsHint": "Définis pour chaque groupe ce dont tu souhaites être informé(e) par e-mail.",
       "mailNotConfigured": "L'envoi d'e-mails n'est pas encore configuré pour cette installation. Tes réglages seront enregistrés, mais aucun e-mail ne sera envoyé pour l'instant.",
-      "changePasswordTitle": "Modifier le mot de passe"
+      "changePasswordTitle": "Modifier le mot de passe",
+      "dataExportTitle": "Mes données",
+      "dataExportHint": "Télécharge toutes les données personnelles enregistrées pour ton compte (profil, adhésions, notes et indications personnelles, liste de tes fichiers envoyés, répartitions financières, etc.) sous forme de fichier JSON.",
+      "dataExportButton": "Télécharger les données"
     },
     "changePasswordForm": {
       "current": "Mot de passe actuel",

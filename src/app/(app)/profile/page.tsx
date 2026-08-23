@@ -1,3 +1,4 @@
+import { Download } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireUser } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -95,6 +96,21 @@ export default async function ProfilePage({
         <h2 className="text-lg font-semibold text-foreground">{t("changePasswordTitle")}</h2>
         <Card className="mt-4">
           <ChangePasswordForm action={changePasswordAction} />
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold text-foreground">{t("dataExportTitle")}</h2>
+        <Card className="mt-4">
+          <p className="text-sm text-muted">{t("dataExportHint")}</p>
+          <a
+            href="/api/profile/export"
+            download
+            className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary-hover"
+          >
+            <Download className="h-4 w-4" />
+            {t("dataExportButton")}
+          </a>
         </Card>
       </div>
     </div>

@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.11 — Stand 23.08.2026
+Version 1.12 — Stand 23.08.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -23,6 +23,8 @@ Version 1.11 — Stand 23.08.2026
 *Änderungen gegenüber Version 1.9: Setlisten-Verwaltung (3.4) um weitere Eintragsarten ergänzt — manuelle Einträge (z. B. Umbaupausen) können optional eine Dauer erhalten und lassen sich einzeln von der fortlaufenden Nummerierung ausnehmen, ohne dass dabei eine Nummer übersprungen wird; neu hinzugekommen sind zudem bandweit sichtbare, kursiv dargestellte Kommentarzeilen sowie unnummerierte Abschnittstrenner mit optionaler Beschriftung zur Gliederung der Setlist.*
 
 *Änderungen gegenüber Version 1.10: Bühnen-Hinweis-Icons (3.3, 3.4) deutlich erweitert — Umstimmen, Instrumentwechsel, Programmwechsel und freier Hinweis um Equipment-Verknüpfung, Kapo, Klick, Loop-Pedal, Backing Vocal, Solo, Einzähler und In-Ear ergänzt; jeder Hinweistyp lässt sich seitdem je Eintrag beliebig oft anwenden statt nur einmal. Equipment-Katalogeinträge (3.9) können seitdem mit einem Icon und einer frei wählbaren Farbe versehen werden; der Instrumentwechsel-Hinweis verknüpft direkt auf einen solchen Katalogeintrag statt auf Freitext, wählbar je Setlist zwischen kleiner Darstellung im Hinweis-Badge, großer Darstellung neben Tonart/BPM oder keiner Darstellung. Neu hinzugekommen sind zudem technische Hinweise (für FOH/Licht/Technik) auf Song-, Setlist- und Setlist-Eintrags-Ebene sowie ein eigener, kompakt gesetzter tabellarischer Druckexport dafür (3.4). Außerdem: Self-Service-Passwort-Reset per E-Mail-Link (Abschnitt 4), der bestehende Admin-Reset bleibt unverändert bestehen und funktioniert weiterhin auch ohne konfigurierten Mailserver; Mehrsprachigkeit (Abschnitt 4) um Französisch, Schwedisch sowie ein augenzwinkerndes Saarländisch als Spaß-Variante erweitert.*
+
+*Änderungen gegenüber Version 1.11: Exportmöglichkeit der eigenen Daten (Abschnitt 4) umgesetzt — über „Mein Profil" lässt sich jederzeit ein vollständiger, strukturierter JSON-Export aller personenbezogenen Daten des eigenen Kontos herunterladen. Neuer Abschnitt 6 „Datenschutz und DSGVO" ergänzt: ordnet Verantwortlichkeit (selbstgehostete Software, Betreiber ist die verantwortliche Stelle, nicht die Software), Serverstandort/internationale Datenübermittlung außerhalb der EU/EWR sowie den Umsetzungsstand der Betroffenenrechte (Auskunft/Portabilität umgesetzt, Berichtigung umgesetzt, Löschung/Widerspruch teilweise) ein.*
 
 ## 1. Zweck und Zielgruppe
 
@@ -197,7 +199,7 @@ Beide Funktionen sind als unterstützende Zusatzfunktionen zu verstehen, die bes
 - **Plattformen**: Responsive Webanwendung, nutzbar auf Desktop-Browsern sowie mobilen Endgeräten; native Apps optional als spätere Ausbaustufe.
 - **Darstellung**: Hell- und Dunkelmodus.
 - **Mehrsprachigkeit** (umgesetzt): Deutsch, Englisch, Französisch und Schwedisch als vollwertige Sprachen, ergänzt um ein augenzwinkerndes Saarländisch als eigens gekennzeichnete Spaß-Variante; umschaltbar über einen Sprachwähler im Kopfbereich der Anwendung. Die Wahl wird dauerhaft im Benutzerprofil gespeichert und gilt bandübergreifend. Vor dem Login (z. B. auf der Anmeldeseite) wird die Sprache automatisch aus den Browser-Einstellungen erkannt. Die Architektur ist so ausgelegt, dass weitere Sprachen ergänzt werden können.
-- **Datenschutz**: DSGVO-konforme Datenhaltung (Serverstandort/Datenverarbeitung innerhalb der EU), transparente Datenschutzerklärung, Exportmöglichkeit der eigenen Daten.
+- **Datenschutz**: DSGVO-konforme Datenhaltung (Serverstandort/Datenverarbeitung innerhalb der EU als Standardannahme), transparente Datenschutzerklärung, Exportmöglichkeit der eigenen Daten — Details und Einordnung siehe Abschnitt 6.
 - **Schutz vor Brute-Force-Login-Versuchen**: Nach 5 fehlgeschlagenen Loginversuchen in Folge wird das betroffene Konto für 2 Tage gesperrt, unabhängig davon, von welcher IP-Adresse die Versuche stammen. Die Sperre läuft danach automatisch ab; ein Passwort-Reset (admin- oder selbstbedient, siehe unten) hebt sie zusätzlich sofort auf.
 - **Passwort-Reset**: Zwei sich ergänzende Wege. Administrator:innen können das Passwort eines Mitglieds jederzeit über die Mitgliederverwaltung zurücksetzen (temporäres Passwort, Zwang zur Änderung beim nächsten Login) — funktioniert unabhängig davon, ob ein Mailserver konfiguriert ist. Zusätzlich steht ein selbstbedienter „Passwort vergessen"-Ablauf per E-Mail-Link zur Verfügung (zeitlich begrenzter, einmal verwendbarer Token), sobald ein Mailserver konfiguriert ist; ist das nicht der Fall, blendet sich der Link zum Selbstbedienungs-Reset aus und die App verweist auf den Admin-Reset, statt eine nicht funktionierende Funktion anzubieten.
 - **Zuverlässigkeit**: nachvollziehbare Benachrichtigungslogik, keine automatische kostenpflichtige Verlängerung ohne ausdrückliche Zustimmung, falls ein Testzeitraum angeboten wird.
@@ -220,3 +222,32 @@ Im Rahmen der Recherche wurden weitere, bei einzelnen Anbietern vorkommende Funk
 - Speziell auf Farbenblindheit ausgelegter Barrierefreiheits-Modus
 
 Diese Liste kann in einer späteren Phase erneut bewertet werden, sollte sich der Bedarf ändern.
+
+## 6. Datenschutz und DSGVO
+
+### 6.1 Verantwortlichkeit
+
+Bandplaner ist selbstgehostete Software ohne zentralen Anbieter, der die Anwendung für alle Nutzer:innen betreibt. Verantwortliche Stelle im Sinne der DSGVO (Art. 4 Nr. 7) ist daher jeweils die Person oder Organisation, die eine konkrete Installation betreibt — z. B. die Bandleitung, die den Server bei sich zuhause oder bei einem Hoster aufsetzt —, **nicht** die Software selbst oder ihre Entwickler:innen. Ihr obliegen die üblichen Betreiberpflichten: eigene Datenschutzerklärung, ggf. Verzeichnis von Verarbeitungstätigkeiten, ein Auftragsverarbeitungsvertrag mit einem genutzten Hoster, die Bearbeitung von Betroffenenanfragen sowie die Meldung von Datenschutzverletzungen.
+
+### 6.2 Serverstandort und internationale Datenübermittlung
+
+Die Anwendung schreibt technisch keinen Serverstandort vor und läuft auf jedem Server, der Node.js/Docker unterstützt. Ein Standort innerhalb der EU/EWR (die in Abschnitt 4 genannte Standardannahme, z. B. eine eigene Diskstation in Deutschland) ist der unkomplizierteste Fall, weil dann keine gesonderte Rechtsgrundlage für eine Datenübermittlung ins Drittland nötig ist.
+
+Wird stattdessen außerhalb der EU/EWR gehostet, ist die Verarbeitung der personenbezogenen Daten der Bandmitglieder nur zulässig, wenn eine der folgenden Grundlagen greift:
+
+- **Angemessenheitsbeschluss** der EU-Kommission für das Zielland (u. a. Schweiz, Vereinigtes Königreich, Japan, Südkorea, Kanada im kommerziellen Bereich).
+- **EU-US Data Privacy Framework**, sofern der genutzte Hoster in den USA entsprechend zertifiziert ist.
+- **Standardvertragsklauseln (SCCs)** mit dem Hoster, falls keine der beiden vorherigen Grundlagen greift.
+
+Ohne eine dieser Grundlagen wäre ein Hosting außerhalb der EU/EWR nicht DSGVO-konform. Diese Einordnung ersetzt keine rechtliche Beratung im Einzelfall.
+
+### 6.3 Betroffenenrechte
+
+- **Auskunft und Datenübertragbarkeit (Art. 15, 20 DSGVO) — umgesetzt:** Über „Mein Profil" → „Meine Daten" kann jede Person jederzeit selbstständig alle zu ihrem Konto gespeicherten personenbezogenen Daten als strukturierte JSON-Datei herunterladen: Profildaten, Mitgliedschaften, persönliche Song- und Setlist-Notizen samt Bühnen-Hinweisen, Metadaten hochgeladener Dateien, eigene Song-Abstimmungen, Verfügbarkeiten/Abwesenheiten, zugeordnete Gagen/Kostenanteile und mehr. Bandweite Inhalte anderer Mitglieder sind darin bewusst nicht enthalten.
+- **Berichtigung (Art. 16) — umgesetzt:** Name, Profilbild und Passwort sind direkt im eigenen Profil änderbar; inhaltliche Korrekturen an bandweiten Daten (z. B. Songangaben) obliegen den content-berechtigten Mitgliedern bzw. der Administration.
+- **Löschung (Art. 17) — teilweise umgesetzt:** Administrator:innen können eine Person jederzeit aus einer Band entfernen. Eine vollständige, selbstbediente Konto-Löschung über alle Bands hinweg ist aktuell nicht vorgesehen; entsprechende Anfragen sind derzeit manuell durch die Administration der jeweiligen Installation zu bearbeiten.
+- **Widerspruch/Einschränkung (Art. 18, 21) — teilweise umgesetzt:** Bandweite E-Mail-Benachrichtigungen lassen sich je Ereignistyp im eigenen Profil abschalten (Abschnitt 3.6). Darüber hinausgehende Einschränkungen der Verarbeitung sind derzeit nur manuell durch die Administration möglich.
+
+### 6.4 Speicherdauer
+
+Es gibt aktuell keine automatische Löschung nach Ablauf einer festen Frist — Daten bleiben gespeichert, solange die jeweilige Band bzw. Mitgliedschaft besteht. Diese Entscheidung liegt bewusst bei der Administration jeder Installation, da die sinnvolle Aufbewahrungsdauer (z. B. für vergangene Auftritte oder Abrechnungen) je nach Band stark variiert.

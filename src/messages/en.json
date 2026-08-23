@@ -46,7 +46,10 @@
       "notificationsTitle": "Email notifications",
       "notificationsHint": "Choose per band what you want to be notified about by email.",
       "mailNotConfigured": "This installation doesn't have email sending set up yet. Your settings will be saved, but no emails will be sent yet.",
-      "changePasswordTitle": "Change password"
+      "changePasswordTitle": "Change password",
+      "dataExportTitle": "My data",
+      "dataExportHint": "Download all personal data stored for your account (profile, memberships, personal notes and cues, a list of your uploaded files, finance allocations, and more) as a JSON file.",
+      "dataExportButton": "Download data"
     },
     "changePasswordForm": {
       "current": "Current password",

@@ -46,7 +46,10 @@
       "notificationsTitle": "E-postaviseringar",
       "notificationsHint": "Ställ in per band vad du vill bli meddelad om via e-post.",
       "mailNotConfigured": "E-postutskick är inte konfigurerat för den här installationen än. Dina inställningar sparas, men inga e-postmeddelanden skickas ännu.",
-      "changePasswordTitle": "Ändra lösenord"
+      "changePasswordTitle": "Ändra lösenord",
+      "dataExportTitle": "Mina uppgifter",
+      "dataExportHint": "Ladda ner alla personuppgifter som sparats för ditt konto (profil, medlemskap, personliga anteckningar och markeringar, en lista över dina uppladdade filer, ekonomifördelningar med mera) som en JSON-fil.",
+      "dataExportButton": "Ladda ner uppgifter"
     },
     "changePasswordForm": {
       "current": "Nuvarande lösenord",
