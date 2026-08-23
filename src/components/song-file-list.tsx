@@ -13,8 +13,9 @@ type SongFileItem = {
   mimeType: string;
   size: number;
   visibility: "PRIVATE" | "BAND";
-  uploadedBy: { name: string };
-  uploadedById: string;
+  /** null, wenn das hochladende Konto inzwischen geloescht wurde (siehe deleteAccountAction) - dann ohne jeden Hinweis auf die Person angezeigt. */
+  uploadedBy: { name: string } | null;
+  uploadedById: string | null;
 };
 
 function fileIcon(filename: string) {
@@ -86,9 +87,13 @@ export function SongFileList({
             <span
               className="inline-flex shrink-0 items-center gap-1 rounded-full bg-surface-muted px-2 py-0.5 text-xs text-muted"
               title={
-                file.visibility === "PRIVATE"
-                  ? t("uploadedByPrivate", { name: file.uploadedBy.name })
-                  : t("uploadedByBand", { name: file.uploadedBy.name })
+                file.uploadedBy
+                  ? file.visibility === "PRIVATE"
+                    ? t("uploadedByPrivate", { name: file.uploadedBy.name })
+                    : t("uploadedByBand", { name: file.uploadedBy.name })
+                  : file.visibility === "PRIVATE"
+                    ? t("uploadedByPrivateUnknown")
+                    : t("uploadedByBandUnknown")
               }
             >
               {file.visibility === "PRIVATE" ? (
@@ -96,7 +101,7 @@ export function SongFileList({
               ) : (
                 <Users className="h-3 w-3" />
               )}
-              {file.uploadedBy.name}
+              {file.uploadedBy?.name}
             </span>
             {canDelete && (
               <DeleteButton

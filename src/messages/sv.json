@@ -49,7 +49,9 @@
       "changePasswordTitle": "Ändra lösenord",
       "dataExportTitle": "Mina uppgifter",
       "dataExportHint": "Ladda ner alla personuppgifter som sparats för ditt konto (profil, medlemskap, personliga anteckningar och markeringar, en lista över dina uppladdade filer, ekonomifördelningar med mera) som en JSON-fil.",
-      "dataExportButton": "Ladda ner uppgifter"
+      "dataExportButton": "Ladda ner uppgifter",
+      "deleteAccountTitle": "Radera konto",
+      "deleteAccountHint": "Radera ditt konto permanent. Det går inte att ångra."
     },
     "changePasswordForm": {
       "current": "Nuvarande lösenord",
@@ -71,6 +73,23 @@
         "NEW_FILE": { "label": "Ny fil", "description": "När en fil laddas upp för bandet." },
         "FINANCE_ALLOCATION": { "label": "Mina gager och kostnadsandelar", "description": "När ett belopp tilldelas dig eller en bekräftelse väntar." }
       }
+    },
+    "deleteAccount": {
+      "startButton": "Radera konto",
+      "warningTitle": "Den här åtgärden kan inte ångras!",
+      "warningBody": "Ditt konto och alla dina personuppgifter raderas permanent: profil, lösenord, personliga anteckningar och scenmarkeringar på låtar och spellistor, tillgänglighet och frånvaro, dina låtröster samt din personliga utrustning. Du tas också bort från alla band du är medlem i.",
+      "warningKept": "Bandgemensamt innehåll som du skapat eller laddat upp (t.ex. händelser, låtförslag, ekonomiposter, filer) finns kvar för bandet - men utan några spår av att det kommer från dig.",
+      "confirmEmailLabel": "Skriv din e-postadress ({email}) för att bekräfta",
+      "passwordLabel": "Nuvarande lösenord",
+      "submitting": "Raderar…",
+      "confirmButton": "Radera konto permanent",
+      "cancel": "Avbryt",
+      "passwordRequired": "Ange ditt nuvarande lösenord",
+      "confirmEmailRequired": "Ange din e-postadress för att bekräfta",
+      "invalidInput": "Ogiltig inmatning",
+      "emailMismatch": "E-postadressen du angav matchar inte ditt konto",
+      "wrongPassword": "Fel lösenord",
+      "soleAdminBlocked": "Kontot kan inte raderas: du är den enda administratören i följande band: {bands}. Utse en annan administratör där först."
     }
   },
   "imageUpload": {
@@ -199,7 +218,8 @@
       "registerLink": "Registrera dig",
       "invalidCredentials": "E-post/användarnamn eller lösenord är felaktigt",
       "accountLocked": "För många misslyckade inloggningsförsök. Kontot är tillfälligt låst och låses automatiskt upp igen efter 2 dagar.",
-      "forgotPasswordLink": "Glömt lösenordet?"
+      "forgotPasswordLink": "Glömt lösenordet?",
+      "accountDeletedNotice": "Ditt konto har raderats. Alla dina personuppgifter har tagits bort."
     },
     "register": {
       "title": "Skapa konto",
@@ -363,7 +383,9 @@
       "noFiles": "Inga filer uppladdade än.",
       "uploadedByPrivate": "Privat · uppladdad av {name}",
       "uploadedByBand": "Synligt för bandet · uppladdad av {name}",
-      "deleteConfirm": "Vill du verkligen ta bort den här filen?"
+      "deleteConfirm": "Vill du verkligen ta bort den här filen?",
+      "uploadedByPrivateUnknown": "Privat",
+      "uploadedByBandUnknown": "Synlig för bandet"
     },
     "audioPlayer": {
       "unsupported": "Din webbläsare kan inte spela upp den här ljudfilen.",

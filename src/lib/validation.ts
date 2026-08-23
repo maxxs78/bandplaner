@@ -29,6 +29,13 @@ export function getResetPasswordSchema(t: (key: string) => string) {
   });
 }
 
+export function getDeleteAccountSchema(t: (key: string) => string) {
+  return z.object({
+    password: z.string().min(1, t("passwordRequired")),
+    confirmEmail: z.string().min(1, t("confirmEmailRequired")),
+  });
+}
+
 /**
  * Generische, modulübergreifend geteilte Meldungen (Namespace "validation" in
  * den messages/*.json) - siehe getSongSchema() als Beispiel für die Verwendung.

@@ -24,8 +24,9 @@ export type FileListItem = {
   rawVisibility: string;
   kind: "band" | "song";
   shareToken?: string;
-  uploadedBy: { name: string };
-  uploadedById: string;
+  /** null, wenn das hochladende Konto inzwischen geloescht wurde (siehe deleteAccountAction) - dann ohne jeden Hinweis auf die Person angezeigt. */
+  uploadedBy: { name: string } | null;
+  uploadedById: string | null;
   /** Mehrfachverknuepfung (m:n) - eine Datei kann an mehrere Objekte je Typ gleichzeitig haengen. */
   songs?: { id: string; title: string }[];
   events?: { id: string; title: string }[];
@@ -111,7 +112,7 @@ export function FileList({
     return files.filter((f) =>
       [
         f.filename,
-        f.uploadedBy.name,
+        f.uploadedBy?.name,
         ...(f.songs ?? []).map((s) => s.title),
         ...(f.events ?? []).map((e) => e.title),
         ...(f.equipment ?? []).map((e) => e.name),
@@ -163,7 +164,8 @@ export function FileList({
             {file.filename}
           </a>
           <p className="truncate text-xs text-muted">
-            {categoryLabels[file.category]} · {formatSize(file.size)} · {file.uploadedBy.name}
+            {categoryLabels[file.category]} · {formatSize(file.size)}
+            {file.uploadedBy && <> · {file.uploadedBy.name}</>}
             {(file.songs ?? []).map((s) => (
               <span key={s.id}>{tList("songSuffix", { title: s.title })}</span>
             ))}

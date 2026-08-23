@@ -93,7 +93,9 @@ export default async function FinanceEntryDetailPage({
               {entry.event && ` · ${entry.event.title} (${eventTypeLabels[entry.event.type]})`}
             </p>
             {entry.description && <p className="mt-1 text-sm text-foreground">{entry.description}</p>}
-            <p className="mt-1 text-xs text-muted">{t("createdBy", { name: entry.createdBy.name })}</p>
+            {entry.createdBy && (
+              <p className="mt-1 text-xs text-muted">{t("createdBy", { name: entry.createdBy.name })}</p>
+            )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Badge variant={financeEntryTypeBadgeVariant[entry.type]}>{financeEntryTypeLabels[entry.type]}</Badge>

@@ -63,16 +63,16 @@ enum BandFileVisibility {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  name         String
-  email        String   @unique
-  passwordHash String
+  id                 String   @id @default(cuid())
+  name               String
+  email              String   @unique
+  passwordHash       String
   /// Gesetzt, wenn ein Admin ein initiales Passwort vergeben hat (siehe
   /// resetMemberPasswordAction) - erzwingt eine Passwortaenderung ueber
   /// requireActiveUser(), bevor die Person die App sonst nutzen kann.
-  mustChangePassword Boolean @default(false)
-  avatarUrl    String?
-  createdAt    DateTime @default(now())
+  mustChangePassword Boolean  @default(false)
+  avatarUrl          String?
+  createdAt          DateTime @default(now())
 
   /// Bevorzugte Sprache des Kontos ("de" oder "en"). Vor dem ersten Login
   /// bzw. fuer Gaeste ohne Konto wird stattdessen die Browser-Spracheinstellung
@@ -88,25 +88,25 @@ model User {
   /// ab, sobald dieser Zeitpunkt in der Vergangenheit liegt.
   lockedUntil         DateTime?
 
-  memberships    Membership[]
-  availabilities Availability[]
-  absences       Absence[]
-  songNotes      SongNote[]
-  createdEvents  Event[]        @relation("EventCreatedBy")
-  eventParticipations EventParticipant[]
-  invitationsSent Invitation[]  @relation("InvitationInvitedBy")
-  setlistNotes           SetlistNote[]
-  setlistItemAnnotations SetlistItemAnnotation[]
-  uploadedSongFiles      SongFile[]
-  songVotes              SongVote[]
-  proposedSongs          Song[]                  @relation("SongProposedBy")
-  uploadedBandFiles      BandFile[]
-  ownedEquipment         Equipment[]             @relation("EquipmentOwnerUser")
-  responsibleForEquipment Equipment[]            @relation("EquipmentResponsible")
-  assignedPacklistItems  PacklistItem[]
-  financeAdminOf         BandFinanceAdmin[]
-  createdFinanceEntries  FinanceEntry[]
-  financeAllocations     FinanceAllocation[]
+  memberships             Membership[]
+  availabilities          Availability[]
+  absences                Absence[]
+  songNotes               SongNote[]
+  createdEvents           Event[]                 @relation("EventCreatedBy")
+  eventParticipations     EventParticipant[]
+  invitationsSent         Invitation[]            @relation("InvitationInvitedBy")
+  setlistNotes            SetlistNote[]
+  setlistItemAnnotations  SetlistItemAnnotation[]
+  uploadedSongFiles       SongFile[]
+  songVotes               SongVote[]
+  proposedSongs           Song[]                  @relation("SongProposedBy")
+  uploadedBandFiles       BandFile[]
+  ownedEquipment          Equipment[]             @relation("EquipmentOwnerUser")
+  responsibleForEquipment Equipment[]             @relation("EquipmentResponsible")
+  assignedPacklistItems   PacklistItem[]
+  financeAdminOf          BandFinanceAdmin[]
+  createdFinanceEntries   FinanceEntry[]
+  financeAllocations      FinanceAllocation[]
 
   assignedPacklistItemEventStatuses PacklistItemEventStatus[]
   setlistItemEventAnnotations       SetlistItemEventAnnotation[]
@@ -148,30 +148,30 @@ model Band {
 
   /// Funktions-Schalter fuer optionale Module (siehe src/lib/features.ts fuer
   /// Abhaengigkeiten - packlistsEnabled wirkt nur, wenn equipmentEnabled auch an ist).
-  equipmentEnabled Boolean @default(true)
-  packlistsEnabled Boolean @default(true)
+  equipmentEnabled      Boolean               @default(true)
+  packlistsEnabled      Boolean               @default(true)
   /// Finanzmodul ist ein komplett neues Feature (anders als Equipment/Packlisten,
   /// die es schon vorher gab) - Standard bewusst aus, jede Band aktiviert es
   /// aktiv. Siehe BandFinanceAdmin fuer die separate, rollenunabhaengige Liste
   /// der finanzberechtigten Personen.
-  financeEnabled Boolean @default(false)
+  financeEnabled        Boolean               @default(false)
   /// Kommunikationsmodul: E-Mail-Benachrichtigungen zu Bandereignissen und
   /// WhatsApp-Teilen-Buttons. Wie das Finanzmodul ein neues Feature, daher
   /// Standard aus. Die persoenlichen Benachrichtigungs-Einstellungen je
   /// Mitglied (siehe Membership) bleiben beim Abschalten erhalten.
-  communicationEnabled Boolean @default(false)
+  communicationEnabled  Boolean               @default(false)
   /// Medienplayer: Abspielen hinterlegter Audiodateien inkl. Uebungsmodus
   /// (Tempo, Transponieren, Abschnitts-Loop) sowie Einbettung verlinkter
   /// Streaming-Quellen. Steuert ausschliesslich die Player-Oberflaeche -
   /// Up- und Download der Dateien gehoeren zur Songbibliothek und bleiben
   /// davon unberuehrt.
-  mediaPlayerEnabled Boolean @default(false)
+  mediaPlayerEnabled    Boolean               @default(false)
   /// Automatische Tonart-Erkennung im Uebungsmodus (Krumhansl-Schmuckler-Verfahren
   /// auf Basis des Chromagramms, siehe src/lib/key-detection.ts) - Unterfunktion
   /// des Medienplayers, greift daher nur, wenn dieser ebenfalls aktiv ist. Standard
   /// an: rein informativ (nur eine Naeherung), aendert nie automatisch Songdaten -
   /// dafuer muss die Person das Ergebnis aktiv uebernehmen.
-  keyDetectionEnabled Boolean @default(true)
+  keyDetectionEnabled   Boolean               @default(true)
   /// Abrechnungsmodus fuer das Finanzmodul: NO_BALANCE = kein Bandkonto, Zu-/Abfluesse
   /// muessen immer zu 100% auf Mitglieder verteilt werden (durchgesetzt in
   /// finance/actions.ts). BAND_BALANCE = die Band darf ein eigenes Kapital halten,
@@ -194,18 +194,18 @@ model Band {
   /// verknuepfbar mit Terminen - "Advanced Feature", daher Standard aus.
   locationsEnabled Boolean @default(false)
 
-  memberships Membership[]
-  events      Event[]
-  songs       Song[]
-  setlists    Setlist[]
-  absences    Absence[]
-  invitations Invitation[]
-  files       BandFile[]
-  ownedEquipment Equipment[] @relation("EquipmentOwnerBand")
-  packlists   Packlist[]
-  financeAdmins BandFinanceAdmin[]
+  memberships    Membership[]
+  events         Event[]
+  songs          Song[]
+  setlists       Setlist[]
+  absences       Absence[]
+  invitations    Invitation[]
+  files          BandFile[]
+  ownedEquipment Equipment[]        @relation("EquipmentOwnerBand")
+  packlists      Packlist[]
+  financeAdmins  BandFinanceAdmin[]
   financeEntries FinanceEntry[]
-  locations   Location[]
+  locations      Location[]
 }
 
 /// Finanzberechtigte Person einer Band - bewusst losgeloest von Role (Admin/Mitglied),
@@ -268,8 +268,13 @@ model FinanceEntry {
   event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
   eventId String?
 
-  createdBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-  createdById String
+  /// Optional statt Pflichtfeld: bleibt bei Konto-Loeschung des/der Erstellenden
+  /// erhalten (SetNull) - eine Cascade wuerde sonst auch die Zuordnungen
+  /// (FinanceAllocation) anderer Mitglieder an diesem Eintrag mitloeschen,
+  /// obwohl deren Gagen/Kostenanteile mit dem geloeschten Konto nichts zu tun
+  /// haben. Siehe deleteAccountAction in src/app/(app)/profile/actions.ts.
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
 
   allocations FinanceAllocation[]
 }
@@ -332,11 +337,14 @@ model Invitation {
   acceptedAt DateTime?
   createdAt  DateTime  @default(now())
 
-  band     Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
-  bandId   String
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
 
-  invitedBy   User   @relation("InvitationInvitedBy", fields: [invitedById], references: [id])
-  invitedById String
+  /// Optional statt Pflichtfeld: bleibt bei Konto-Loeschung der einladenden
+  /// Person erhalten (SetNull), damit die Einladung weiterhin angenommen
+  /// werden kann. Siehe deleteAccountAction in src/app/(app)/profile/actions.ts.
+  invitedBy   User?   @relation("InvitationInvitedBy", fields: [invitedById], references: [id], onDelete: SetNull)
+  invitedById String?
 }
 
 model Event {
@@ -358,10 +366,13 @@ model Event {
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
 
-  createdBy   User   @relation("EventCreatedBy", fields: [createdById], references: [id])
-  createdById String
+  /// Optional statt Pflichtfeld: bleibt bei Konto-Loeschung des/der Erstellenden
+  /// erhalten (SetNull), damit der Termin fuer die Band nutzbar bleibt - siehe
+  /// deleteAccountAction in src/app/(app)/profile/actions.ts.
+  createdBy   User?   @relation("EventCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
 
-  place   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  place      Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   locationId String?
 
   availabilities Availability[]
@@ -371,11 +382,11 @@ model Event {
   packlists      Packlist[]
   financeEntries FinanceEntry[]
 
-  packlistItemEventStatuses  PacklistItemEventStatus[]
+  packlistItemEventStatuses   PacklistItemEventStatus[]
   setlistItemEventAnnotations SetlistItemEventAnnotation[]
-  setlistEventNotes          SetlistEventNote[]
-  setlistEventSnapshots      SetlistEventSnapshot[]
-  packlistEventSnapshots     PacklistEventSnapshot[]
+  setlistEventNotes           SetlistEventNote[]
+  setlistEventSnapshots       SetlistEventSnapshot[]
+  packlistEventSnapshots      PacklistEventSnapshot[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
@@ -453,12 +464,12 @@ model Song {
   proposedBy   User?   @relation("SongProposedBy", fields: [proposedById], references: [id], onDelete: SetNull)
   proposedById String?
 
-  notes         SongNote[]
-  setlistItems  SetlistItem[]
-  files         SongFile[]
-  links         SongLink[]
-  votes         SongVote[]
-  bandFiles     BandFile[]
+  notes        SongNote[]
+  setlistItems SetlistItem[]
+  files        SongFile[]
+  links        SongLink[]
+  votes        SongVote[]
+  bandFiles    BandFile[]
 }
 
 /// Daumen-hoch/-runter-Abstimmung über einen vorgeschlagenen Song, optional mit für alle sichtbarem Kommentar.
@@ -503,31 +514,39 @@ model SongFile {
   song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
   songId String
 
-  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  uploadedById String
+  /// Optional statt Pflichtfeld: bleibt bei Konto-Loeschung der hochladenden
+  /// Person erhalten (SetNull) - eine Cascade wuerde sonst die Datei selbst
+  /// mitloeschen, obwohl sie weiterhin Teil des Song-Materials der Band ist.
+  /// Siehe deleteAccountAction in src/app/(app)/profile/actions.ts.
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById String?
 }
 
 /// Zentraler, bandweiter Dateispeicher (Noten, Verträge, Fotos, Aufnahmen, Sonstiges) -
 /// unabhängig von den song-gebundenen Dateien (SongFile). Optional mit Song/Termin/Equipment verknüpfbar.
 /// INTERNAL: nur für Bandmitglieder sichtbar. PUBLIC: zusätzlich über einen Link ohne Login abrufbar.
 model BandFile {
-  id         String              @id @default(cuid())
+  id         String             @id @default(cuid())
   filename   String
   /// Relativer Pfad im (nicht öffentlichen) Dateispeicher - Zugriff nur über die geschützten Download-Routen
   storageKey String
   mimeType   String
   size       Int
-  category   BandFileCategory    @default(OTHER)
-  visibility BandFileVisibility  @default(INTERNAL)
+  category   BandFileCategory   @default(OTHER)
+  visibility BandFileVisibility @default(INTERNAL)
   /// Token für den öffentlichen Freigabelink (nur bei visibility=PUBLIC nutzbar)
-  shareToken String              @unique @default(cuid())
-  createdAt  DateTime            @default(now())
+  shareToken String             @unique @default(cuid())
+  createdAt  DateTime           @default(now())
 
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
 
-  uploadedBy   User   @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
-  uploadedById String
+  /// Optional statt Pflichtfeld: bleibt bei Konto-Loeschung der hochladenden
+  /// Person erhalten (SetNull) - eine Cascade wuerde sonst die Datei selbst
+  /// mitloeschen, obwohl sie weiterhin Teil des Datenbestands der Band ist.
+  /// Siehe deleteAccountAction in src/app/(app)/profile/actions.ts.
+  uploadedBy   User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  uploadedById String?
 
   /// Mehrfachverknuepfung (m:n): eine Datei kann an beliebig viele Termine,
   /// Songs, Equipment-Eintraege und Orte gleichzeitig gehaengt werden, z. B.
@@ -568,15 +587,15 @@ enum EquipmentIconDisplay {
 }
 
 model Setlist {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
+  id                   String               @id @default(cuid())
+  name                 String
+  createdAt            DateTime             @default(now())
   equipmentIconDisplay EquipmentIconDisplay @default(IN_TAG)
   /// Geteilte (nicht personenbezogene) technische Hinweise fuer die gesamte
   /// Setlist, z. B. fuer FOH/Licht/Technik - im Unterschied zu SetlistNote
   /// (persoenliche Hinweise je Mitglied). Erscheint als Kopfnotiz im
   /// technischen Ablaufplan-Ausdruck.
-  techNotes String?
+  techNotes            String?
 
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
@@ -587,9 +606,9 @@ model Setlist {
   /// SetlistItemEventAnnotation/SetlistEventNote (siehe dort).
   events Event[]
 
-  items      SetlistItem[]
-  notes      SetlistNote[]
-  eventNotes SetlistEventNote[]
+  items          SetlistItem[]
+  notes          SetlistNote[]
+  eventNotes     SetlistEventNote[]
   eventSnapshots SetlistEventSnapshot[]
 }
 
@@ -620,29 +639,29 @@ enum SetlistItemKind {
 }
 
 model SetlistItem {
-  id          String          @id @default(cuid())
-  order       Int
-  kind        SetlistItemKind @default(SONG)
+  id                   String          @id @default(cuid())
+  order                Int
+  kind                 SetlistItemKind @default(SONG)
   /// Bedeutung je nach kind: Titel des manuellen Eintrags (CUSTOM), Kommentartext
   /// (COMMENT) oder optionales Abschnitts-Label (SECTION) - sowie weiterhin der
   /// Fallback-Titel, wenn der urspruenglich verknuepfte Song geloescht wurde
   /// (SONG, siehe songDeleted).
-  customTitle String?
+  customTitle          String?
   /// Nur bei kind=CUSTOM gesetzt: Dauer in Sekunden (z. B. eine Pause), zaehlt
   /// mit in die Gesamtspieldauer der Setlist ein.
-  durationSec Int?
+  durationSec          Int?
   /// Nur bei kind=CUSTOM relevant: true = wird beim Durchnummerieren
   /// uebersprungen (kein eigener Zaehler-Wert), die Nummerierung setzt sich beim
   /// naechsten zaehlenden Eintrag ohne Luecke fort. SONG zaehlt immer,
   /// COMMENT/SECTION nie - dort ist dieses Feld ohne Bedeutung.
-  excludeFromNumbering Boolean @default(false)
+  excludeFromNumbering Boolean         @default(false)
   /// Gesetzt, wenn der ursprünglich verknüpfte Song aus der Bibliothek gelöscht wurde;
   /// customTitle enthält dann dessen früheren Titel als Fallback-Anzeige.
-  songDeleted Boolean @default(false)
+  songDeleted          Boolean         @default(false)
   /// Geteilter (nicht personenbezogener) technischer Zusatzhinweis nur fuer diese
   /// Setlist, ergaenzt Song.techNotes - editierbar von Content-Managern, sichtbar
   /// fuer alle im technischen Ablaufplan-Ausdruck.
-  techNotes String?
+  techNotes            String?
 
   setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
   setlistId String
@@ -796,7 +815,7 @@ model Packlist {
   /// liegt in PacklistItemEventStatus (siehe dort).
   events Event[]
 
-  items PacklistItem[]
+  items          PacklistItem[]
   eventSnapshots PacklistEventSnapshot[]
 }
 
@@ -848,9 +867,9 @@ model PacklistItemEventStatus {
   id      String  @id @default(cuid())
   checked Boolean @default(false)
 
-  item   PacklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  itemId String
-  event  Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  item    PacklistItem @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  itemId  String
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
   eventId String
 
   assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
@@ -865,9 +884,9 @@ model PacklistItemEventStatus {
 /// einzelnen Suchstring arbeitet. latitude/longitude bleiben leer, bis eine
 /// Adresse erfolgreich geocodiert oder ein Punkt auf der Karte gesetzt wurde.
 model Location {
-  id      String  @id @default(cuid())
-  name    String
-  address String?
+  id        String  @id @default(cuid())
+  name      String
+  address   String?
   latitude  Float?
   longitude Float?
 
@@ -877,12 +896,12 @@ model Location {
   website      String?
 
   /// Fassungsvermögen (Personen)
-  capacity Int?
+  capacity               Int?
   /// Bühnenmaße, PA/Technik vorhanden, Stromanschluss etc.
-  stageAndTechNotes String?
+  stageAndTechNotes      String?
   /// Anfahrt, Lademöglichkeit, Parkplätze
   loadingAndParkingNotes String?
-  notes String?
+  notes                  String?
 
   createdAt DateTime @default(now())
 

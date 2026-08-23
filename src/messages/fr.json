@@ -49,7 +49,9 @@
       "changePasswordTitle": "Modifier le mot de passe",
       "dataExportTitle": "Mes données",
       "dataExportHint": "Télécharge toutes les données personnelles enregistrées pour ton compte (profil, adhésions, notes et indications personnelles, liste de tes fichiers envoyés, répartitions financières, etc.) sous forme de fichier JSON.",
-      "dataExportButton": "Télécharger les données"
+      "dataExportButton": "Télécharger les données",
+      "deleteAccountTitle": "Supprimer le compte",
+      "deleteAccountHint": "Supprime définitivement ton compte. Cette action est irréversible."
     },
     "changePasswordForm": {
       "current": "Mot de passe actuel",
@@ -71,6 +73,23 @@
         "NEW_FILE": { "label": "Nouveau fichier", "description": "Quand un fichier est mis en ligne pour le groupe." },
         "FINANCE_ALLOCATION": { "label": "Mes cachets et parts de frais", "description": "Quand un montant t'est attribué ou qu'une confirmation est en attente." }
       }
+    },
+    "deleteAccount": {
+      "startButton": "Supprimer le compte",
+      "warningTitle": "Cette action est irréversible !",
+      "warningBody": "Ton compte et toutes tes données personnelles seront définitivement supprimés : profil, mot de passe, notes personnelles et indications scéniques sur les morceaux et les setlists, disponibilités et absences, tes votes sur les morceaux, ainsi que ton équipement personnel. Tu seras également retiré·e de tous les groupes dont tu es membre.",
+      "warningKept": "Le contenu partagé avec le groupe que tu as créé ou envoyé (par ex. événements, propositions de morceaux, entrées financières, fichiers) reste disponible pour le groupe - mais sans aucune trace indiquant qu'il vient de toi.",
+      "confirmEmailLabel": "Tape ton adresse e-mail ({email}) pour confirmer",
+      "passwordLabel": "Mot de passe actuel",
+      "submitting": "Suppression…",
+      "confirmButton": "Supprimer définitivement le compte",
+      "cancel": "Annuler",
+      "passwordRequired": "Merci de saisir ton mot de passe actuel",
+      "confirmEmailRequired": "Merci de saisir ton adresse e-mail pour confirmer",
+      "invalidInput": "Saisie invalide",
+      "emailMismatch": "L'adresse e-mail saisie ne correspond pas à ton compte",
+      "wrongPassword": "Mot de passe incorrect",
+      "soleAdminBlocked": "Impossible de supprimer le compte : tu es la seule personne administratrice dans les groupes suivants : {bands}. Désigne d'abord une autre personne administratrice là-bas."
     }
   },
   "imageUpload": {
@@ -199,7 +218,8 @@
       "registerLink": "S'inscrire",
       "invalidCredentials": "E-mail/nom d'utilisateur ou mot de passe incorrect",
       "accountLocked": "Trop de tentatives de connexion échouées. Le compte est temporairement bloqué et sera automatiquement débloqué après 2 jours.",
-      "forgotPasswordLink": "Mot de passe oublié ?"
+      "forgotPasswordLink": "Mot de passe oublié ?",
+      "accountDeletedNotice": "Ton compte a été supprimé. Toutes tes données personnelles ont été retirées."
     },
     "register": {
       "title": "Créer un compte",
@@ -363,7 +383,9 @@
       "noFiles": "Aucun fichier envoyé pour l'instant.",
       "uploadedByPrivate": "Privé · envoyé par {name}",
       "uploadedByBand": "Visible par le groupe · envoyé par {name}",
-      "deleteConfirm": "Vraiment supprimer ce fichier ?"
+      "deleteConfirm": "Vraiment supprimer ce fichier ?",
+      "uploadedByPrivateUnknown": "Privé",
+      "uploadedByBandUnknown": "Visible pour le groupe"
     },
     "audioPlayer": {
       "unsupported": "Ton navigateur ne peut pas lire ce fichier audio.",

@@ -49,7 +49,9 @@
       "changePasswordTitle": "Change password",
       "dataExportTitle": "My data",
       "dataExportHint": "Download all personal data stored for your account (profile, memberships, personal notes and cues, a list of your uploaded files, finance allocations, and more) as a JSON file.",
-      "dataExportButton": "Download data"
+      "dataExportButton": "Download data",
+      "deleteAccountTitle": "Delete account",
+      "deleteAccountHint": "Permanently delete your account. This cannot be undone."
     },
     "changePasswordForm": {
       "current": "Current password",
@@ -71,6 +73,23 @@
         "NEW_FILE": { "label": "New file", "description": "When a file is uploaded for the band." },
         "FINANCE_ALLOCATION": { "label": "My fees and cost shares", "description": "When an amount is allocated to you or a confirmation is pending." }
       }
+    },
+    "deleteAccount": {
+      "startButton": "Delete account",
+      "warningTitle": "This action cannot be undone!",
+      "warningBody": "Your account and all your personal data will be permanently deleted: profile, password, personal notes and stage cues on songs and setlists, availability and absences, your song votes, and your personal equipment. You will also be removed from every band you're a member of.",
+      "warningKept": "Band-wide content you created or uploaded (e.g. events, song proposals, finance entries, files) stays available to the band - but without any trace that it came from you.",
+      "confirmEmailLabel": "Type your email address ({email}) to confirm",
+      "passwordLabel": "Current password",
+      "submitting": "Deleting…",
+      "confirmButton": "Permanently delete account",
+      "cancel": "Cancel",
+      "passwordRequired": "Please enter your current password",
+      "confirmEmailRequired": "Please enter your email address to confirm",
+      "invalidInput": "Invalid input",
+      "emailMismatch": "The email address you entered doesn't match your account",
+      "wrongPassword": "Wrong password",
+      "soleAdminBlocked": "Account cannot be deleted: you're the only administrator in the following bands: {bands}. Appoint another administrator there first."
     }
   },
   "imageUpload": {
@@ -199,7 +218,8 @@
       "registerLink": "Register",
       "invalidCredentials": "Email/username or password is incorrect",
       "accountLocked": "Too many failed login attempts. The account is temporarily locked and will automatically unlock after 2 days.",
-      "forgotPasswordLink": "Forgot password?"
+      "forgotPasswordLink": "Forgot password?",
+      "accountDeletedNotice": "Your account has been deleted. All your personal data has been removed."
     },
     "register": {
       "title": "Create account",
@@ -363,7 +383,9 @@
       "noFiles": "No files uploaded yet.",
       "uploadedByPrivate": "Private · uploaded by {name}",
       "uploadedByBand": "Visible to the band · uploaded by {name}",
-      "deleteConfirm": "Really delete this file?"
+      "deleteConfirm": "Really delete this file?",
+      "uploadedByPrivateUnknown": "Private",
+      "uploadedByBandUnknown": "Visible to the band"
     },
     "audioPlayer": {
       "unsupported": "Your browser can't play this audio file.",

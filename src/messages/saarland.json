@@ -49,7 +49,9 @@
       "changePasswordTitle": "Passwort ännere",
       "dataExportTitle": "Meine Daten",
       "dataExportHint": "Lade alle personenbezogenen Daten herunter, die zu deinem Konto gespeichert sind (Profil, Mitgliedschaften, persönliche Notizen und Hinweise, hochgeladene Dateien als Liste, Finanzzuordnungen u. a.) als JSON-Datei.",
-      "dataExportButton": "Daten herunterladen"
+      "dataExportButton": "Daten herunterladen",
+      "deleteAccountTitle": "Konto löschen",
+      "deleteAccountHint": "Lösche dein Konto unwiderruflich. Das kann nicht rückgängig gemacht werden."
     },
     "changePasswordForm": {
       "current": "Aktuellet Passwort",
@@ -71,6 +73,23 @@
         "NEW_FILE": { "label": "Neie Datei", "description": "Wann e Datei fer die Band uffgelade werd." },
         "FINANCE_ALLOCATION": { "label": "Meini Gage unn Kosteaadeel", "description": "Wann dir e Betraa zugeordnet werd odder e Bestätigung noch aussteht." }
       }
+    },
+    "deleteAccount": {
+      "startButton": "Konto löschen",
+      "warningTitle": "Diese Aktion kann nicht rückgängig gemacht werden!",
+      "warningBody": "Dein Konto und alle deine persönlichen Daten werden endgültig gelöscht: Profil, Passwort, persönliche Notizen und Bühnen-Hinweise zu Songs und Setlisten, Verfügbarkeiten und Abwesenheiten, deine Song-Abstimmungen sowie dein persönliches Equipment. Du wirst außerdem aus allen Bands entfernt, in denen du Mitglied bist.",
+      "warningKept": "Bandweit geteilte Inhalte, die du erstellt oder hochgeladen hast (z. B. Termine, Songvorschläge, Finanzeinträge, Dateien), bleiben für die Band erhalten - allerdings ohne jeden Hinweis darauf, dass sie von dir stammen.",
+      "confirmEmailLabel": "Tippe zur Bestätigung deine E-Mail-Adresse ({email})",
+      "passwordLabel": "Aktuelles Passwort",
+      "submitting": "Wird gelöscht…",
+      "confirmButton": "Konto endgültig löschen",
+      "cancel": "Abbrechen",
+      "passwordRequired": "Bitte aktuelles Passwort eingeben",
+      "confirmEmailRequired": "Bitte E-Mail-Adresse zur Bestätigung eingeben",
+      "invalidInput": "Ungültige Eingabe",
+      "emailMismatch": "Die eingegebene E-Mail-Adresse stimmt nicht mit deiner Kontoadresse überein",
+      "wrongPassword": "Falsches Passwort",
+      "soleAdminBlocked": "Konto kann nicht gelöscht werden: Du bist die einzige Administratorperson in folgenden Bands: {bands}. Ernenne dort zuerst eine weitere Administratorperson."
     }
   },
   "imageUpload": {
@@ -199,7 +218,8 @@
       "registerLink": "Registriere",
       "invalidCredentials": "E-Mail/Benutzername odder Passwort is falsch",
       "accountLocked": "Ze viel verhaute Loginversuch. S'Konto is fer e Weil gsperrt unn werd automatisch nooch 2 Daache widder freigschalt.",
-      "forgotPasswordLink": "Passwort vergessen?"
+      "forgotPasswordLink": "Passwort vergessen?",
+      "accountDeletedNotice": "Dein Konto wurde gelöscht. Alle deine persönlichen Daten wurden entfernt."
     },
     "register": {
       "title": "Konto aalege",
@@ -363,7 +383,9 @@
       "noFiles": "Noch kaa Dateie uffgelade.",
       "uploadedByPrivate": "Privat · uffgelade vun {name}",
       "uploadedByBand": "Fer die Band sichtbar · uffgelade vun {name}",
-      "deleteConfirm": "Datei wirklich fottmache?"
+      "deleteConfirm": "Datei wirklich fottmache?",
+      "uploadedByPrivateUnknown": "Privat",
+      "uploadedByBandUnknown": "Für die Band sichtbar"
     },
     "audioPlayer": {
       "unsupported": "Dei Browser kann die Audiodatei net abspiele.",

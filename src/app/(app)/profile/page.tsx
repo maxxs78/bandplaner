@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { ImageUploadForm } from "@/components/image-upload-form";
 import { ChangePasswordForm } from "@/components/change-password-form";
 import { NotificationPreferencesForm } from "@/components/notification-preferences-form";
+import { DeleteAccountForm } from "@/components/delete-account-form";
 import {
   updateAvatarAction,
   removeAvatarAction,
@@ -111,6 +112,16 @@ export default async function ProfilePage({
             <Download className="h-4 w-4" />
             {t("dataExportButton")}
           </a>
+        </Card>
+      </div>
+
+      <div className="mt-6">
+        <h2 className="text-lg font-semibold text-danger">{t("deleteAccountTitle")}</h2>
+        <Card className="mt-4">
+          <p className="text-sm text-muted">{t("deleteAccountHint")}</p>
+          <div className="mt-4">
+            <DeleteAccountForm email={user.email} />
+          </div>
         </Card>
       </div>
     </div>
