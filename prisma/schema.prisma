@@ -111,6 +111,25 @@ model User {
   assignedPacklistItemEventStatuses PacklistItemEventStatus[]
   setlistItemEventAnnotations       SetlistItemEventAnnotation[]
   setlistEventNotes                 SetlistEventNote[]
+
+  passwordResetTokens PasswordResetToken[]
+}
+
+/// Self-Service-Passwort-Reset per E-Mail-Link (siehe src/lib/password-reset.ts).
+/// Ergaenzt, ersetzt aber nicht den weiterhin bestehenden Admin-Reset
+/// (resetMemberPasswordAction), der ohne konfigurierten Mailserver funktioniert.
+model PasswordResetToken {
+  id String @id @default(cuid())
+
+  /// SHA-256-Hash des im Mail-Link enthaltenen Tokens - nie der Klartext, damit
+  /// ein DB-Zugriff allein keine Kontouebernahme ermoeglicht.
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
 }
 
 model Band {

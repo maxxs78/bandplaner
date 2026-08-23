@@ -1,4 +1,5 @@
 import { LoginForm } from "@/components/login-form";
+import { isMailConfigured } from "@/lib/mail";
 
 export default async function LoginPage({
   searchParams,
@@ -9,7 +10,7 @@ export default async function LoginPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-12">
-      <LoginForm callbackUrl={callbackUrl ?? "/dashboard"} />
+      <LoginForm callbackUrl={callbackUrl ?? "/dashboard"} showForgotPasswordLink={isMailConfigured()} />
     </main>
   );
 }

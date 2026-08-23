@@ -195,7 +195,8 @@
       "noAccount": "Pas encore de compte ?",
       "registerLink": "S'inscrire",
       "invalidCredentials": "E-mail/nom d'utilisateur ou mot de passe incorrect",
-      "accountLocked": "Trop de tentatives de connexion échouées. Le compte est temporairement bloqué et sera automatiquement débloqué après 2 jours."
+      "accountLocked": "Trop de tentatives de connexion échouées. Le compte est temporairement bloqué et sera automatiquement débloqué après 2 jours.",
+      "forgotPasswordLink": "Mot de passe oublié ?"
     },
     "register": {
       "title": "Créer un compte",
@@ -213,6 +214,36 @@
       "invalidInput": "Saisie invalide",
       "emailTaken": "Cette adresse e-mail est déjà utilisée",
       "loginFailedAfterRegister": "Inscription réussie, échec de la connexion"
+    },
+    "forgotPassword": {
+      "title": "Mot de passe oublié",
+      "subtitle": "Nous t'enverrons un lien pour réinitialiser ton mot de passe.",
+      "emailLabel": "Adresse e-mail",
+      "submit": "Demander le lien",
+      "submitting": "Envoi en cours…",
+      "successMessage": "Si un compte existe avec cette adresse e-mail, un lien de réinitialisation a été envoyé.",
+      "invalidEmail": "Adresse e-mail invalide",
+      "invalidInput": "Saisie invalide",
+      "notAvailable": "Cette fonction n'est pas disponible sur ce serveur. Merci de contacter l'administration de ton groupe pour réinitialiser ton mot de passe.",
+      "backToLogin": "Retour à la connexion",
+      "mailSubject": "Réinitialisation de ton mot de passe",
+      "mailBody": "Bonjour {name}, tu as demandé une réinitialisation de ton mot de passe. Clique sur le lien ci-dessous pour définir un nouveau mot de passe :",
+      "mailExpiry": "Ce lien est valable une heure. Si tu n'es pas à l'origine de cette demande, tu peux ignorer cet e-mail."
+    },
+    "resetPassword": {
+      "title": "Définir un nouveau mot de passe",
+      "subtitle": "Choisis un nouveau mot de passe pour ton compte.",
+      "newPasswordLabel": "Nouveau mot de passe",
+      "confirmPasswordLabel": "Confirmer le mot de passe",
+      "submit": "Définir le mot de passe",
+      "submitting": "Enregistrement…",
+      "newPasswordTooShort": "Le nouveau mot de passe doit contenir au moins 8 caractères",
+      "confirmPasswordRequired": "Merci de confirmer ton nouveau mot de passe",
+      "mismatch": "Les nouveaux mots de passe ne correspondent pas",
+      "invalidInput": "Saisie invalide",
+      "invalidToken": "Ce lien est invalide ou a expiré.",
+      "requestNewLink": "Demander un nouveau lien",
+      "loginFailedAfterReset": "Mot de passe modifié, mais la connexion automatique a échoué. Merci de te connecter manuellement."
     }
   },
   "dashboard": {

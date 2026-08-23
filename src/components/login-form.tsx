@@ -9,7 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 
-export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
+export function LoginForm({
+  callbackUrl,
+  showForgotPasswordLink = false,
+}: {
+  callbackUrl: string;
+  /** Nur true, wenn ein Mailserver konfiguriert ist - ohne Versandweg waere
+   * der Link ein toter Verweis auf eine Seite, die nur den Admin-Reset-Hinweis
+   * zeigt (siehe forgot-password/page.tsx). */
+  showForgotPasswordLink?: boolean;
+}) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
   const t = useTranslations("auth.login");
 
@@ -25,7 +34,14 @@ export function LoginForm({ callbackUrl }: { callbackUrl: string }) {
           <Input id="email" name="email" type="text" autoComplete="username" required />
         </div>
         <div>
-          <Label htmlFor="password">{t("passwordLabel")}</Label>
+          <div className="flex items-baseline justify-between">
+            <Label htmlFor="password">{t("passwordLabel")}</Label>
+            {showForgotPasswordLink && (
+              <Link href="/forgot-password" className="text-xs font-medium text-primary hover:underline">
+                {t("forgotPasswordLink")}
+              </Link>
+            )}
+          </div>
           <Input
             id="password"
             name="password"

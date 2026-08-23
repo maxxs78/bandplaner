@@ -5,14 +5,10 @@ import { isGuestAccessExpired } from "@/lib/access";
 import { getEnabledFeatures } from "@/lib/features";
 import { notificationEvents, type NotificationEvent } from "@/lib/notification-events";
 import { isLocale, defaultLocale } from "@/i18n/config";
+import { appUrl } from "@/lib/app-url";
 
 export { notificationEvents };
 export type { NotificationEvent };
-
-function appUrl(path: string) {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  return `${base.replace(/\/$/, "")}${path}`;
-}
 
 type MessageBuilder = (
   t: Awaited<ReturnType<typeof getTranslations>>,

@@ -195,7 +195,8 @@
       "noAccount": "Noch kaa Konto?",
       "registerLink": "Registriere",
       "invalidCredentials": "E-Mail/Benutzername odder Passwort is falsch",
-      "accountLocked": "Ze viel verhaute Loginversuch. S'Konto is fer e Weil gsperrt unn werd automatisch nooch 2 Daache widder freigschalt."
+      "accountLocked": "Ze viel verhaute Loginversuch. S'Konto is fer e Weil gsperrt unn werd automatisch nooch 2 Daache widder freigschalt.",
+      "forgotPasswordLink": "Passwort vergessen?"
     },
     "register": {
       "title": "Konto aalege",
@@ -213,6 +214,36 @@
       "invalidInput": "Des passt net",
       "emailTaken": "Die E-Mail-Adress wird schunn benutzt",
       "loginFailedAfterRegister": "Registrierung hot geklappt, Aamelde awwer net"
+    },
+    "forgotPassword": {
+      "title": "Passwort vergessen",
+      "subtitle": "Wir schicken dir einen Link zum Zurücksetzen deines Passworts.",
+      "emailLabel": "E-Mail-Adresse",
+      "submit": "Link anfordern",
+      "submitting": "Wird gesendet…",
+      "successMessage": "Falls ein Konto mit dieser E-Mail-Adresse existiert, wurde ein Link zum Zurücksetzen verschickt.",
+      "invalidEmail": "Ungültige E-Mail-Adresse",
+      "invalidInput": "Ungültige Eingabe",
+      "notAvailable": "Diese Funktion ist auf diesem Server nicht verfügbar. Bitte wende dich an deine Bandadministration, um dein Passwort zurücksetzen zu lassen.",
+      "backToLogin": "Zurück zur Anmeldung",
+      "mailSubject": "Passwort zurücksetzen",
+      "mailBody": "Hallo {name}, du hast eine Zurücksetzung deines Passworts angefordert. Klicke auf den folgenden Link, um ein neues Passwort zu vergeben:",
+      "mailExpiry": "Der Link ist eine Stunde lang gültig. Falls du das nicht angefordert hast, kannst du diese E-Mail ignorieren."
+    },
+    "resetPassword": {
+      "title": "Neues Passwort vergeben",
+      "subtitle": "Wähle ein neues Passwort für dein Konto.",
+      "newPasswordLabel": "Neues Passwort",
+      "confirmPasswordLabel": "Passwort bestätigen",
+      "submit": "Passwort setzen",
+      "submitting": "Wird gespeichert…",
+      "newPasswordTooShort": "Neues Passwort muss mindestens 8 Zeichen haben",
+      "confirmPasswordRequired": "Bitte neues Passwort bestätigen",
+      "mismatch": "Die neuen Passwörter stimmen nicht überein",
+      "invalidInput": "Ungültige Eingabe",
+      "invalidToken": "Dieser Link ist ungültig oder abgelaufen.",
+      "requestNewLink": "Neuen Link anfordern",
+      "loginFailedAfterReset": "Passwort geändert, Anmeldung fehlgeschlagen. Bitte melde dich manuell an."
     }
   },
   "dashboard": {

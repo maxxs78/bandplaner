@@ -195,7 +195,8 @@
       "noAccount": "No account yet?",
       "registerLink": "Register",
       "invalidCredentials": "Email/username or password is incorrect",
-      "accountLocked": "Too many failed login attempts. The account is temporarily locked and will automatically unlock after 2 days."
+      "accountLocked": "Too many failed login attempts. The account is temporarily locked and will automatically unlock after 2 days.",
+      "forgotPasswordLink": "Forgot password?"
     },
     "register": {
       "title": "Create account",
@@ -213,6 +214,36 @@
       "invalidInput": "Invalid input",
       "emailTaken": "This email address is already in use",
       "loginFailedAfterRegister": "Registration successful, sign-in failed"
+    },
+    "forgotPassword": {
+      "title": "Forgot password",
+      "subtitle": "We'll send you a link to reset your password.",
+      "emailLabel": "Email address",
+      "submit": "Request link",
+      "submitting": "Sending…",
+      "successMessage": "If an account with this email address exists, a reset link has been sent.",
+      "invalidEmail": "Invalid email address",
+      "invalidInput": "Invalid input",
+      "notAvailable": "This feature is not available on this server. Please contact your band administration to reset your password.",
+      "backToLogin": "Back to login",
+      "mailSubject": "Reset your password",
+      "mailBody": "Hi {name}, you requested a password reset. Click the link below to set a new password:",
+      "mailExpiry": "This link is valid for one hour. If you didn't request this, you can safely ignore this email."
+    },
+    "resetPassword": {
+      "title": "Set a new password",
+      "subtitle": "Choose a new password for your account.",
+      "newPasswordLabel": "New password",
+      "confirmPasswordLabel": "Confirm password",
+      "submit": "Set password",
+      "submitting": "Saving…",
+      "newPasswordTooShort": "New password must be at least 8 characters",
+      "confirmPasswordRequired": "Please confirm your new password",
+      "mismatch": "The new passwords don't match",
+      "invalidInput": "Invalid input",
+      "invalidToken": "This link is invalid or has expired.",
+      "requestNewLink": "Request a new link",
+      "loginFailedAfterReset": "Password changed, but automatic login failed. Please log in manually."
     }
   },
   "dashboard": {

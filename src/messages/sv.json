@@ -195,7 +195,8 @@
       "noAccount": "Inget konto än?",
       "registerLink": "Registrera dig",
       "invalidCredentials": "E-post/användarnamn eller lösenord är felaktigt",
-      "accountLocked": "För många misslyckade inloggningsförsök. Kontot är tillfälligt låst och låses automatiskt upp igen efter 2 dagar."
+      "accountLocked": "För många misslyckade inloggningsförsök. Kontot är tillfälligt låst och låses automatiskt upp igen efter 2 dagar.",
+      "forgotPasswordLink": "Glömt lösenordet?"
     },
     "register": {
       "title": "Skapa konto",
@@ -213,6 +214,36 @@
       "invalidInput": "Ogiltig inmatning",
       "emailTaken": "Den här e-postadressen används redan",
       "loginFailedAfterRegister": "Registreringen lyckades, inloggningen misslyckades"
+    },
+    "forgotPassword": {
+      "title": "Glömt lösenordet",
+      "subtitle": "Vi skickar en länk för att återställa ditt lösenord.",
+      "emailLabel": "E-postadress",
+      "submit": "Begär länk",
+      "submitting": "Skickar…",
+      "successMessage": "Om ett konto med den här e-postadressen finns har en återställningslänk skickats.",
+      "invalidEmail": "Ogiltig e-postadress",
+      "invalidInput": "Ogiltig inmatning",
+      "notAvailable": "Den här funktionen är inte tillgänglig på den här servern. Kontakta din bandadministration för att återställa ditt lösenord.",
+      "backToLogin": "Tillbaka till inloggning",
+      "mailSubject": "Återställ ditt lösenord",
+      "mailBody": "Hej {name}, du har begärt en återställning av ditt lösenord. Klicka på länken nedan för att ange ett nytt lösenord:",
+      "mailExpiry": "Länken är giltig i en timme. Om du inte har begärt detta kan du ignorera det här mejlet."
+    },
+    "resetPassword": {
+      "title": "Ange nytt lösenord",
+      "subtitle": "Välj ett nytt lösenord för ditt konto.",
+      "newPasswordLabel": "Nytt lösenord",
+      "confirmPasswordLabel": "Bekräfta lösenord",
+      "submit": "Spara lösenord",
+      "submitting": "Sparar…",
+      "newPasswordTooShort": "Nytt lösenord måste vara minst 8 tecken",
+      "confirmPasswordRequired": "Bekräfta ditt nya lösenord",
+      "mismatch": "De nya lösenorden stämmer inte överens",
+      "invalidInput": "Ogiltig inmatning",
+      "invalidToken": "Länken är ogiltig eller har gått ut.",
+      "requestNewLink": "Begär en ny länk",
+      "loginFailedAfterReset": "Lösenordet ändrades, men automatisk inloggning misslyckades. Logga in manuellt."
     }
   },
   "dashboard": {
