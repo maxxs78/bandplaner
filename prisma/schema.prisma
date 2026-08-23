@@ -421,6 +421,11 @@ model Song {
   lyrics        String?
   /// Für alle Bandmitglieder sichtbare Anmerkung, z. B. "Live-Version", Sonderarrangements
   remarks       String?
+  /// Geteilte technische Hinweise fuer FOH/Licht/Technik (z. B. "Nebel bei Bridge"),
+  /// unabhaengig von der Setlist - erscheint im technischen Ablaufplan-Ausdruck
+  /// jeder Setlist, die diesen Song enthaelt (SetlistItem.techNotes ergaenzt dies
+  /// nur fuer eine konkrete Setlist).
+  techNotes     String?
   createdAt     DateTime   @default(now())
 
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
@@ -533,10 +538,26 @@ model SongNote {
   @@unique([songId, userId])
 }
 
+/// Steuert, wie das Equipment-Icon eines INSTRUMENT_CHANGE-Hinweises je Setlist
+/// dargestellt wird (siehe CueBadges/setlist-builder.tsx): IN_TAG = klein im
+/// Hinweis-Badge (bisheriges Verhalten), LARGE = grosses Icon neben Tonart/BPM,
+/// HIDDEN = kein Equipment-Icon (nur der generische Hinweis-Typ-Icon).
+enum EquipmentIconDisplay {
+  IN_TAG
+  LARGE
+  HIDDEN
+}
+
 model Setlist {
   id        String   @id @default(cuid())
   name      String
   createdAt DateTime @default(now())
+  equipmentIconDisplay EquipmentIconDisplay @default(IN_TAG)
+  /// Geteilte (nicht personenbezogene) technische Hinweise fuer die gesamte
+  /// Setlist, z. B. fuer FOH/Licht/Technik - im Unterschied zu SetlistNote
+  /// (persoenliche Hinweise je Mitglied). Erscheint als Kopfnotiz im
+  /// technischen Ablaufplan-Ausdruck.
+  techNotes String?
 
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
@@ -599,6 +620,10 @@ model SetlistItem {
   /// Gesetzt, wenn der ursprünglich verknüpfte Song aus der Bibliothek gelöscht wurde;
   /// customTitle enthält dann dessen früheren Titel als Fallback-Anzeige.
   songDeleted Boolean @default(false)
+  /// Geteilter (nicht personenbezogener) technischer Zusatzhinweis nur fuer diese
+  /// Setlist, ergaenzt Song.techNotes - editierbar von Content-Managern, sichtbar
+  /// fuer alle im technischen Ablaufplan-Ausdruck.
+  techNotes String?
 
   setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
   setlistId String

@@ -37,6 +37,7 @@ export function SongForm({
     status?: string;
     lyrics?: string;
     remarks?: string;
+    techNotes?: string;
   };
   submitLabel: string;
   /** Nur Admins dürfen den Status setzen/ändern - andere reichen Songs als Vorschlag ein. */
@@ -355,6 +356,18 @@ export function SongForm({
           defaultValue={defaultValues?.remarks}
         />
         <p className="mt-1 text-xs text-muted">{tf("notesVisibility")}</p>
+      </div>
+
+      <div>
+        <Label htmlFor="techNotes">{tf("techNotes")}</Label>
+        <Textarea
+          id="techNotes"
+          name="techNotes"
+          rows={3}
+          placeholder={tf("techNotesPlaceholder")}
+          defaultValue={defaultValues?.techNotes}
+        />
+        <p className="mt-1 text-xs text-muted">{tf("techNotesVisibility")}</p>
       </div>
 
       <FieldError>{state?.error}</FieldError>

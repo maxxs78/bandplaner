@@ -92,7 +92,7 @@ export default async function SongDetailPage({
     ? await prisma.equipment.findMany({
         where: equipmentVisibleInBand(bandId),
         orderBy: { name: "asc" },
-        select: { id: true, name: true, icon: true, color: true },
+        select: { id: true, name: true, icon: true, color: true, category: true },
       })
     : [];
   const eligibleVoterCount =

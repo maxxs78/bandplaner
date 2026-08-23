@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Clock, Printer, Save } from "lucide-react";
+import { ArrowLeft, Clock, Printer, Save, ClipboardList } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
@@ -8,8 +8,9 @@ import { getEnabledFeatures } from "@/lib/features";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { SetlistBuilder } from "@/components/setlist-builder";
 import { EventContextSelector } from "@/components/event-context-selector";
+import { EquipmentIconDisplaySelector } from "@/components/equipment-icon-display-selector";
 import { computeSetlistNumbers, totalSetlistDurationSec, formatSetlistAsText, type SetlistDisplayItem } from "@/lib/setlist-items";
-import { deleteSetlistAction, saveSetlistNoteAction } from "../actions";
+import { deleteSetlistAction, saveSetlistNoteAction, saveEquipmentIconDisplayAction, saveSetlistTechNotesAction } from "../actions";
 import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { Button } from "@/components/ui/button";
@@ -61,7 +62,7 @@ export default async function SetlistDetailPage({
     ? await prisma.equipment.findMany({
         where: equipmentVisibleInBand(bandId),
         orderBy: { name: "asc" },
-        select: { id: true, name: true, icon: true, color: true },
+        select: { id: true, name: true, icon: true, color: true, category: true },
       })
     : [];
 
@@ -172,6 +173,12 @@ export default async function SetlistDetailPage({
                 {t("print")}
               </Button>
             </Link>
+            <Link href={`/print/setlists/${setlistId}/tech`} target="_blank">
+              <Button variant="secondary" size="sm">
+                <ClipboardList className="h-4 w-4" />
+                {t("printTech")}
+              </Button>
+            </Link>
             {canManage && (
               <DeleteButton action={deleteSetlistAction.bind(null, bandId, setlistId)} label={t("delete")} />
             )}
@@ -189,6 +196,19 @@ export default async function SetlistDetailPage({
               activeEventId={activeEventId}
               noEventLabel={t("noEventContext")}
               basePath={`/bands/${bandId}/setlists/${setlistId}`}
+            />
+          </div>
+        </Card>
+      )}
+
+      {canManage && features.equipment && (
+        <Card className="mt-4">
+          <h2 className="text-sm font-semibold text-foreground">{t("equipmentIconDisplayLabel")}</h2>
+          <p className="mt-1 text-xs text-muted">{t("equipmentIconDisplayHint")}</p>
+          <div className="mt-2">
+            <EquipmentIconDisplaySelector
+              action={saveEquipmentIconDisplayAction.bind(null, bandId, setlistId)}
+              value={setlist.equipmentIconDisplay}
             />
           </div>
         </Card>
@@ -250,6 +270,7 @@ export default async function SetlistDetailPage({
             librarySongs={songs}
             readOnly={!canManage || isPastActiveEvent}
             equipmentOptions={equipmentOptions}
+            equipmentIconDisplay={setlist.equipmentIconDisplay}
           />
         )}
       </div>
@@ -273,6 +294,32 @@ export default async function SetlistDetailPage({
           </Button>
         </form>
       </Card>
+
+      {(canManage || setlist.techNotes) && (
+        <Card className="mt-6">
+          <h2 className="font-semibold text-foreground">{t("techNotes")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("techNotesVisibility")}</p>
+          {canManage ? (
+            <form
+              action={saveSetlistTechNotesAction.bind(null, bandId, setlistId)}
+              className="mt-3 space-y-3"
+            >
+              <Textarea
+                name="techNotes"
+                rows={3}
+                defaultValue={setlist.techNotes ?? ""}
+                placeholder={t("techNotesPlaceholder")}
+              />
+              <Button type="submit" size="sm">
+                <Save className="h-4 w-4" />
+                {t("saveNote")}
+              </Button>
+            </form>
+          ) : (
+            <p className="mt-3 whitespace-pre-wrap text-sm text-foreground">{setlist.techNotes}</p>
+          )}
+        </Card>
+      )}
     </div>
   );
 }

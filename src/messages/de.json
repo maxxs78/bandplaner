@@ -359,6 +359,9 @@
       "notes": "Notizen",
       "notesPlaceholder": "z. B. Live-Version, Sonderarrangement…",
       "notesVisibility": "Für die ganze Band sichtbar.",
+      "techNotes": "Technische Hinweise (FOH/Licht/Technik)",
+      "techNotesPlaceholder": "z. B. Nebel bei der Bridge, Spot auf Sologitarre…",
+      "techNotesVisibility": "Für alle Bandmitglieder sichtbar - erscheint im technischen Ablaufplan-Ausdruck der Setlist.",
       "saving": "Wird gespeichert…",
       "assistant": {
         "uploadLabel": "Audiodatei hochladen (optional)",
@@ -536,7 +539,32 @@
     "saving": "Wird gespeichert…",
     "save": "Speichern",
     "equipmentFreeText": "Freitext",
-    "equipmentNone": "Kein Instrument (Freitext)"
+    "equipmentNone": "Kein Instrument (Freitext)",
+    "equipment": "Equipment",
+    "equipmentValueLabel": "Equipment (optional)",
+    "equipmentPlaceholder": "z. B. Nebelmaschine",
+    "capo": "Kapo",
+    "capoValueLabel": "Bund (optional)",
+    "capoPlaceholder": "z. B. 3",
+    "click": "Klick",
+    "clickValueLabel": "Status (optional)",
+    "clickPlaceholder": "z. B. an / aus",
+    "looper": "Loop-Pedal",
+    "looperValueLabel": "Aktion (optional)",
+    "looperPlaceholder": "z. B. Start / Stop",
+    "backingVocal": "Backing Vocal",
+    "backingVocalValueLabel": "Hinweis (optional)",
+    "backingVocalPlaceholder": "z. B. 2. Strophe",
+    "solo": "Solo",
+    "countIn": "Einzähler",
+    "countInValueLabel": "Wer zählt ein (optional)",
+    "countInPlaceholder": "z. B. Schlagzeug",
+    "countInNone": "ohne",
+    "countInCustom": "Freitext",
+    "inEar": "In-Ear",
+    "inEarValueLabel": "Hinweis (optional)",
+    "inEarPlaceholder": "z. B. Gesang lauter",
+    "remove": "Entfernen"
   },
   "overview": {
     "upcomingEvents": "Anstehende Termine",
@@ -678,7 +706,29 @@
       "myNotes": "Meine Notizen zu dieser Setlist",
       "myNotesVisibility": "Nur für dich sichtbar.",
       "notesPlaceholder": "z. B. Ablaufhinweise, Reihenfolge-Absprachen, Erinnerungen für diesen Auftritt…",
-      "saveNote": "Notiz speichern"
+      "saveNote": "Notiz speichern",
+      "printTech": "Technischer Ablauf",
+      "equipmentIconDisplayLabel": "Equipment-Icon-Darstellung",
+      "equipmentIconDisplayHint": "Steuert, wie das Icon eines gewählten Instruments/Equipments bei einem Instrumentwechsel-Hinweis in dieser Setlist angezeigt wird.",
+      "techNotes": "Technische Hinweise (FOH/Licht/Technik)",
+      "techNotesVisibility": "Für alle Bandmitglieder sichtbar - erscheint im technischen Ablaufplan-Ausdruck.",
+      "techNotesPlaceholder": "z. B. Bühnenplan-Hinweise, Nebel/Pyro-Freigaben, Backline-Besonderheiten…",
+      "saving": "Wird gespeichert…",
+      "equipmentIconDisplayOptions": {
+        "IN_TAG": "Klein im Hinweis-Badge",
+        "LARGE": "Groß neben Tonart/BPM",
+        "HIDDEN": "Nicht darstellen"
+      }
+    },
+    "techPrint": {
+      "titleSuffix": "Technischer Ablaufplan",
+      "columnNr": "Nr.",
+      "columnTitle": "Song",
+      "columnKey": "Ton",
+      "columnBpm": "BPM",
+      "columnDuration": "Dauer",
+      "columnNotes": "Technische Hinweise",
+      "empty": "Diese Setlist ist noch leer."
     },
     "builder": {
       "order": "Reihenfolge",
@@ -702,7 +752,10 @@
       "addSection": "Abschnitt hinzufügen",
       "library": "Songbibliothek",
       "searchPlaceholder": "Song suchen…",
-      "noSongsFound": "Keine Songs gefunden."
+      "noSongsFound": "Keine Songs gefunden.",
+      "techNoteLabel": "Technischer Hinweis (FOH/Licht/Technik, für alle sichtbar)",
+      "techNotePlaceholder": "z. B. Nebel, Spot, Backline-Besonderheit",
+      "techNoteSave": "Speichern"
     }
   },
   "invite": {

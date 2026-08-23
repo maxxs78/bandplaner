@@ -97,6 +97,7 @@ export function getSongSchema(t: (key: string) => string) {
     status: z.enum(["PROPOSED", "NEW", "IN_PROGRESS", "STAGE_READY", "ACTIVE", "ARCHIVED"]),
     lyrics: z.string().optional(),
     remarks: z.string().optional(),
+    techNotes: z.string().optional(),
   });
 }
 

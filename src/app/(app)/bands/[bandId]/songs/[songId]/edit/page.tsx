@@ -63,6 +63,7 @@ export default async function EditSongPage({
             status: song.status,
             lyrics: song.lyrics ?? "",
             remarks: song.remarks ?? "",
+            techNotes: song.techNotes ?? "",
           }}
         />
       </Card>

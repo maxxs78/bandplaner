@@ -80,6 +80,7 @@ async function parseSongForm(formData: FormData) {
     status: formData.get("status"),
     lyrics: formData.get("lyrics") || undefined,
     remarks: formData.get("remarks") || undefined,
+    techNotes: formData.get("techNotes") || undefined,
   });
 }
 
@@ -162,6 +163,7 @@ export async function createSongAction(
       status: isAdmin ? (d.status as SongStatus) : "PROPOSED",
       lyrics: d.lyrics || null,
       remarks: d.remarks || null,
+      techNotes: d.techNotes || null,
       proposedById: user.id,
     },
   });
@@ -279,6 +281,7 @@ export async function updateSongAction(
       rejected: status === "ARCHIVED" ? undefined : false,
       lyrics: d.lyrics || null,
       remarks: d.remarks || null,
+      techNotes: d.techNotes || null,
     },
   });
 

@@ -400,6 +400,56 @@ export async function saveSetlistNoteAction(
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
 }
 
+export async function saveEquipmentIconDisplayAction(
+  bandId: string,
+  setlistId: string,
+  formData: FormData
+) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const value = formData.get("equipmentIconDisplay");
+  if (value !== "IN_TAG" && value !== "LARGE" && value !== "HIDDEN") return;
+
+  await prisma.setlist.update({
+    where: { id: setlistId, bandId },
+    data: { equipmentIconDisplay: value },
+  });
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+  revalidatePath(`/print/setlists/${setlistId}`);
+}
+
+export async function saveSetlistTechNotesAction(bandId: string, setlistId: string, formData: FormData) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const techNotes = ((formData.get("techNotes") as string) ?? "").trim() || null;
+  await prisma.setlist.update({
+    where: { id: setlistId, bandId },
+    data: { techNotes },
+  });
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+  revalidatePath(`/print/setlists/${setlistId}/tech`);
+}
+
+export async function saveItemTechNoteAction(
+  bandId: string,
+  setlistId: string,
+  itemId: string,
+  formData: FormData
+) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+
+  const techNotes = ((formData.get("techNotes") as string) ?? "").trim() || null;
+  await prisma.setlistItem.update({
+    where: { id: itemId, setlistId },
+    data: { techNotes },
+  });
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+  revalidatePath(`/print/setlists/${setlistId}/tech`);
+}
+
 export async function saveItemAnnotationAction(
   bandId: string,
   setlistId: string,

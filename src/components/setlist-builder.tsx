@@ -16,7 +16,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Plus, Tag, X } from "lucide-react";
+import { ClipboardList, GripVertical, Plus, Tag, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   addSongToSetlistAction,
@@ -26,12 +26,14 @@ import {
   removeSetlistItemAction,
   reorderSetlistItemsAction,
   saveItemAnnotationAction,
+  saveItemTechNoteAction,
   setItemNumberingAction,
 } from "@/app/(app)/bands/[bandId]/setlists/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CueAnnotationEditor, type AnnotationValues, type EquipmentOption } from "@/components/cue-annotation-editor";
-import { CueBadges } from "@/components/cue-badges";
+import { CueBadges, EquipmentIconStrip } from "@/components/cue-badges";
+import type { EquipmentIconDisplay } from "@/lib/setlist-cues";
 import { parseCues } from "@/lib/setlist-cues";
 import { computeSetlistNumbers, type SetlistItemKind } from "@/lib/setlist-items";
 import clsx from "clsx";
@@ -57,6 +59,8 @@ type SetlistItem = {
     status: string;
   } | null;
   myAnnotation?: MyAnnotation;
+  /** Geteilter technischer Zusatzhinweis (FOH/Licht/Technik) nur fuer diese Setlist. */
+  techNotes: string | null;
 };
 
 type LibrarySong = { id: string; title: string; key: string | null; bpm: number | null; status: string };
@@ -86,12 +90,14 @@ function RowContent({
   isExpanded,
   onToggleExpand,
   onSetNumbering,
+  equipmentIconDisplay,
 }: {
   item: SetlistItem;
   number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSetNumbering?: (exclude: boolean) => void;
+  equipmentIconDisplay: EquipmentIconDisplay;
 }) {
   const t = useTranslations("setlists.builder");
   const { title, meta } = itemTitleAndMeta(item, t);
@@ -118,11 +124,14 @@ function RowContent({
             </span>
           )}
         </div>
-        <p className="truncate text-xs text-muted">{meta}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="truncate text-xs text-muted">{meta}</p>
+          {equipmentIconDisplay === "LARGE" && <EquipmentIconStrip cues={cues} />}
+        </div>
         {(annotation?.note || cues.length > 0) && (
           <div className="mt-1 flex flex-wrap items-center gap-2">
             {annotation?.note && <p className="text-xs italic text-foreground">{annotation.note}</p>}
-            <CueBadges cues={cues} />
+            <CueBadges cues={cues} showEquipmentIcon={equipmentIconDisplay === "IN_TAG"} />
           </div>
         )}
         {item.kind === "CUSTOM" && onSetNumbering && (
@@ -179,12 +188,14 @@ function ItemContent({
   isExpanded,
   onToggleExpand,
   onSetNumbering,
+  equipmentIconDisplay,
 }: {
   item: SetlistItem;
   number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSetNumbering?: (exclude: boolean) => void;
+  equipmentIconDisplay: EquipmentIconDisplay;
 }) {
   if (item.kind === "COMMENT") return <CommentContent item={item} />;
   if (item.kind === "SECTION") return <SectionContent item={item} />;
@@ -195,6 +206,7 @@ function ItemContent({
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       onSetNumbering={onSetNumbering}
+      equipmentIconDisplay={equipmentIconDisplay}
     />
   );
 }
@@ -204,11 +216,13 @@ function ReadOnlyRow({
   number,
   isExpanded,
   onToggleExpand,
+  equipmentIconDisplay,
 }: {
   item: SetlistItem;
   number: number | null;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  equipmentIconDisplay: EquipmentIconDisplay;
 }) {
   return (
     <div
@@ -218,7 +232,13 @@ function ReadOnlyRow({
       )}
       style={item.myAnnotation?.color ? { borderLeft: `4px solid ${item.myAnnotation.color}` } : undefined}
     >
-      <ItemContent item={item} number={number} isExpanded={isExpanded} onToggleExpand={onToggleExpand} />
+      <ItemContent
+        item={item}
+        number={number}
+        isExpanded={isExpanded}
+        onToggleExpand={onToggleExpand}
+        equipmentIconDisplay={equipmentIconDisplay}
+      />
     </div>
   );
 }
@@ -230,6 +250,7 @@ function SortableRow({
   onToggleExpand,
   onRemove,
   onSetNumbering,
+  equipmentIconDisplay,
 }: {
   item: SetlistItem;
   number: number | null;
@@ -237,6 +258,7 @@ function SortableRow({
   onToggleExpand: () => void;
   onRemove: (id: string) => void;
   onSetNumbering: (itemId: string, exclude: boolean) => void;
+  equipmentIconDisplay: EquipmentIconDisplay;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
@@ -274,6 +296,7 @@ function SortableRow({
         isExpanded={isExpanded}
         onToggleExpand={onToggleExpand}
         onSetNumbering={(exclude) => onSetNumbering(item.id, exclude)}
+        equipmentIconDisplay={equipmentIconDisplay}
       />
       <button
         type="button"
@@ -287,6 +310,32 @@ function SortableRow({
   );
 }
 
+/** Geteilter (nicht personenbezogener) technischer Zusatzhinweis fuer diesen
+ * Eintrag - editierbar von Content-Managern, analog zur persoenlichen
+ * Notiz oben, aber fuer alle sichtbar (FOH/Licht/Technik-Ausdruck). */
+function ItemTechNoteForm({
+  defaultValue,
+  onSave,
+}: {
+  defaultValue: string;
+  onSave: (formData: FormData) => Promise<void>;
+}) {
+  const t = useTranslations("setlists.builder");
+
+  return (
+    <form action={onSave} className="mt-3 space-y-1.5 border-t border-border pt-3">
+      <label className="flex items-center gap-1.5 text-xs font-medium text-muted">
+        <ClipboardList className="h-3.5 w-3.5" />
+        {t("techNoteLabel")}
+      </label>
+      <Input name="techNotes" defaultValue={defaultValue} placeholder={t("techNotePlaceholder")} className="text-xs" />
+      <Button type="submit" size="sm" variant="secondary">
+        {t("techNoteSave")}
+      </Button>
+    </form>
+  );
+}
+
 export function SetlistBuilder({
   bandId,
   setlistId,
@@ -295,6 +344,7 @@ export function SetlistBuilder({
   librarySongs,
   readOnly = false,
   equipmentOptions,
+  equipmentIconDisplay = "IN_TAG",
 }: {
   bandId: string;
   setlistId: string;
@@ -305,6 +355,8 @@ export function SetlistBuilder({
   readOnly?: boolean;
   /** Katalog an waehlbarem Equipment fuer den INSTRUMENT_CHANGE-Hinweis - siehe CueAnnotationEditor. */
   equipmentOptions?: EquipmentOption[];
+  /** Setlist.equipmentIconDisplay - steuert, wie Equipment-Icons an den Zeilen dargestellt werden. */
+  equipmentIconDisplay?: EquipmentIconDisplay;
 }) {
   const [items, setItems] = useState(initialItems);
   const [search, setSearch] = useState("");
@@ -359,6 +411,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        techNotes: null,
         song: { ...song, durationSec: null },
       },
     ]);
@@ -386,6 +439,7 @@ export function SetlistBuilder({
         durationSec,
         excludeFromNumbering: customExcludeFromNumbering,
         songDeleted: false,
+        techNotes: null,
         song: null,
       },
     ]);
@@ -413,6 +467,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        techNotes: null,
         song: null,
       },
     ]);
@@ -437,6 +492,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        techNotes: null,
         song: null,
       },
     ]);
@@ -492,6 +548,7 @@ export function SetlistBuilder({
                   onToggleExpand={() =>
                     setExpandedItemId((current) => (current === item.id ? null : item.id))
                   }
+                  equipmentIconDisplay={equipmentIconDisplay}
                 />
                 {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
                   <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
@@ -525,6 +582,7 @@ export function SetlistBuilder({
                       }
                       onRemove={handleRemove}
                       onSetNumbering={handleSetNumbering}
+                      equipmentIconDisplay={equipmentIconDisplay}
                     />
                     {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
                       <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
@@ -538,6 +596,13 @@ export function SetlistBuilder({
                           compact
                           equipmentOptions={equipmentOptions}
                         />
+                        {item.kind === "SONG" && (
+                          <ItemTechNoteForm
+                            key={item.id}
+                            defaultValue={item.techNotes ?? ""}
+                            onSave={(formData) => saveItemTechNoteAction(bandId, setlistId, item.id, formData)}
+                          />
+                        )}
                       </div>
                     )}
                   </div>

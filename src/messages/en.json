@@ -359,6 +359,9 @@
       "notes": "Notes",
       "notesPlaceholder": "e.g. live version, special arrangement…",
       "notesVisibility": "Visible to the whole band.",
+      "techNotes": "Technical Notes (FOH/Lighting/Crew)",
+      "techNotesPlaceholder": "e.g. fog during the bridge, spotlight on guitar solo…",
+      "techNotesVisibility": "Visible to all band members - appears on the setlist's technical sheet printout.",
       "saving": "Saving…",
       "assistant": {
         "uploadLabel": "Upload audio file (optional)",
@@ -536,7 +539,32 @@
     "saving": "Saving…",
     "save": "Save",
     "equipmentFreeText": "Free text",
-    "equipmentNone": "No instrument (free text)"
+    "equipmentNone": "No instrument (free text)",
+    "equipment": "Equipment",
+    "equipmentValueLabel": "Equipment (optional)",
+    "equipmentPlaceholder": "e.g. fog machine",
+    "capo": "Capo",
+    "capoValueLabel": "Fret (optional)",
+    "capoPlaceholder": "e.g. 3",
+    "click": "Click",
+    "clickValueLabel": "Status (optional)",
+    "clickPlaceholder": "e.g. on / off",
+    "looper": "Looper",
+    "looperValueLabel": "Action (optional)",
+    "looperPlaceholder": "e.g. Start / Stop",
+    "backingVocal": "Backing Vocal",
+    "backingVocalValueLabel": "Note (optional)",
+    "backingVocalPlaceholder": "e.g. 2nd verse",
+    "solo": "Solo",
+    "countIn": "Count-in",
+    "countInValueLabel": "Who counts in (optional)",
+    "countInPlaceholder": "e.g. Drums",
+    "countInNone": "none",
+    "countInCustom": "Custom",
+    "inEar": "In-Ear",
+    "inEarValueLabel": "Note (optional)",
+    "inEarPlaceholder": "e.g. Vocals louder",
+    "remove": "Remove"
   },
   "overview": {
     "upcomingEvents": "Upcoming Events",
@@ -678,7 +706,29 @@
       "myNotes": "My Notes for this Setlist",
       "myNotesVisibility": "Only visible to you.",
       "notesPlaceholder": "e.g. running order notes, sequencing agreements, reminders for this gig…",
-      "saveNote": "Save Note"
+      "saveNote": "Save Note",
+      "printTech": "Technical Sheet",
+      "equipmentIconDisplayLabel": "Equipment Icon Display",
+      "equipmentIconDisplayHint": "Controls how the icon of a chosen instrument/equipment is shown for an instrument-change hint in this setlist.",
+      "techNotes": "Technical Notes (FOH/Lighting/Crew)",
+      "techNotesVisibility": "Visible to all band members - appears on the technical sheet printout.",
+      "techNotesPlaceholder": "e.g. stage plot notes, fog/pyro clearance, backline specifics…",
+      "saving": "Saving…",
+      "equipmentIconDisplayOptions": {
+        "IN_TAG": "Small, in the hint badge",
+        "LARGE": "Large, next to key/BPM",
+        "HIDDEN": "Not shown"
+      }
+    },
+    "techPrint": {
+      "titleSuffix": "Technical Sheet",
+      "columnNr": "No.",
+      "columnTitle": "Song",
+      "columnKey": "Key",
+      "columnBpm": "BPM",
+      "columnDuration": "Duration",
+      "columnNotes": "Technical Notes",
+      "empty": "This setlist is still empty."
     },
     "builder": {
       "order": "Order",
@@ -702,7 +752,10 @@
       "addSection": "Add section",
       "library": "Song Library",
       "searchPlaceholder": "Search song…",
-      "noSongsFound": "No songs found."
+      "noSongsFound": "No songs found.",
+      "techNoteLabel": "Technical note (FOH/lighting/crew, visible to everyone)",
+      "techNotePlaceholder": "e.g. fog, spotlight, backline specifics",
+      "techNoteSave": "Save"
     }
   },
   "invite": {

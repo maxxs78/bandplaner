@@ -3,7 +3,7 @@ import { getTranslations } from "next-intl/server";
 import { requireMembership } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { PrintTrigger } from "@/components/print-trigger";
-import { CueBadges } from "@/components/cue-badges";
+import { CueBadges, EquipmentIconStrip } from "@/components/cue-badges";
 import { parseCues } from "@/lib/setlist-cues";
 import { computeSetlistNumbers, totalSetlistDurationSec, type SetlistDisplayItem } from "@/lib/setlist-items";
 
@@ -205,13 +205,18 @@ export default async function SetlistPrintPage({
                           {Math.round(item.durationSec / 60)} Min.
                         </span>
                       )}
+                      {setlist.equipmentIconDisplay === "LARGE" && <EquipmentIconStrip cues={cues} size="xl" />}
                     </div>
                     {(annotation?.note || cues.length > 0) && (
                       <div className="mt-2 flex flex-wrap items-center gap-3">
                         {annotation?.note && (
                           <span className="text-xl italic text-gray-800">{annotation.note}</span>
                         )}
-                        <CueBadges cues={cues} size="lg" />
+                        <CueBadges
+                          cues={cues}
+                          size="lg"
+                          showEquipmentIcon={setlist.equipmentIconDisplay === "IN_TAG"}
+                        />
                       </div>
                     )}
                   </div>

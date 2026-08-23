@@ -1,6 +1,36 @@
-import { RefreshCw, Repeat, Hash, AlertCircle, type LucideIcon } from "lucide-react";
+import {
+  RefreshCw,
+  Repeat,
+  Hash,
+  AlertCircle,
+  Pin,
+  Timer,
+  Repeat2,
+  Mic2,
+  Star,
+  ListOrdered,
+  Headphones,
+  Package,
+  type LucideIcon,
+} from "lucide-react";
 
-export type CueType = "RETUNE" | "INSTRUMENT_CHANGE" | "PROGRAM_CHANGE" | "CUSTOM";
+/** Spiegelt das Prisma-Enum EquipmentIconDisplay - hier als eigener Typ, damit
+ * Client-Komponenten nicht den Prisma-Client importieren muessen. */
+export type EquipmentIconDisplay = "IN_TAG" | "LARGE" | "HIDDEN";
+
+export type CueType =
+  | "RETUNE"
+  | "INSTRUMENT_CHANGE"
+  | "EQUIPMENT"
+  | "PROGRAM_CHANGE"
+  | "CUSTOM"
+  | "CAPO"
+  | "CLICK"
+  | "LOOPER"
+  | "BACKING_VOCAL"
+  | "SOLO"
+  | "COUNT_IN"
+  | "IN_EAR";
 
 export type Cue = {
   type: CueType;
@@ -26,6 +56,13 @@ export function getCueDefinitions(
       valueLabel: t("instrumentChangeValueLabel"),
       placeholder: t("instrumentChangePlaceholder"),
     },
+    EQUIPMENT: {
+      label: t("equipment"),
+      icon: Package,
+      hasValue: true,
+      valueLabel: t("equipmentValueLabel"),
+      placeholder: t("equipmentPlaceholder"),
+    },
     PROGRAM_CHANGE: {
       label: t("programChange"),
       icon: Hash,
@@ -40,10 +77,66 @@ export function getCueDefinitions(
       valueLabel: t("customValueLabel"),
       placeholder: t("customPlaceholder"),
     },
+    CAPO: {
+      label: t("capo"),
+      icon: Pin,
+      hasValue: true,
+      valueLabel: t("capoValueLabel"),
+      placeholder: t("capoPlaceholder"),
+    },
+    CLICK: {
+      label: t("click"),
+      icon: Timer,
+      hasValue: true,
+      valueLabel: t("clickValueLabel"),
+      placeholder: t("clickPlaceholder"),
+    },
+    LOOPER: {
+      label: t("looper"),
+      icon: Repeat2,
+      hasValue: true,
+      valueLabel: t("looperValueLabel"),
+      placeholder: t("looperPlaceholder"),
+    },
+    BACKING_VOCAL: {
+      label: t("backingVocal"),
+      icon: Mic2,
+      hasValue: true,
+      valueLabel: t("backingVocalValueLabel"),
+      placeholder: t("backingVocalPlaceholder"),
+    },
+    SOLO: { label: t("solo"), icon: Star, hasValue: false },
+    COUNT_IN: {
+      label: t("countIn"),
+      icon: ListOrdered,
+      hasValue: true,
+      valueLabel: t("countInValueLabel"),
+      placeholder: t("countInPlaceholder"),
+    },
+    IN_EAR: {
+      label: t("inEar"),
+      icon: Headphones,
+      hasValue: true,
+      valueLabel: t("inEarValueLabel"),
+      placeholder: t("inEarPlaceholder"),
+    },
   };
 }
 
-export const CUE_TYPES: CueType[] = ["RETUNE", "INSTRUMENT_CHANGE", "PROGRAM_CHANGE", "CUSTOM"];
+export const CUE_TYPES: CueType[] = [
+  "RETUNE",
+  "INSTRUMENT_CHANGE",
+  "EQUIPMENT",
+  "CAPO",
+  "PROGRAM_CHANGE",
+  "CLICK",
+  "LOOPER",
+  "BACKING_VOCAL",
+  "SOLO",
+  "COUNT_IN",
+  "IN_EAR",
+  "CUSTOM",
+];
 
 export const COLOR_PALETTE = [
   { key: "red", value: "#ef4444" },

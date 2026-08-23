@@ -359,6 +359,9 @@
       "notes": "Anteckningar",
       "notesPlaceholder": "t.ex. liveversion, specialarrangemang…",
       "notesVisibility": "Synligt för hela bandet.",
+      "techNotes": "Tekniska anteckningar (FOH/Ljus/Tekniker)",
+      "techNotesPlaceholder": "t.ex. dimma under bryggan, spotlight på gitarrsolo…",
+      "techNotesVisibility": "Synlig för alla bandmedlemmar - visas på setlistens tekniska utskrift.",
       "saving": "Sparar…",
       "assistant": {
         "uploadLabel": "Ladda upp ljudfil (valfritt)",
@@ -536,7 +539,32 @@
     "saving": "Sparar…",
     "save": "Spara",
     "equipmentFreeText": "Fritext",
-    "equipmentNone": "Inget instrument (fritext)"
+    "equipmentNone": "Inget instrument (fritext)",
+    "equipment": "Utrustning",
+    "equipmentValueLabel": "Utrustning (valfritt)",
+    "equipmentPlaceholder": "t.ex. dimmaskin",
+    "capo": "Capo",
+    "capoValueLabel": "Band (valfritt)",
+    "capoPlaceholder": "t.ex. 3",
+    "click": "Klick",
+    "clickValueLabel": "Status (valfritt)",
+    "clickPlaceholder": "t.ex. på / av",
+    "looper": "Looper",
+    "looperValueLabel": "Åtgärd (valfritt)",
+    "looperPlaceholder": "t.ex. Start / Stopp",
+    "backingVocal": "Bakgrundssång",
+    "backingVocalValueLabel": "Anteckning (valfritt)",
+    "backingVocalPlaceholder": "t.ex. andra versen",
+    "solo": "Solo",
+    "countIn": "Inräkning",
+    "countInValueLabel": "Vem räknar in (valfritt)",
+    "countInPlaceholder": "t.ex. Trummor",
+    "countInNone": "ingen",
+    "countInCustom": "Fritext",
+    "inEar": "In-Ear",
+    "inEarValueLabel": "Anteckning (valfritt)",
+    "inEarPlaceholder": "t.ex. Sång högre",
+    "remove": "Ta bort"
   },
   "overview": {
     "upcomingEvents": "Kommande händelser",
@@ -678,7 +706,29 @@
       "myNotes": "Mina anteckningar för den här låtlistan",
       "myNotesVisibility": "Synligt endast för dig.",
       "notesPlaceholder": "t.ex. förloppsanteckningar, ordningsöverenskommelser, påminnelser för den här spelningen…",
-      "saveNote": "Spara anteckning"
+      "saveNote": "Spara anteckning",
+      "printTech": "Teknisk lista",
+      "equipmentIconDisplayLabel": "Visning av utrustningsikon",
+      "equipmentIconDisplayHint": "Styr hur ikonen för ett valt instrument/utrustning visas vid en instrumentbytes-hint i denna setlist.",
+      "techNotes": "Tekniska anteckningar (FOH/Ljus/Tekniker)",
+      "techNotesVisibility": "Synlig för alla bandmedlemmar - visas på den tekniska listans utskrift.",
+      "techNotesPlaceholder": "t.ex. scenplan, dimma/pyro-tillstånd, backline-detaljer…",
+      "saving": "Sparar…",
+      "equipmentIconDisplayOptions": {
+        "IN_TAG": "Liten, i hint-badgen",
+        "LARGE": "Stor, bredvid tonart/BPM",
+        "HIDDEN": "Visas inte"
+      }
+    },
+    "techPrint": {
+      "titleSuffix": "Teknisk lista",
+      "columnNr": "Nr",
+      "columnTitle": "Låt",
+      "columnKey": "Tonart",
+      "columnBpm": "BPM",
+      "columnDuration": "Längd",
+      "columnNotes": "Tekniska anteckningar",
+      "empty": "Denna setlist är fortfarande tom."
     },
     "builder": {
       "order": "Ordning",
@@ -702,7 +752,10 @@
       "addSection": "Lägg till sektion",
       "library": "Låtbibliotek",
       "searchPlaceholder": "Sök låt…",
-      "noSongsFound": "Inga låtar hittades."
+      "noSongsFound": "Inga låtar hittades.",
+      "techNoteLabel": "Teknisk anteckning (FOH/ljus/tekniker, synlig för alla)",
+      "techNotePlaceholder": "t.ex. dimma, spotlight, backline-detalj",
+      "techNoteSave": "Spara"
     }
   },
   "invite": {

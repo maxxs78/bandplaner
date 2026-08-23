@@ -359,6 +359,9 @@
       "notes": "Notes",
       "notesPlaceholder": "ex. version live, arrangement spécial…",
       "notesVisibility": "Visible par tout le groupe.",
+      "techNotes": "Notes techniques (FOH/Lumière/Régie)",
+      "techNotesPlaceholder": "p. ex. fumée pendant le pont, poursuite sur le solo de guitare…",
+      "techNotesVisibility": "Visible par tous les membres du groupe - apparaît sur la fiche technique imprimée de la setlist.",
       "saving": "Enregistrement…",
       "assistant": {
         "uploadLabel": "Envoyer un fichier audio (optionnel)",
@@ -536,7 +539,32 @@
     "saving": "Enregistrement…",
     "save": "Enregistrer",
     "equipmentFreeText": "Texte libre",
-    "equipmentNone": "Aucun instrument (texte libre)"
+    "equipmentNone": "Aucun instrument (texte libre)",
+    "equipment": "Équipement",
+    "equipmentValueLabel": "Équipement (optionnel)",
+    "equipmentPlaceholder": "p. ex. machine à fumée",
+    "capo": "Capodastre",
+    "capoValueLabel": "Case (optionnel)",
+    "capoPlaceholder": "p. ex. 3",
+    "click": "Clic",
+    "clickValueLabel": "Statut (optionnel)",
+    "clickPlaceholder": "p. ex. activé / désactivé",
+    "looper": "Looper",
+    "looperValueLabel": "Action (optionnel)",
+    "looperPlaceholder": "p. ex. Start / Stop",
+    "backingVocal": "Chœur",
+    "backingVocalValueLabel": "Remarque (optionnel)",
+    "backingVocalPlaceholder": "p. ex. 2e couplet",
+    "solo": "Solo",
+    "countIn": "Compte à rebours",
+    "countInValueLabel": "Qui compte (optionnel)",
+    "countInPlaceholder": "p. ex. Batterie",
+    "countInNone": "aucun",
+    "countInCustom": "Texte libre",
+    "inEar": "In-Ear",
+    "inEarValueLabel": "Remarque (optionnel)",
+    "inEarPlaceholder": "p. ex. Chant plus fort",
+    "remove": "Supprimer"
   },
   "overview": {
     "upcomingEvents": "Événements à venir",
@@ -678,7 +706,29 @@
       "myNotes": "Mes notes pour cette setlist",
       "myNotesVisibility": "Visible seulement par toi.",
       "notesPlaceholder": "ex. notes de déroulement, ordre convenu, rappels pour ce concert…",
-      "saveNote": "Enregistrer la note"
+      "saveNote": "Enregistrer la note",
+      "printTech": "Fiche technique",
+      "equipmentIconDisplayLabel": "Affichage de l'icône d'équipement",
+      "equipmentIconDisplayHint": "Détermine comment l'icône de l'instrument/équipement choisi est affichée pour un changement d'instrument dans cette setlist.",
+      "techNotes": "Notes techniques (FOH/Lumière/Régie)",
+      "techNotesVisibility": "Visible par tous les membres du groupe - apparaît sur la fiche technique imprimée.",
+      "techNotesPlaceholder": "p. ex. plan de scène, autorisations fumée/pyro, particularités backline…",
+      "saving": "Enregistrement…",
+      "equipmentIconDisplayOptions": {
+        "IN_TAG": "Petite, dans le badge",
+        "LARGE": "Grande, à côté de la tonalité/BPM",
+        "HIDDEN": "Non affichée"
+      }
+    },
+    "techPrint": {
+      "titleSuffix": "Fiche technique",
+      "columnNr": "N°",
+      "columnTitle": "Morceau",
+      "columnKey": "Ton",
+      "columnBpm": "BPM",
+      "columnDuration": "Durée",
+      "columnNotes": "Notes techniques",
+      "empty": "Cette setlist est encore vide."
     },
     "builder": {
       "order": "Ordre",
@@ -702,7 +752,10 @@
       "addSection": "Ajouter une section",
       "library": "Bibliothèque de morceaux",
       "searchPlaceholder": "Rechercher un morceau…",
-      "noSongsFound": "Aucun morceau trouvé."
+      "noSongsFound": "Aucun morceau trouvé.",
+      "techNoteLabel": "Note technique (FOH/lumière/régie, visible par tous)",
+      "techNotePlaceholder": "p. ex. fumée, poursuite, particularité backline",
+      "techNoteSave": "Enregistrer"
     }
   },
   "invite": {

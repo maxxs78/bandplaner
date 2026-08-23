@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 import clsx from "clsx";
 import { useTranslations } from "next-intl";
 import { Input, Select } from "@/components/ui/input";
@@ -11,7 +11,23 @@ import { EQUIPMENT_ICONS, isEquipmentIconKey } from "@/lib/equipment-icons";
 
 export type AnnotationValues = { note: string; color: string | null; cues: Cue[] };
 
-export type EquipmentOption = { id: string; name: string; icon: string | null; color: string | null };
+export type EquipmentOption = {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string | null;
+  category: string;
+};
+
+/** Kompakte Feld-Groesse fuer die Cue-Zeilen - ueberschreibt Hoehe, Padding und
+ * Textgroesse der gemeinsamen Input/Select-Basisklassen (die fuer normale,
+ * groessere Formularfelder ausgelegt sind, dort px-3/py-2/text-sm). Die
+ * Padding-/Textgroessen-Utilities muessen mit "!" (important) erzwungen werden,
+ * da Tailwind gleich-spezifische Utility-Klassen nach ihrer Position im
+ * generierten Stylesheet aufloest statt nach der Reihenfolge im className -
+ * ohne "!" gewinnt teils die groessere Basisklasse und der Text wird in der
+ * dadurch zu kleinen Boxhoehe abgeschnitten. */
+const COMPACT_FIELD = "h-7 !px-2 !py-1 !text-xs leading-tight";
 
 export function CueAnnotationEditor({
   defaultValues,
@@ -22,8 +38,9 @@ export function CueAnnotationEditor({
   defaultValues: AnnotationValues;
   onSave: (data: AnnotationValues) => Promise<{ error?: string } | void>;
   compact?: boolean;
-  /** Katalog an waehlbarem Equipment fuer den INSTRUMENT_CHANGE-Hinweis (persoenliches
-   * Equipment + Band-Equipment) - ohne diese Liste bleibt es beim reinen Freitext. */
+  /** Katalog an waehlbarem Equipment fuer INSTRUMENT_CHANGE (nur Kategorie
+   * INSTRUMENTS) und EQUIPMENT (alles andere) - ohne diese Liste bleibt es
+   * beim reinen Freitext. */
   equipmentOptions?: EquipmentOption[];
 }) {
   const t = useTranslations("cues");
@@ -34,29 +51,35 @@ export function CueAnnotationEditor({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function toggleCue(type: Cue["type"]) {
-    setCues((current) =>
-      current.some((c) => c.type === type)
-        ? current.filter((c) => c.type !== type)
-        : [...current, { type }]
-    );
+  const instrumentOptions = equipmentOptions?.filter((o) => o.category === "INSTRUMENTS");
+  const otherEquipmentOptions = equipmentOptions?.filter((o) => o.category !== "INSTRUMENTS");
+
+  /** Jeder Typ ist beliebig oft anhaengbar (z. B. zwei Instrumentwechsel in
+   * einem Song) - Eintraege werden daher ueber ihren Index im flachen
+   * cues-Array adressiert, nicht ueber den Typ allein. */
+  function addCue(type: Cue["type"]) {
+    setCues((current) => [...current, { type }]);
   }
 
-  function setCueValue(type: Cue["type"], value: string) {
+  function removeCueAt(index: number) {
+    setCues((current) => current.filter((_, i) => i !== index));
+  }
+
+  function setCueValueAt(index: number, value: string) {
     setCues((current) =>
-      current.map((c) =>
-        c.type === type
+      current.map((c, i) =>
+        i === index
           ? { ...c, value, equipmentId: undefined, equipmentIcon: undefined, equipmentColor: undefined }
           : c
       )
     );
   }
 
-  function setCueEquipment(type: Cue["type"], equipmentId: string) {
-    const option = equipmentOptions?.find((o) => o.id === equipmentId);
+  function setCueEquipmentAt(index: number, options: EquipmentOption[] | undefined, equipmentId: string) {
+    const option = options?.find((o) => o.id === equipmentId);
     setCues((current) =>
-      current.map((c) =>
-        c.type === type
+      current.map((c, i) =>
+        i === index
           ? option
             ? {
                 ...c,
@@ -118,63 +141,47 @@ export function CueAnnotationEditor({
         ))}
       </div>
 
-      <div className="space-y-1.5">
+      <div className="space-y-2">
         {CUE_TYPES.map((type) => {
           const def = cueDefinitions[type];
-          const active = cues.find((c) => c.type === type);
+          const entries = cues
+            .map((cue, index) => ({ cue, index }))
+            .filter((e) => e.cue.type === type);
+          const optionsForType =
+            type === "INSTRUMENT_CHANGE" ? instrumentOptions : type === "EQUIPMENT" ? otherEquipmentOptions : undefined;
           return (
-            <div key={type} className="flex items-center gap-2">
+            <div key={type} className="space-y-1">
               <button
                 type="button"
-                onClick={() => toggleCue(type)}
-                className={clsx(
-                  "inline-flex items-center gap-1.5 rounded-lg border px-2 py-1 text-xs font-medium transition",
-                  active
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted hover:text-foreground"
-                )}
+                onClick={() => addCue(type)}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted transition hover:text-foreground"
               >
                 <def.icon className="h-3.5 w-3.5" />
                 {def.label}
+                <Plus className="h-3 w-3" />
               </button>
-              {active && def.hasValue && type === "INSTRUMENT_CHANGE" && equipmentOptions && equipmentOptions.length > 0 ? (
-                <>
-                  <Select
-                    value={active.equipmentId ?? ""}
-                    onChange={(e) => setCueEquipment(type, e.target.value)}
-                    className="h-7 w-40 text-xs"
-                  >
-                    <option value="">{t("equipmentFreeText")}</option>
-                    {equipmentOptions.map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                  </Select>
-                  {active.equipmentId ? (
-                    isEquipmentIconKey(active.equipmentIcon) && (
-                      <EquipmentIconPreview iconKey={active.equipmentIcon} color={active.equipmentColor} />
-                    )
-                  ) : (
-                    <Input
-                      value={active.value ?? ""}
-                      onChange={(e) => setCueValue(type, e.target.value)}
-                      placeholder={def.placeholder}
-                      className="h-7 w-36 text-xs"
-                    />
-                  )}
-                </>
-              ) : (
-                active &&
-                def.hasValue && (
-                  <Input
-                    value={active.value ?? ""}
-                    onChange={(e) => setCueValue(type, e.target.value)}
+              {entries.map(({ cue, index }) => (
+                <div key={index} className="ml-1 flex flex-wrap items-center gap-1.5 border-l-2 border-primary/30 pl-2">
+                  <CueValueControl
+                    type={type}
+                    cue={cue}
+                    hasValue={def.hasValue}
                     placeholder={def.placeholder}
-                    className="h-7 w-36 text-xs"
+                    equipmentOptions={optionsForType}
+                    onChangeValue={(value) => setCueValueAt(index, value)}
+                    onChangeEquipment={(equipmentId) => setCueEquipmentAt(index, optionsForType, equipmentId)}
                   />
-                )
-              )}
+                  <button
+                    type="button"
+                    onClick={() => removeCueAt(index)}
+                    aria-label={t("remove")}
+                    title={t("remove")}
+                    className="text-muted hover:text-danger"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
           );
         })}
@@ -193,4 +200,95 @@ function EquipmentIconPreview({ iconKey, color }: { iconKey: string; color?: str
   if (!isEquipmentIconKey(iconKey)) return null;
   const Icon = EQUIPMENT_ICONS[iconKey];
   return <Icon className="h-5 w-5 shrink-0" style={{ color: color ?? undefined }} />;
+}
+
+/** Rendert das Werte-Eingabefeld eines einzelnen Cue-Eintrags - je nach Typ ein
+ * Equipment-Picker (INSTRUMENT_CHANGE nur Instrumente, EQUIPMENT alles andere),
+ * ein "ohne"/Freitext-Picker (COUNT_IN) oder ein einfaches Freitextfeld (alle
+ * anderen Typen mit hasValue). */
+function CueValueControl({
+  type,
+  cue,
+  hasValue,
+  placeholder,
+  equipmentOptions,
+  onChangeValue,
+  onChangeEquipment,
+}: {
+  type: Cue["type"];
+  cue: Cue;
+  hasValue: boolean;
+  placeholder?: string;
+  equipmentOptions?: EquipmentOption[];
+  onChangeValue: (value: string) => void;
+  onChangeEquipment: (equipmentId: string) => void;
+}) {
+  const t = useTranslations("cues");
+
+  if (!hasValue) return null;
+
+  if ((type === "INSTRUMENT_CHANGE" || type === "EQUIPMENT") && equipmentOptions && equipmentOptions.length > 0) {
+    return (
+      <>
+        <Select
+          value={cue.equipmentId ?? ""}
+          onChange={(e) => onChangeEquipment(e.target.value)}
+          className={clsx(COMPACT_FIELD, "w-48")}
+        >
+          <option value="">{t("equipmentFreeText")}</option>
+          {equipmentOptions.map((o) => (
+            <option key={o.id} value={o.id}>
+              {o.name}
+            </option>
+          ))}
+        </Select>
+        {cue.equipmentId ? (
+          isEquipmentIconKey(cue.equipmentIcon) && (
+            <EquipmentIconPreview iconKey={cue.equipmentIcon} color={cue.equipmentColor} />
+          )
+        ) : (
+          <Input
+            value={cue.value ?? ""}
+            onChange={(e) => onChangeValue(e.target.value)}
+            placeholder={placeholder}
+            className={clsx(COMPACT_FIELD, "w-40")}
+          />
+        )}
+      </>
+    );
+  }
+
+  if (type === "COUNT_IN") {
+    const noneLabel = t("countInNone");
+    const isNone = cue.value === noneLabel;
+    return (
+      <>
+        <Select
+          value={isNone ? "none" : ""}
+          onChange={(e) => onChangeValue(e.target.value === "none" ? noneLabel : "")}
+          className={clsx(COMPACT_FIELD, "w-36")}
+        >
+          <option value="">{t("countInCustom")}</option>
+          <option value="none">{noneLabel}</option>
+        </Select>
+        {!isNone && (
+          <Input
+            value={cue.value ?? ""}
+            onChange={(e) => onChangeValue(e.target.value)}
+            placeholder={placeholder}
+            className={clsx(COMPACT_FIELD, "w-36")}
+          />
+        )}
+      </>
+    );
+  }
+
+  return (
+    <Input
+      value={cue.value ?? ""}
+      onChange={(e) => onChangeValue(e.target.value)}
+      placeholder={placeholder}
+      className={clsx(COMPACT_FIELD, "w-40")}
+    />
+  );
 }
