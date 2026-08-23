@@ -29,6 +29,13 @@ enum EventType {
   OTHER
 }
 
+enum GigStatus {
+  INQUIRY
+  CONFIRMED
+  CANCELLED
+  DONE
+}
+
 enum SongStatus {
   PROPOSED
   NEW
@@ -111,6 +118,8 @@ model User {
   assignedPacklistItemEventStatuses PacklistItemEventStatus[]
   setlistItemEventAnnotations       SetlistItemEventAnnotation[]
   setlistEventNotes                 SetlistEventNote[]
+  assignedLineupEntries             EventLineupEntry[]
+  defaultLineupRoles                BandLineupRole[]
 
   passwordResetTokens PasswordResetToken[]
 }
@@ -206,6 +215,7 @@ model Band {
   financeAdmins  BandFinanceAdmin[]
   financeEntries FinanceEntry[]
   locations      Location[]
+  lineupRoles    BandLineupRole[]
 }
 
 /// Finanzberechtigte Person einer Band - bewusst losgeloest von Role (Admin/Mitglied),
@@ -363,6 +373,15 @@ model Event {
   seriesId    String?
   createdAt   DateTime  @default(now())
 
+  /// Gig-Detailfelder (siehe Abschnitt 3.5 der Spezifikation) - nur fuer
+  /// type == GIG relevant, im Formular auch nur dann sichtbar. Beim Wechsel
+  /// auf eine andere Terminart bleiben sie unangetastet (kein Datenverlust),
+  /// werden lediglich ausgeblendet.
+  arrivalAt             DateTime?
+  soundcheckAt          DateTime?
+  technicalRequirements String?
+  gigStatus             GigStatus?
+
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
   bandId String
 
@@ -387,6 +406,7 @@ model Event {
   setlistEventNotes           SetlistEventNote[]
   setlistEventSnapshots       SetlistEventSnapshot[]
   packlistEventSnapshots      PacklistEventSnapshot[]
+  lineup                      EventLineupEntry[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
@@ -400,6 +420,44 @@ model EventParticipant {
   userId  String
 
   @@unique([eventId, userId])
+}
+
+/// Globaler, band-weiter Katalog typischer Besetzungsrollen (z. B. "Bass",
+/// "Lead Guitar"), gepflegt in den Bandeinstellungen. Dient nur als Vorlage
+/// fuer neue Gigs (siehe EventLineupEntry) - Aenderungen hier wirken sich
+/// nicht rueckwirkend auf bereits bestehende Gigs aus.
+model BandLineupRole {
+  id    String @id @default(cuid())
+  name  String
+  order Int
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  /// Optionale "übliche" Besetzung dieser Rolle (z. B. "Bass" -> immer Max),
+  /// wird beim Kopieren in einen neuen Gig als Vorbelegung uebernommen, bleibt
+  /// dort aber wie jeder andere Eintrag frei aenderbar.
+  defaultAssignee   User?   @relation(fields: [defaultAssigneeId], references: [id], onDelete: SetNull)
+  defaultAssigneeId String?
+}
+
+/// Besetzung eines Auftritts. Der Rollenname wird beim Anlegen des Gigs (oder
+/// beim Umstellen eines bestehenden Termins auf GIG) aus BandLineupRole kopiert
+/// (denormalisiert, analog SetlistItem.customTitle) und ist danach unabhaengig
+/// vom globalen Katalog frei editierbar/erweiterbar. Dieselbe Person kann in
+/// mehreren Zeilen auftauchen (Mehrfachrollen, z. B. Gitarre + Backing Vocals).
+model EventLineupEntry {
+  id    String @id @default(cuid())
+  role  String
+  order Int
+
+  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId String?
+  /// Freitext fuer Aushilfen/Deps ohne Benutzerkonto, analog PacklistItem.customName.
+  assignedToName String?
+
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
 }
 
 model Availability {

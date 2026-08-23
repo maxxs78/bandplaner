@@ -8,6 +8,7 @@ import { Input, Label, Select, Textarea, FieldError } from "@/components/ui/inpu
 import type { FormState } from "@/app/(app)/bands/[bandId]/calendar/actions";
 
 const typeValues = ["REHEARSAL", "GIG", "MEETING", "OTHER"] as const;
+const gigStatusValues = ["INQUIRY", "CONFIRMED", "CANCELLED", "DONE"] as const;
 
 const TEXT_LOCATION = "";
 const NEW_LOCATION = "__new_location__";
@@ -38,6 +39,10 @@ export function EventForm({
     locationId?: string;
     description?: string;
     participantIds?: string[];
+    arrivalAt?: string;
+    soundcheckAt?: string;
+    technicalRequirements?: string;
+    gigStatus?: string;
   };
   submitLabel: string;
   allowRepeat?: boolean;
@@ -172,6 +177,46 @@ export function EventForm({
         <Label htmlFor="description">{t("description")}</Label>
         <Textarea id="description" name="description" rows={3} defaultValue={defaultValues?.description} />
       </div>
+
+      {type === "GIG" && (
+        <div className="space-y-4 rounded-lg border border-border p-3">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="arrivalAt">{t("gig.arrivalAt")}</Label>
+              <Input id="arrivalAt" name="arrivalAt" type="datetime-local" defaultValue={defaultValues?.arrivalAt} />
+            </div>
+            <div>
+              <Label htmlFor="soundcheckAt">{t("gig.soundcheckAt")}</Label>
+              <Input
+                id="soundcheckAt"
+                name="soundcheckAt"
+                type="datetime-local"
+                defaultValue={defaultValues?.soundcheckAt}
+              />
+            </div>
+          </div>
+          <div>
+            <Label htmlFor="gigStatus">{t("gig.status")}</Label>
+            <Select id="gigStatus" name="gigStatus" defaultValue={defaultValues?.gigStatus ?? "INQUIRY"}>
+              {gigStatusValues.map((value) => (
+                <option key={value} value={value}>
+                  {t(`gig.statusValues.${value}`)}
+                </option>
+              ))}
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="technicalRequirements">{t("gig.technicalRequirements")}</Label>
+            <Textarea
+              id="technicalRequirements"
+              name="technicalRequirements"
+              rows={2}
+              placeholder={t("gig.technicalRequirementsPlaceholder")}
+              defaultValue={defaultValues?.technicalRequirements}
+            />
+          </div>
+        </div>
+      )}
 
       <div>
         <Label>{t("participants")}</Label>

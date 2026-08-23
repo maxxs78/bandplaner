@@ -8,6 +8,13 @@
     "deleting": "Suppression…",
     "deleteConfirmDefault": "Es-tu sûr(e) ? Cette action est irréversible."
   },
+  "info": {
+    "triggerLabel": "Aide et infos",
+    "title": "À propos de Bandplaner",
+    "handbookLink": "Guide d'utilisation",
+    "handbookHint": "Ouvre le manuel complet dans un nouvel onglet.",
+    "appVersion": "Version de l'application"
+  },
   "bandNav": {
     "editTitle": "Modifier le groupe (profil, membres, invitations)",
     "viewTitle": "Voir le groupe",

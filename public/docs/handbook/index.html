@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bandplaner Handbook</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20rx%3D%228%22%20fill%3D%22%25236d28d9%22%2F%3E%3Ctext%20x%3D%2216%22%20y%3D%2222%22%20font-family%3D%22Georgia%2Cserif%22%20font-size%3D%2218%22%20font-weight%3D%22700%22%20fill%3D%22white%22%20text-anchor%3D%22middle%22%3EB%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root {
+  --bg: #f7f5fb;
+  --surface: #ffffff;
+  --surface-alt: #efe9fa;
+  --border: #e2dbf1;
+  --border-strong: #cfc4e8;
+  --text: #221c30;
+  --text-muted: #675f7d;
+  --accent: #6d28d9;
+  --accent-strong: #4c1d95;
+  --accent-soft: #efe7fd;
+  --accent-contrast: #ffffff;
+  --good-bg: #dcf5e2; --good-fg: #146c34;
+  --warn-bg: #fdf0d3; --warn-fg: #92620a;
+  --info-bg: #dbe8fd; --info-fg: #1849a3;
+  --guest-bg: #f6e2ee; --guest-fg: #99286e;
+  --shadow: 0 1px 2px rgba(76, 29, 149, 0.06), 0 8px 24px -12px rgba(76, 29, 149, 0.18);
+  --radius: 14px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14111d;
+    --surface: #1c1828;
+    --surface-alt: #241f34;
+    --border: #33293f;
+    --border-strong: #453a54;
+    --text: #ece7f6;
+    --text-muted: #a89cc0;
+    --accent: #a78bfa;
+    --accent-strong: #c9b6fb;
+    --accent-soft: #2c2440;
+    --accent-contrast: #1c1828;
+    --good-bg: #163a29; --good-fg: #7fe3a4;
+    --warn-bg: #3d2f10; --warn-fg: #f0c368;
+    --info-bg: #17263f; --info-fg: #93b8f5;
+    --guest-bg: #3a1f30; --guest-fg: #f0a2cf;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14111d;
+  --surface: #1c1828;
+  --surface-alt: #241f34;
+  --border: #33293f;
+  --border-strong: #453a54;
+  --text: #ece7f6;
+  --text-muted: #a89cc0;
+  --accent: #a78bfa;
+  --accent-strong: #c9b6fb;
+  --accent-soft: #2c2440;
+  --accent-contrast: #1c1828;
+  --good-bg: #163a29; --good-fg: #7fe3a4;
+  --warn-bg: #3d2f10; --warn-fg: #f0c368;
+  --info-bg: #17263f; --info-fg: #93b8f5;
+  --guest-bg: #3a1f30; --guest-fg: #f0a2cf;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 30px -14px rgba(0,0,0,0.6);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { animation: none !important; transition: none !important; } }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: "Fraunces", Georgia, serif;
+  font-weight: 600;
+  text-wrap: balance;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+a { color: var(--accent-strong); }
+
+code, kbd, .mono {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+kbd.path {
+  font-size: 0.82em;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.1em 0.5em;
+  color: var(--accent-strong);
+  white-space: nowrap;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 272px minmax(0, 1fr);
+  max-width: 1320px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+.sidebar {
+  border-right: 1px solid var(--border);
+  padding: 28px 20px 40px;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+.brand-mark {
+  width: 34px; height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(155deg, var(--accent), var(--accent-strong));
+  color: var(--accent-contrast);
+  display: flex; align-items: center; justify-content: center;
+  font-family: "Fraunces", serif;
+  font-weight: 700;
+  font-size: 18px;
+  flex: none;
+}
+.brand-name { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.05rem; }
+.brand-sub { font-size: 0.75rem; color: var(--text-muted); margin: 2px 0 18px; }
+.back-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.8rem; font-weight: 600; color: var(--accent-strong);
+  text-decoration: none; margin: 0 0 20px;
+}
+.back-link:hover { text-decoration: underline; }
+
+.side-group { margin-bottom: 6px; }
+.side-group-title {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin: 20px 0 6px;
+  padding: 0 10px;
+}
+.side-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.88rem;
+  transition: background 120ms ease, color 120ms ease;
+}
+.side-link:hover { background: var(--accent-soft); color: var(--accent-strong); }
+.side-link .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border-strong); flex: none; }
+.side-link:hover .dot { background: var(--accent); }
+
+main {
+  padding: 44px clamp(20px, 4vw, 64px) 120px;
+  min-width: 0;
+}
+
+.masthead { max-width: 720px; margin-bottom: 12px; }
+.eyebrow {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 10px;
+}
+h1.title { font-size: clamp(2rem, 4vw, 2.7rem); margin: 0 0 14px; }
+.lede { font-size: 1.08rem; color: var(--text-muted); max-width: 62ch; }
+
+.meta-row {
+  display: flex; flex-wrap: wrap; gap: 10px;
+  margin: 22px 0 40px;
+}
+.meta-chip {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 999px; padding: 6px 12px 6px 10px;
+  font-size: 0.8rem; color: var(--text-muted);
+}
+.meta-chip strong { color: var(--text); font-weight: 600; }
+
+section.mod {
+  max-width: 900px;
+  padding-top: 46px;
+  margin-top: 46px;
+  border-top: 1px solid var(--border);
+  scroll-margin-top: 24px;
+}
+section.mod:first-of-type { border-top: none; margin-top: 20px; padding-top: 0;}
+
+.mod-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 6px; flex-wrap: wrap; }
+.mod-head h2 { font-size: 1.55rem; margin: 0; }
+.mod-nav-path { color: var(--text-muted); font-size: 0.82rem; }
+
+.mod-intro { color: var(--text-muted); max-width: 68ch; margin: 10px 0 22px; }
+.mod-intro strong { color: var(--text); }
+
+.feature-flag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-family: "IBM Plex Mono", monospace;
+  text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--info-bg); color: var(--info-fg);
+  border-radius: 6px; padding: 3px 8px; margin: 0 0 16px;
+}
+
+ul.feature-list { margin: 0 0 26px; padding-left: 0; list-style: none; display: grid; gap: 10px; }
+ul.feature-list li {
+  padding-left: 22px;
+  position: relative;
+  color: var(--text);
+}
+ul.feature-list li::before {
+  content: "";
+  position: absolute; left: 0; top: 0.55em;
+  width: 8px; height: 8px; border-radius: 2px;
+  background: var(--accent);
+  transform: rotate(45deg);
+}
+ul.feature-list li .lbl { font-weight: 600; }
+ul.feature-list li .d { color: var(--text-muted); }
+
+.tag {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 2px 9px;
+  border-radius: 999px;
+  margin: 2px 4px 2px 0;
+}
+.tag-admin { background: var(--accent-soft); color: var(--accent-strong); }
+.tag-member { background: var(--info-bg); color: var(--info-fg); }
+.tag-guest { background: var(--guest-bg); color: var(--guest-fg); }
+.tag-good { background: var(--good-bg); color: var(--good-fg); }
+.tag-warn { background: var(--warn-bg); color: var(--warn-fg); }
+
+.callout {
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 18px 0 26px;
+  font-size: 0.92rem;
+  color: var(--text);
+}
+.callout.tip { border-left-color: var(--good-fg); }
+.callout.warn { border-left-color: var(--warn-fg); }
+.callout b { color: var(--text); }
+
+figure.shot {
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+figure.shot img { display: block; width: 100%; height: auto; }
+figure.shot figcaption {
+  padding: 10px 16px;
+  font-size: 0.78rem;
+  font-family: "IBM Plex Mono", monospace;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  letter-spacing: 0.01em;
+}
+p.fig-note { font-size: 0.85rem; color: var(--text-muted); margin: 8px 2px 0; }
+
+.shots-block { display: grid; gap: 22px; margin: 22px 0 30px; }
+.shot-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; align-items: start; }
+@media (max-width: 760px) { .shot-pair { grid-template-columns: 1fr; } .layout { grid-template-columns: 1fr; } .sidebar { position: static; height: auto; } }
+
+table.roles { width: 100%; border-collapse: collapse; margin: 18px 0 30px; font-size: 0.9rem; }
+table.roles th, table.roles td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+table.roles th { font-family: "IBM Plex Mono", monospace; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+table.roles td.muted { color: var(--text-muted); }
+
+.toggle-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px 18px; margin: 16px 0 28px; }
+@media (max-width: 640px) { .toggle-grid { grid-template-columns: 1fr; } }
+.toggle-item { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.toggle-item .sw { flex: none; width: 30px; height: 18px; border-radius: 999px; background: var(--accent); position: relative; margin-top: 3px; }
+.toggle-item .sw::after { content:""; position:absolute; right:2px; top:2px; width:14px; height:14px; border-radius:50%; background:var(--accent-contrast); }
+.toggle-item.off .sw { background: var(--border-strong); }
+.toggle-item.off .sw::after { left: 2px; right: auto; }
+.toggle-item h4 { margin: 0 0 3px; font-size: 0.88rem; }
+.toggle-item p { margin: 0; font-size: 0.8rem; color: var(--text-muted); }
+
+footer.end {
+  max-width: 900px; margin-top: 70px; padding-top: 26px; border-top: 1px solid var(--border);
+  color: var(--text-muted); font-size: 0.85rem;
+}
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="sidebar" aria-label="Sections">
+    <div class="brand"><div class="brand-mark">B</div><div class="brand-name">Bandplaner</div></div>
+    <div class="brand-sub">User handbook</div>
+    <a class="back-link" href="/dashboard">&larr; Back to Bandplaner</a>
+    
+  <div class="side-group">
+    <div class="side-group-title">Start</div>
+    <a class="side-link" href="#getting-started"><span class="dot"></span>Signing in & bands</a>
+  </div>
+
+
+  <div class="side-group">
+    <div class="side-group-title">Daily use</div>
+    <a class="side-link" href="#overview"><span class="dot"></span>Band overview</a>
+<a class="side-link" href="#calendar"><span class="dot"></span>Calendar & events</a>
+<a class="side-link" href="#availability"><span class="dot"></span>Availability</a>
+<a class="side-link" href="#songs"><span class="dot"></span>Song library</a>
+<a class="side-link" href="#practice-mode"><span class="dot"></span>Practice Mode</a>
+<a class="side-link" href="#setlists"><span class="dot"></span>Setlists</a>
+  </div>
+
+
+  <div class="side-group">
+    <div class="side-group-title">Logistics</div>
+    <a class="side-link" href="#locations"><span class="dot"></span>Locations</a>
+<a class="side-link" href="#equipment"><span class="dot"></span>Equipment & packing lists</a>
+<a class="side-link" href="#files"><span class="dot"></span>Files</a>
+<a class="side-link" href="#finance"><span class="dot"></span>Finance</a>
+  </div>
+
+
+  <div class="side-group">
+    <div class="side-group-title">Administration</div>
+    <a class="side-link" href="#band-settings"><span class="dot"></span>Band, members & features</a>
+<a class="side-link" href="#profile"><span class="dot"></span>Your profile & account</a>
+  </div>
+
+  </nav>
+  <main>
+    <div class="masthead">
+      <p class="eyebrow">User handbook · web app</p>
+      <h1 class="title">Getting the most out of Bandplaner</h1>
+      <p class="lede">A complete tour of every screen and setting, illustrated with live screenshots from a running instance — signed in as band administrator Max Mustermann.</p>
+    </div>
+    <div class="meta-row">
+      <span class="meta-chip">Demo band: <strong>&nbsp;The Testers</strong></span>
+      <span class="meta-chip">Account: <strong>&nbsp;Max Mustermann</strong></span>
+      <span class="meta-chip">Interface language: <strong>&nbsp;English</strong></span>
+    </div>
+
+    
+<section class="mod" id="getting-started">
+  <div class="mod-head"><h2>Signing in &amp; switching bands</h2></div>
+  <p class="mod-intro">Bandplaner is a browser app — there's nothing to install. Every account can belong to <strong>several bands at once</strong> (a cover band and an orchestra, for example) and switch freely between them. This manual walks through every screen using a demo account, <strong>Max Mustermann</strong>, who administers a band called <strong>The Testers</strong>.</p>
+
+  <div class="shots-block">
+    <div class="shot-pair"><figure class="shot">
+    <img src="img/01-login.png" alt="Sign-in screen" loading="lazy" />
+    <figcaption>Sign in — /login</figcaption>
+    
+  </figure><figure class="shot">
+    <img src="img/02-my-bands.png" alt="My Bands overview after signing in" loading="lazy" />
+    <figcaption>My Bands — /dashboard</figcaption>
+    
+  </figure></div>
+  </div>
+
+  <p>After signing in you land on <strong>My Bands</strong>: a card per band you belong to, its next upcoming event, and your role. Click a card to enter that band's workspace, or <strong>New Band</strong> to found one — you become its administrator automatically.</p>
+
+  <p>New members join via an emailed invite link (see <a href="#band-settings">Band, members &amp; features</a>) and set their own password when accepting it. There's no open sign-up: someone already inside a band has to invite you.</p>
+
+  <h3>Roles, at a glance</h3>
+  <p class="mod-intro">Every permission described later in this manual ultimately comes down to one of these three roles, set per band membership.</p>
+  <table class="roles">
+    <tr><th>Role</th><th>Can do</th></tr>
+    <tr>
+      <td><span class="tag tag-admin">Administrator</span></td>
+      <td>Everything: edit any content, manage members and invites, rename or reconfigure the band, turn optional modules on or off.</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-member">Member</span></td>
+      <td>View everything, respond to their own availability, propose songs, edit their own notes/files, and — where an admin has granted it — manage day-to-day content like events or the song library.</td>
+    </tr>
+    <tr>
+      <td><span class="tag tag-guest">Guest</span></td>
+      <td class="muted">A time-limited, read-mostly membership for subs, crew or one-off helpers. Access can auto-expire on a set date so nobody has to remember to remove it.</td>
+    </tr>
+  </table>
+  <div class="callout">
+    <b>Two more roles live outside this table:</b> a <em>finance admin</em> flag (see <a href="#finance">Finance</a>) that can be granted to any member independently of Administrator/Member, and the equipment/location "responsible person" fields, which are just assignments, not access levels.
+  </div>
+</section>
+
+<section class="mod" id="overview">
+  <div class="mod-head"><h2>Band overview</h2><span class="mod-nav-path"><kbd class="path">Overview</kbd> tab</span></div>
+  <p class="mod-intro">The landing page for a band once you've picked it: what's coming up, and the band's public-facing profile at a glance.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/03-band-overview.png" alt="Band overview page listing upcoming events and band info" loading="lazy" />
+    <figcaption>Band overview — The Testers</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Upcoming events</span> — <span class="d">the next five events for this band, colour-striped by type (rehearsal, gig, meeting, other), soonest first.</span></li>
+    <li><span class="lbl">Band profile card</span> — <span class="d">genre, home city, a short bio, and quick links for contact e-mail, website and Spotify — edited from <a href="#band-settings">Band, members &amp; features</a>.</span></li>
+    <li><span class="lbl">At-a-glance stats</span> — <span class="d">member count, songs in the active repertoire, and number of saved setlists.</span></li>
+  </ul>
+  <p>Every screen shares the same header: the band switcher and gear icon (top right) jump to another band or its settings; your avatar, language picker, and light/dark toggle (top left of that cluster) apply to your account everywhere, not just this band.</p>
+  <div class="shots-block">
+    <figure class="shot">
+    <img src="img/28-dark-mode.png" alt="The same overview page in dark mode" loading="lazy" />
+    <figcaption>The same page in dark mode — toggle next to your avatar</figcaption>
+    
+  </figure>
+  </div>
+</section>
+
+<section class="mod" id="calendar">
+  <div class="mod-head"><h2>Calendar &amp; events</h2><span class="mod-nav-path"><kbd class="path">Calendar</kbd> tab</span></div>
+  <p class="mod-intro">One shared calendar per band for rehearsals, gigs, meetings and anything else worth scheduling. Switch between a scrollable <strong>list</strong> and a full <strong>month</strong> grid.</p>
+  <div class="shots-block">
+    <div class="shot-pair"><figure class="shot">
+    <img src="img/04-calendar-list.png" alt="Calendar list view showing upcoming events" loading="lazy" />
+    <figcaption>List view</figcaption>
+    
+  </figure><figure class="shot">
+    <img src="img/05-calendar-month.png" alt="Calendar month view with an absence heatmap" loading="lazy" />
+    <figcaption>Month view — background tint shows absences</figcaption>
+    
+  </figure></div>
+  </div>
+  <p>In month view, the background of each day tints automatically: the more members have logged an absence that day, the stronger the colour — a fast way to spot a bad rehearsal date before you even open it. Click <strong>ICS Feed</strong> to subscribe from Google, Apple or Outlook Calendar so events stay in sync outside the app too.</p>
+
+  <h3>Creating an event</h3>
+  <div class="shots-block">
+    <figure class="shot">
+    <img src="img/08-event-new-form.png" alt="New event form with type, location, time range and participants" loading="lazy" />
+    <figcaption>New Event</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Type</span> — <span class="d">Rehearsal, Gig, Meeting or Other — drives the colour coding and, for gigs, unlocks extra fields.</span></li>
+    <li><span class="lbl">Location</span> — <span class="d">free text, or — once the Locations module is on — pick a saved venue from the catalog instead.</span></li>
+    <li><span class="lbl">Participants</span> — <span class="d">rehearsals and gigs default to the whole band; meetings and other events default to just you. Adjust the checklist either way before saving.</span></li>
+    <li><span class="lbl">Repeat weekly</span> — <span class="d">spins up a whole series of events in one go, e.g. a standing Thursday rehearsal.</span></li>
+  </ul>
+
+  <h3>Event detail: a rehearsal</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/07-event-rehearsal-detail.png" alt="Rehearsal detail page with availability buttons and response list" loading="lazy" />
+    <figcaption>A rehearsal — availability, responses, and linked content</figcaption>
+    
+  </figure>
+  </div>
+  <p>Every event page opens with your own <strong>Yes / Maybe / No</strong> button and a live list of who else has answered. Below that: setlists, packing lists and files can each be linked straight to this event (created fresh or picked from an existing one), and <strong>Share via WhatsApp</strong> drops a ready-made message with date, time and location into your chat app.</p>
+
+  <h3>Event detail: a gig</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/06-event-gig-detail.png" alt="Gig detail page showing arrival and soundcheck times, gig status, and the lineup editor" loading="lazy" />
+    <figcaption>A gig — extra logistics fields and the lineup</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Gig-only fields</span> — <span class="d">arrival and soundcheck time, free-text technical requirements, and a status from Inquiry through Confirmed, Done or Cancelled.</span></li>
+    <li><span class="lbl">Lineup</span> — <span class="d">who plays which role at this specific gig. Pick any band member per role, type a free-text name for a fill-in musician with no account, or add extra roles on the fly — independent of the reusable role list in band settings.</span></li>
+    <li><span class="lbl">Settlement status</span> — <span class="d">once the Finance module is on, shows whether this gig's fee has been fully allocated to members yet.</span></li>
+  </ul>
+  <div class="callout tip"><b>Tip:</b> switching an existing event's type to Gig reveals these fields without losing anything you already entered — nothing is deleted when you switch back, either.</div>
+</section>
+
+<section class="mod" id="availability">
+  <div class="mod-head"><h2>Availability</h2><span class="mod-nav-path"><kbd class="path">Availability</kbd> tab</span></div>
+  <p class="mod-intro">Where per-event Yes/Maybe/No answers add up to a plan — and where longer absences that aren't tied to any one event live.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/09-availability.png" alt="Availability matrix cross-referencing members and upcoming events, plus a personal absences list" loading="lazy" />
+    <figcaption>Availability matrix and personal absences</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Availability matrix</span> — <span class="d">everyone's response to every upcoming event in one grid, so a rehearsal date with too many blanks or crosses jumps out immediately.</span></li>
+    <li><span class="lbl">Personal absences</span> — <span class="d">log a vacation or blocked stretch once, by date range, instead of declining every event inside it one by one. Overlapping events flag the conflict automatically on their own page.</span></li>
+  </ul>
+</section>
+
+<section class="mod" id="songs">
+  <div class="mod-head"><h2>Song library</h2><span class="mod-nav-path"><kbd class="path">Songs</kbd> tab</span></div>
+  <p class="mod-intro">The band's shared repertoire: one entry per song, filterable by where it stands in the pipeline from first idea to stage-ready.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/10-songs-library.png" alt="Song library list with cover art, key/tempo/genre, and status pills" loading="lazy" />
+    <figcaption>Song library — filter tabs for Proposals, New, In progress, Stage ready, Active, Archived</figcaption>
+    
+  </figure>
+  </div>
+
+  <h3>Adding a song — and letting the app do the typing</h3>
+  <div class="shots-block">
+    <div class="shot-pair"><figure class="shot">
+    <img src="img/14-song-new-form.png" alt="New song form with an Online research button above the title field" loading="lazy" />
+    <figcaption>New Song — the full metadata form</figcaption>
+    
+  </figure><figure class="shot">
+    <img src="img/14b-song-online-research.png" alt="Online research results listing several matching releases with an adopt button each" loading="lazy" />
+    <figcaption>Online research — pick a match to auto-fill the form</figcaption>
+    
+  </figure></div>
+  </div>
+  <p>Type a title (and, for cover songs, the original artist) and click <strong>Online research</strong>: Bandplaner looks the song up in music databases and lists candidate releases — including different live albums or re-releases — each with an <strong>adopt</strong> button that fills in tempo, genre, album, release year and cover art for you. Uploading an audio file works the same way in reverse: its ID3 tags are read automatically where present. Every field stays fully editable by hand either way, and nothing is ever overwritten without your say-so.</p>
+
+  <h3>Song detail: files, notes and personal stage cues</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/11-song-detail-audio.png" alt="Song detail page showing band-wide metadata, an attached audio file with a playable player, personal notes and stage cue picker" loading="lazy" />
+    <figcaption>A song's detail page — shared info plus your own private layer</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Band-wide information</span> — <span class="d">key, tempo, time signature, duration, genre, artist, album and release year — the same for everyone.</span></li>
+    <li><span class="lbl">Links &amp; files</span> — <span class="d">reference links to streaming platforms, plus uploaded audio, PDFs or Guitar Pro tabs. Files can be marked private (just you) or visible to the whole band.</span></li>
+    <li><span class="lbl">My Personal Notes</span> — <span class="d">your own playing hints or fingering reminders, visible to nobody else.</span></li>
+    <li><span class="lbl">My Stage Cues</span> — <span class="d">a short private hint, a colour, and pick-from-a-list cue badges (retune, change instrument, capo, program change, click, looper, backing vocal, solo, count-in, in-ear, or a custom note). These carry over automatically the first time the song is added to a setlist — see <a href="#setlists">Setlists</a>.</span></li>
+  </ul>
+
+  <h3>Proposing a song &amp; voting</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/13-song-proposal-voting.png" alt="A song proposal with a voting card: for/against buttons, a comment box, the vote tally, and admin accept/reject buttons" loading="lazy" />
+    <figcaption>A live proposal, mid-vote</figcaption>
+    
+  </figure>
+  </div>
+  <p>Any member can put a song forward; it enters the library with a <span class="tag tag-warn">Proposed</span> status and a visible <strong>Voting</strong> card. Everyone votes <strong>For</strong> or <strong>Against</strong> with an optional comment — votes carry the voter's name, there's no anonymous voting. If the whole band votes the same way, the outcome is automatic: unanimously for and it becomes <span class="tag tag-good">New</span>; unanimously against and it's archived and marked rejected. Any split decision is left for an administrator to resolve with an <strong>Accept proposal</strong> / <strong>Reject proposal</strong> call.</p>
+</section>
+
+<section class="mod" id="practice-mode">
+  <div class="mod-head"><h2>Practice Mode</h2><span class="feature-flag">Optional module — Media player</span></div>
+  <p class="mod-intro">A built-in practice tool for any uploaded audio file, opened with the <strong>Practice Mode</strong> button next to a song's audio player. Everything runs locally in the browser — nothing is re-uploaded or re-encoded.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/12-song-practice-mode.png" alt="Practice Mode panel with a waveform, tempo and key sliders showing 100 percent and zero semitones, and section loop buttons" loading="lazy" />
+    <figcaption>Practice Mode — tempo, key, looping and auto key detection</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Tempo</span> — <span class="d">slow a track down or speed it up as a percentage, independent of pitch — the song stays in the same key at any speed.</span></li>
+    <li><span class="lbl">Key</span> — <span class="d">transpose in semitone steps, independent of tempo — handy for a capo change or a vocalist's range, without touching playback speed.</span></li>
+    <li><span class="lbl">Section loop</span> — <span class="d"><strong>A from here</strong> / <strong>B to here</strong> mark a passage on the waveform for endless repeat — perfect for a tricky bridge. Click anywhere on the waveform to jump there; drag to mark a loop directly.</span></li>
+    <li><span class="lbl">Detect key</span> — <span class="d">an optional one-click estimate of the track's musical key, with a nudge to adopt it into the song's shared metadata if it differs from what's stored. It's an approximation (major/minor relatives are hard to tell apart automatically) and never changes song data on its own.</span></li>
+  </ul>
+  <div class="callout">Practice Mode and its key detector are each separate toggles in band settings — an admin can offer tempo/pitch practice without the auto key guesser, or turn off the whole media player if it's not wanted.</div>
+</section>
+
+<section class="mod" id="setlists">
+  <div class="mod-head"><h2>Setlists</h2><span class="mod-nav-path"><kbd class="path">Setlists</kbd> tab</span></div>
+  <p class="mod-intro">Running orders built from the song library, reusable across events and exportable for the stage or the tech crew.</p>
+  <div class="shots-block">
+    <figure class="shot">
+    <img src="img/15-setlists-list.png" alt="Setlists overview listing three saved setlists with song counts and linked events" loading="lazy" />
+    <figcaption>Setlists overview</figcaption>
+    
+  </figure>
+  </div>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/16-setlist-detail.png" alt="Setlist builder with a drag-orderable list of songs, custom entries, a section break and a comment line, next to a searchable song library sidebar" loading="lazy" />
+    <figcaption>The setlist builder</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Order</span> — <span class="d">drag songs in from the library on the right, then drag to reorder. Total running time updates live from each song's stored duration.</span></li>
+    <li><span class="lbl">Beyond songs</span> — <span class="d">add a <em>custom entry</em> (e.g. "Pause", with its own duration and an option to skip it in the numbering), a plain <em>comment</em> line visible to everyone, or a <em>section</em> divider to label a block like "Part 2".</span></li>
+    <li><span class="lbl">Equipment icon display</span> — <span class="d">controls how an instrument-change cue's icon appears in this setlist: small inside the hint badge, large next to the key/BPM, or hidden entirely.</span></li>
+    <li><span class="lbl">Reused across events</span> — <span class="d">one setlist can be linked to several events; a per-event context selector applies your personal notes and cues to whichever upcoming date you pick.</span></li>
+    <li><span class="lbl">My Notes / Technical Notes</span> — <span class="d">a private note just for you, and a shared technical note for FOH, lighting or crew that prints on the technical sheet.</span></li>
+    <li><span class="lbl">Share, Print, Technical Sheet</span> — <span class="d">a WhatsApp-ready summary, a big-print stage view personalised with your own colours and cues, and a separate crew-facing technical sheet.</span></li>
+  </ul>
+  <div class="callout tip"><b>Snapshots:</b> once an event tied to a setlist is in the past, the running order is frozen the moment you next edit it — so a setlist you keep reusing never silently rewrites what actually happened at last month's gig.</div>
+</section>
+
+<section class="mod" id="locations">
+  <div class="mod-head"><h2>Locations</h2><span class="feature-flag">Optional module</span></div>
+  <p class="mod-intro">A reusable catalog of venues, so a gig's address, stage notes and contact details only have to be entered once.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/17-locations-list.png" alt="Add-location form with an address search box, an interactive map, contact fields and stage/tech notes, above a list of four saved locations" loading="lazy" />
+    <figcaption>Locations — add form (with map search) and saved venues</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Address search</span> — <span class="d">type a street or venue name and Bandplaner geocodes it onto the map for you; the pin can also be dragged by hand.</span></li>
+    <li><span class="lbl">Contact &amp; capacity</span> — <span class="d">a booking contact's name, phone, e-mail and website, plus the venue's capacity.</span></li>
+    <li><span class="lbl">Stage &amp; tech / Access &amp; parking</span> — <span class="d">free-text notes for stage size, house PA, power, load-in access and parking — read once, reused at every gig there.</span></li>
+    <li><span class="lbl">Linked everywhere</span> — <span class="d">pick a saved location instead of free text when creating an event, and attach files (a rider, a stage plot) directly to the venue.</span></li>
+  </ul>
+</section>
+
+<section class="mod" id="equipment">
+  <div class="mod-head"><h2>Equipment &amp; packing lists</h2><span class="feature-flag">Optional module</span></div>
+  <p class="mod-intro">A catalog of everything the band owns or brings, and checklists built from it for a specific gig or rehearsal.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/19-equipment-catalog.png" alt="Equipment catalog add-form with a category dropdown and a large icon picker, above a list of band and personal gear" loading="lazy" />
+    <figcaption>Equipment catalog — add form with icon picker, and the current inventory</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Ownership</span> — <span class="d">each item belongs either to the band, or to one member personally — personal gear is automatically usable in every band that member plays in, and only its owner can edit it.</span></li>
+    <li><span class="lbl">Responsible person</span> — <span class="d">optionally set independently of ownership — whoever's actually in charge of hauling the PA, say — and used as the default assignee when the item lands on a packing list.</span></li>
+    <li><span class="lbl">Category &amp; icon</span> — <span class="d">a broad category (instruments, PA, amps &amp; pedals, stage gear, monitoring, personal, other) plus a pickable icon and colour for fast visual scanning.</span></li>
+  </ul>
+
+  <h3>Packing lists</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/22-packlist-detail.png" alt="A packing list with owner/location/responsible filters, a grouping option, checkable entries, and an equipment catalog sidebar to add more" loading="lazy" />
+    <figcaption>Inside a packing list</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Built from the catalog</span> — <span class="d">search and add equipment items directly, or type a one-off custom entry (an extension cable, say) that isn't worth cataloguing.</span></li>
+    <li><span class="lbl">Filter &amp; group</span> — <span class="d">by owner, storage location or responsible person — useful once a list runs long — with a live packed-count at the top.</span></li>
+    <li><span class="lbl">Linked to events</span> — <span class="d">reused across every gig or rehearsal it's attached to; like setlists, a linked event that's already past freezes its own "as packed" snapshot the moment the list changes again.</span></li>
+    <li><span class="lbl">Print</span> — <span class="d">a clean printable checklist for loading the car.</span></li>
+  </ul>
+</section>
+
+<section class="mod" id="files">
+  <div class="mod-head"><h2>Files</h2><span class="mod-nav-path"><kbd class="path">Files</kbd> tab</span></div>
+  <p class="mod-intro">One shared, quota-tracked file store for the band — contracts, photos, recordings, sheet music, video, anything else — independent of the files attached directly to individual songs.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/23-files.png" alt="Files page with a storage quota bar, an upload form with category/visibility/linking options, and a searchable, filterable file list" loading="lazy" />
+    <figcaption>Band files — storage, upload, and the shared library</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Storage meter</span> — <span class="d">a simple used-of-total bar so nobody's surprised by a full quota mid-upload.</span></li>
+    <li><span class="lbl">Category &amp; visibility</span> — <span class="d">file into Sheet music, Contracts, Photos, Recordings, Video or Other; mark each file <em>Band-internal</em> (members only) or share it via a login-free public link.</span></li>
+    <li><span class="lbl">Linking</span> — <span class="d">optionally tie a file to a song, event, equipment item or location at upload time — or leave it unlinked in the general pool.</span></li>
+    <li><span class="lbl">One library, many sources</span> — <span class="d">files uploaded on a song, event or equipment page automatically show up here too, so this list is always the complete picture.</span></li>
+    <li><span class="lbl">Search &amp; group</span> — <span class="d">by filename or by the song/event/equipment it's linked to.</span></li>
+  </ul>
+  <div class="callout warn"><b>Public links</b> can be switched off band-wide from Band settings at any moment — doing so immediately disables every existing link, not just new ones, without changing any file's own visibility setting.</div>
+</section>
+
+<section class="mod" id="finance">
+  <div class="mod-head"><h2>Finance</h2><span class="feature-flag">Optional module — Finance</span></div>
+  <p class="mod-intro">Income and expenses for the band, with amounts split between members and a confirmation step on each side.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/24-finance-overview.png" alt="Finance page with income/expenses/balance totals, a personal payouts list, an entry-creation form, and a filterable full ledger" loading="lazy" />
+    <figcaption>Finance overview — as seen by a finance admin</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Two visibility levels</span> — <span class="d">only <em>finance admins</em> (a role granted per member, independent of Administrator/Member — see <a href="#band-settings">Band settings</a>) see the full ledger and totals; everyone else sees only their own fees and cost shares under "My finances".</span></li>
+    <li><span class="lbl">Entries</span> — <span class="d">an income or expense, with a category, amount, date, optional description, and an optional link to the event it belongs to (a gig fee, say).</span></li>
+    <li><span class="lbl">Allocations &amp; confirmation</span> — <span class="d">a finance admin splits each entry across members. A member confirms receiving their share of an income; a finance admin confirms a member has paid their share of an expense — until then it shows as pending.</span></li>
+    <li><span class="lbl">Settlement mode</span> — <span class="d">"No band account" requires every entry to be 100% allocated to members; "Band account" lets the band hold its own balance, with any unallocated remainder settled against it automatically — set in Band settings.</span></li>
+    <li><span class="lbl">CSV export</span> — <span class="d">the full ledger, ready for a tax return or external bookkeeping.</span></li>
+  </ul>
+</section>
+
+<section class="mod" id="band-settings">
+  <div class="mod-head"><h2>Band, members &amp; features</h2><span class="mod-nav-path"><kbd class="path">Band</kbd> tab</span></div>
+  <p class="mod-intro">Administrator territory: the band's public profile, who belongs to it and with what role, and which optional modules are switched on — everything this manual calls out as "optional module" is controlled from here.</p>
+
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/25-members.png" alt="Band profile edit form and a members list with role dropdowns, password reset and remove actions, plus an invite form" loading="lazy" />
+    <figcaption>Band profile, members, and inviting new people</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Band profile</span> — <span class="d">name, picture, genre, home city, a short bio, and contact/website/Spotify/Instagram/Facebook links — this is internal band information for the app and its exports, not a public "link-in-bio" page.</span></li>
+    <li><span class="lbl">Members</span> — <span class="d">change anyone's role, trigger a password reset for someone who's locked out (works even without an e-mail server configured), or remove them.</span></li>
+    <li><span class="lbl">Invite a person</span> — <span class="d">enter an e-mail and a starting role; they receive a link to accept and set their own password.</span></li>
+  </ul>
+
+  <h3>Feature management</h3>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/26-band-settings.png" alt="Feature toggle checklist for Equipment, Packing lists, Finance with settlement mode, Communication, Media player with key detection, and Locations, plus finance-admin checkboxes, guest expiry setting, public file links toggle, and a lineup role list" loading="lazy" />
+    <figcaption>Turning modules on or off for this band</figcaption>
+    
+  </figure>
+  </div>
+  <p>Every optional module in this manual — Equipment, Packing lists, Finance, Media player (and its key-detection sub-toggle), and Locations — is a simple on/off switch here. Turning one off just hides it from the navigation; nothing is deleted, and all its data comes straight back the moment it's switched back on.</p>
+  <ul class="feature-list">
+    <li><span class="lbl">Finance admins</span> — <span class="d">tick which members see the full Finance ledger — this also grants them admin-equivalent rights for songs, equipment, files and events, but not member management or this settings page itself.</span></li>
+    <li><span class="lbl">Guest access expiry</span> — <span class="d">a default number of days that pre-fills new guest invitations, still freely editable per invite; leave blank for unlimited access by default.</span></li>
+    <li><span class="lbl">Public file links</span> — <span class="d">the band-wide kill switch described in <a href="#files">Files</a>.</span></li>
+    <li><span class="lbl">Lineup roles</span> — <span class="d">a reusable, ordered list of typical roles (Bass, Lead Guitar, …), each with an optional usual player — copied in as a starting point whenever a new gig's lineup is created, and freely edited from there without affecting this master list.</span></li>
+  </ul>
+</section>
+
+<section class="mod" id="profile">
+  <div class="mod-head"><h2>Your profile &amp; account</h2><span class="mod-nav-path">Avatar menu → <kbd class="path">/profile</kbd></span></div>
+  <p class="mod-intro">Account-level settings that follow you across every band, plus your data and privacy controls.</p>
+  <div class="shots-block">
+    <figure class="shot shot-wide">
+    <img src="img/27-profile.png" alt="Personal profile page with avatar upload, per-band email notification checkboxes, a change-password form, a GDPR data export button, and account deletion" loading="lazy" />
+    <figcaption>My profile</figcaption>
+    
+  </figure>
+  </div>
+  <ul class="feature-list">
+    <li><span class="lbl">Profile picture, name &amp; e-mail</span> — <span class="d">your account identity, shown everywhere from member lists to vote tallies.</span></li>
+    <li><span class="lbl">Email notifications</span> — <span class="d">per band, choose what you're emailed about — new events, event changes, new song proposals, new files, and your own fees or cost shares. (Requires the band's Communication module and a configured mail server; settings still save without one.)</span></li>
+    <li><span class="lbl">Change password</span> — <span class="d">current password, new password, confirmation.</span></li>
+    <li><span class="lbl">My data</span> — <span class="d">download everything stored about you — profile, memberships, personal notes and cues, your uploaded files, finance allocations and more — as a single JSON file.</span></li>
+    <li><span class="lbl">Delete account</span> — <span class="d">a permanent, self-service deletion with a double confirmation step. This is genuinely irreversible.</span></li>
+  </ul>
+
+  <h3>Language &amp; appearance</h3>
+  <p>The language switcher and the light/dark toggle sit in the header of every page (see the <a href="#overview">band overview</a> screenshots above) — not tucked away in settings — because they're meant to be changed on the fly. Bandplaner currently ships English, German, French and Swedish; your choice is remembered on your account and applied from your very next page load.</p>
+</section>
+
+    <footer class="end">
+      Every screenshot in this handbook was captured directly from a running Bandplaner instance. Screens vary slightly depending on which optional modules your band administrator has enabled and your own role — see <a href="#getting-started">Roles, at a glance</a>.
+    </footer>
+  </main>
+</div>
+
+</body>
+</html>

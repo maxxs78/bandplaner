@@ -64,6 +64,10 @@ export default async function EditEventPage({
             locationId: event.locationId ?? undefined,
             description: event.description ?? "",
             participantIds: event.participants.map((p) => p.userId),
+            arrivalAt: event.arrivalAt ? format(event.arrivalAt, "yyyy-MM-dd'T'HH:mm") : undefined,
+            soundcheckAt: event.soundcheckAt ? format(event.soundcheckAt, "yyyy-MM-dd'T'HH:mm") : undefined,
+            technicalRequirements: event.technicalRequirements ?? "",
+            gigStatus: event.gigStatus ?? undefined,
           }}
         />
       </Card>

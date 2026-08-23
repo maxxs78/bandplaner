@@ -137,3 +137,36 @@ export async function updateBandSettingsAction(
   revalidatePath(`/bands/${bandId}`, "layout");
   return undefined;
 }
+
+/**
+ * Ersetzt den kompletten Besetzungsrollen-Katalog der Band durch die im
+ * Formular uebermittelte, geordnete Liste. Wirkt nur als Kopiervorlage fuer
+ * neue Gigs (siehe EventLineupEntry) - bestehende Gigs bleiben unberuehrt.
+ */
+export async function updateLineupRolesAction(
+  bandId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const { membership } = await requireMembership(bandId);
+  const t = await getTranslations("bandSettings.actions");
+  if (!canManageBand(membership.role)) {
+    return { error: t("onlyAdminsManageSettings") };
+  }
+
+  const names = formData.getAll("roleName").map((v) => String(v).trim());
+  const defaultAssigneeIds = formData.getAll("defaultAssigneeId").map(String);
+  const roles = names
+    .map((name, i) => ({ name, defaultAssigneeId: defaultAssigneeIds[i] || null }))
+    .filter((role) => role.name.length > 0);
+
+  await prisma.$transaction([
+    prisma.bandLineupRole.deleteMany({ where: { bandId } }),
+    prisma.bandLineupRole.createMany({
+      data: roles.map((role, order) => ({ bandId, order, ...role })),
+    }),
+  ]);
+
+  revalidatePath(`/bands/${bandId}/settings`);
+  return undefined;
+}

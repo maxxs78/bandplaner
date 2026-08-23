@@ -8,6 +8,13 @@
     "deleting": "Deleting…",
     "deleteConfirmDefault": "Are you sure? This cannot be undone."
   },
+  "info": {
+    "triggerLabel": "Help & info",
+    "title": "About Bandplaner",
+    "handbookLink": "User Handbook",
+    "handbookHint": "Opens the full manual in a new tab.",
+    "appVersion": "App version"
+  },
   "bandNav": {
     "editTitle": "Edit band (profile, members, invites)",
     "viewTitle": "View band",
@@ -204,6 +211,19 @@
       "invalidSelection": "Invalid selection",
       "onlyAdminsManageSettings": "Only admins can manage settings for the band",
       "invalidGuestAccessDays": "Guest access duration must be a number between 1 and 3650 days"
+    },
+    "lineupRoles": {
+      "title": "Lineup roles",
+      "hint": "Typical roles for this band (e.g. Bass, Lead Guitar, Backing Vocals) – copied into a new gig's lineup as a starting point and freely editable there afterwards, independent of this list.",
+      "rolePlaceholder": "e.g. Bass",
+      "noDefaultAssignee": "No usual person",
+      "moveUp": "Move up",
+      "moveDown": "Move down",
+      "remove": "Remove",
+      "addRole": "Add role",
+      "noRoles": "No roles yet.",
+      "saving": "Saving…",
+      "save": "Save"
     }
   },
   "auth": {
@@ -674,7 +694,30 @@
       "noPacklistLinked": "No packlist linked yet.",
       "linkExistingPacklist": "Link an existing packlist…",
       "files": "Files",
-      "linkExistingFile": "Link an existing file…"
+      "linkExistingFile": "Link an existing file…",
+      "gigStatusValues": {
+        "INQUIRY": "Inquiry",
+        "CONFIRMED": "Confirmed",
+        "CANCELLED": "Cancelled",
+        "DONE": "Done"
+      },
+      "gigArrivalAt": "Arrival: {time}",
+      "gigSoundcheckAt": "Soundcheck: {time}",
+      "settlementOpen": "Settlement open",
+      "settlementDone": "Settlement complete",
+      "lineup": {
+        "title": "Lineup",
+        "hint": "Who's playing which role at this gig – freely adjustable here, independent of the global role catalog in the band settings.",
+        "rolePlaceholder": "e.g. Bass",
+        "unassigned": "Unassigned",
+        "freeText": "Free text…",
+        "freeTextPlaceholder": "Name of the fill-in musician",
+        "remove": "Remove",
+        "addRole": "Add role",
+        "noEntries": "No lineup entries yet.",
+        "saving": "Saving…",
+        "save": "Save"
+      }
     },
     "availability": {
       "YES": "Yes",
@@ -711,7 +754,20 @@
     "you": " (you)",
     "repeatWeekly": "Repeat weekly",
     "repeatUntil": "Repeat until",
-    "saving": "Saving…"
+    "saving": "Saving…",
+    "gig": {
+      "arrivalAt": "Arrival time",
+      "soundcheckAt": "Soundcheck",
+      "status": "Status",
+      "statusValues": {
+        "INQUIRY": "Inquiry",
+        "CONFIRMED": "Confirmed",
+        "CANCELLED": "Cancelled",
+        "DONE": "Done"
+      },
+      "technicalRequirements": "Technical requirements",
+      "technicalRequirementsPlaceholder": "e.g. venue provides PA, we bring only monitors…"
+    }
   },
   "availabilityButtons": { "YES": "Yes", "MAYBE": "Maybe", "NO": "No" },
   "availabilityPage": {

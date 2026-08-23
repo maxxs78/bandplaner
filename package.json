@@ -1,6 +1,6 @@
 {
   "name": "bandplaner",
-  "version": "1.0.0",
+  "version": "1.2.7",
   "private": true,
   "scripts": {
     "dev": "node scripts/dev.mjs",

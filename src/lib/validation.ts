@@ -83,6 +83,10 @@ export function getEventSchema(t: (key: string) => string) {
       description: z.string().optional(),
       repeatWeekly: z.boolean().optional(),
       repeatUntil: z.string().optional(),
+      arrivalAt: z.string().optional(),
+      soundcheckAt: z.string().optional(),
+      technicalRequirements: z.string().optional(),
+      gigStatus: z.enum(["INQUIRY", "CONFIRMED", "CANCELLED", "DONE"]).optional(),
     })
     .refine((data) => new Date(data.endsAt) > new Date(data.startsAt), {
       message: t("endAfterStart"),

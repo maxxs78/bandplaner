@@ -6,7 +6,13 @@ import { Card } from "@/components/ui/card";
 import { FeatureTogglesForm } from "@/components/feature-toggles-form";
 import { BandSettingsForm } from "@/components/band-settings-form";
 import { FinanceAdminsForm } from "@/components/finance-admins-form";
-import { updateBandFeaturesAction, updateBandSettingsAction, updateFinanceAdminsAction } from "./actions";
+import { LineupRolesForm } from "@/components/lineup-roles-form";
+import {
+  updateBandFeaturesAction,
+  updateBandSettingsAction,
+  updateFinanceAdminsAction,
+  updateLineupRolesAction,
+} from "./actions";
 
 export default async function BandSettingsPage({
   params,
@@ -19,16 +25,21 @@ export default async function BandSettingsPage({
     redirect(`/bands/${bandId}`);
   }
 
-  const [memberships, financeAdmins] = membership.band.financeEnabled
-    ? await Promise.all([
-        prisma.membership.findMany({
-          where: { bandId },
-          include: { user: { select: { id: true, name: true } } },
-          orderBy: { createdAt: "asc" },
-        }),
-        prisma.bandFinanceAdmin.findMany({ where: { bandId }, select: { userId: true } }),
-      ])
-    : [[], []];
+  const [memberships, financeAdmins, lineupRoles] = await Promise.all([
+    prisma.membership.findMany({
+      where: { bandId },
+      include: { user: { select: { id: true, name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    membership.band.financeEnabled
+      ? prisma.bandFinanceAdmin.findMany({ where: { bandId }, select: { userId: true } })
+      : Promise.resolve([]),
+    prisma.bandLineupRole.findMany({
+      where: { bandId },
+      orderBy: { order: "asc" },
+      select: { name: true, defaultAssigneeId: true },
+    }),
+  ]);
 
   const members = memberships.map((m) => m.user);
   const financeAdminIds = financeAdmins.map((f) => f.userId);
@@ -78,6 +89,19 @@ export default async function BandSettingsPage({
             action={updateBandSettingsAction.bind(null, bandId)}
             initialDefaultGuestAccessDays={membership.band.defaultGuestAccessDays}
             initialPublicFileLinksEnabled={membership.band.publicFileLinksEnabled}
+          />
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">{t("lineupRoles.title")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("lineupRoles.hint")}</p>
+        <Card className="mt-4">
+          <LineupRolesForm
+            key={lineupRoles.map((r) => `${r.name}-${r.defaultAssigneeId}`).join(",")}
+            action={updateLineupRolesAction.bind(null, bandId)}
+            initialRoles={lineupRoles.map((r) => ({ name: r.name, defaultAssigneeId: r.defaultAssigneeId }))}
+            members={members}
           />
         </Card>
       </div>

@@ -8,6 +8,13 @@
     "deleting": "Tar bort…",
     "deleteConfirmDefault": "Är du säker? Detta kan inte ångras."
   },
+  "info": {
+    "triggerLabel": "Hjälp och info",
+    "title": "Om Bandplaner",
+    "handbookLink": "Användarhandbok",
+    "handbookHint": "Öppnar den fullständiga manualen i en ny flik.",
+    "appVersion": "Appversion"
+  },
   "bandNav": {
     "editTitle": "Redigera bandet (profil, medlemmar, inbjudningar)",
     "viewTitle": "Visa bandet",

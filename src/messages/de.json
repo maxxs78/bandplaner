@@ -8,6 +8,13 @@
     "deleting": "Wird gelöscht…",
     "deleteConfirmDefault": "Bist du sicher? Dies kann nicht rückgängig gemacht werden."
   },
+  "info": {
+    "triggerLabel": "Hilfe & Info",
+    "title": "Über Bandplaner",
+    "handbookLink": "Anleitung",
+    "handbookHint": "Öffnet das vollständige Handbuch in einem neuen Tab.",
+    "appVersion": "App-Version"
+  },
   "bandNav": {
     "editTitle": "Band bearbeiten (Profil, Mitglieder, Einladungen)",
     "viewTitle": "Band ansehen",
@@ -204,6 +211,19 @@
       "invalidSelection": "Ungültige Auswahl",
       "onlyAdminsManageSettings": "Nur Admins können Einstellungen für die Band verwalten",
       "invalidGuestAccessDays": "Gastzugangsdauer muss eine Zahl zwischen 1 und 3650 Tagen sein"
+    },
+    "lineupRoles": {
+      "title": "Besetzungsrollen",
+      "hint": "Typische Rollen dieser Band (z. B. Bass, Lead Guitar, Backing Vocals) – werden beim Anlegen eines neuen Auftritts als Startpunkt für dessen Besetzung übernommen und sind dort unabhängig von dieser Liste weiter änderbar.",
+      "rolePlaceholder": "z. B. Bass",
+      "noDefaultAssignee": "Keine übliche Person",
+      "moveUp": "Nach oben",
+      "moveDown": "Nach unten",
+      "remove": "Entfernen",
+      "addRole": "Rolle hinzufügen",
+      "noRoles": "Noch keine Rollen angelegt.",
+      "saving": "Wird gespeichert…",
+      "save": "Speichern"
     }
   },
   "auth": {
@@ -674,7 +694,30 @@
       "noPacklistLinked": "Noch keine Packliste verknüpft.",
       "linkExistingPacklist": "Bestehende Packliste verknüpfen…",
       "files": "Dateien",
-      "linkExistingFile": "Bestehende Datei verknüpfen…"
+      "linkExistingFile": "Bestehende Datei verknüpfen…",
+      "gigStatusValues": {
+        "INQUIRY": "Anfrage",
+        "CONFIRMED": "Bestätigt",
+        "CANCELLED": "Abgesagt",
+        "DONE": "Erledigt"
+      },
+      "gigArrivalAt": "Ankunft: {time}",
+      "gigSoundcheckAt": "Soundcheck: {time}",
+      "settlementOpen": "Abrechnung offen",
+      "settlementDone": "Abrechnung abgeschlossen",
+      "lineup": {
+        "title": "Besetzung",
+        "hint": "Wer spielt bei diesem Auftritt welche Rolle – unabhängig vom globalen Rollen-Katalog in den Bandeinstellungen frei anpassbar.",
+        "rolePlaceholder": "z. B. Bass",
+        "unassigned": "Nicht zugewiesen",
+        "freeText": "Frei (Text)…",
+        "freeTextPlaceholder": "Name der Aushilfe",
+        "remove": "Entfernen",
+        "addRole": "Rolle hinzufügen",
+        "noEntries": "Noch keine Besetzung eingetragen.",
+        "saving": "Wird gespeichert…",
+        "save": "Speichern"
+      }
     },
     "availability": {
       "YES": "Zusage",
@@ -711,7 +754,20 @@
     "you": " (du)",
     "repeatWeekly": "Wöchentlich wiederholen",
     "repeatUntil": "Wiederholen bis",
-    "saving": "Wird gespeichert…"
+    "saving": "Wird gespeichert…",
+    "gig": {
+      "arrivalAt": "Ankunftszeit",
+      "soundcheckAt": "Soundcheck",
+      "status": "Status",
+      "statusValues": {
+        "INQUIRY": "Anfrage",
+        "CONFIRMED": "Bestätigt",
+        "CANCELLED": "Abgesagt",
+        "DONE": "Erledigt"
+      },
+      "technicalRequirements": "Technische Anforderungen",
+      "technicalRequirementsPlaceholder": "z. B. Veranstalter stellt PA, wir bringen nur Monitore…"
+    }
   },
   "availabilityButtons": { "YES": "Zusage", "MAYBE": "Vielleicht", "NO": "Absage" },
   "availabilityPage": {

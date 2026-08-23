@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction } from "../actions";
+import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction, saveLineupAction } from "../actions";
 import {
   deleteBandFileAction,
   updateBandFileAction,
@@ -22,7 +22,16 @@ import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
 import { MinimalFileUpload } from "@/components/band-file-upload";
 import { FileList, type FileListItem } from "@/components/file-list";
 import { AddressMap } from "@/components/address-map";
+import { LineupEditor } from "@/components/lineup-editor";
 import { getEventTypeLabels, eventTypeBadgeVariant, eventLocationLabel } from "@/lib/event-colors";
+import { computeGigSettlementStatus } from "@/lib/gig-status";
+
+const gigStatusVariant: Record<string, "success" | "danger" | "warning" | "default"> = {
+  INQUIRY: "warning",
+  CONFIRMED: "success",
+  CANCELLED: "danger",
+  DONE: "default",
+};
 
 const statusVariant: Record<string, "success" | "danger" | "warning"> = {
   YES: "success",
@@ -62,6 +71,8 @@ export default async function EventDetailPage({
           locations: { select: { id: true, name: true } },
         },
       },
+      lineup: { orderBy: { order: "asc" } },
+      financeEntries: { include: { allocations: { select: { confirmedAt: true } } } },
     },
   });
   if (!event) notFound();
@@ -146,6 +157,10 @@ export default async function EventDetailPage({
     unlinkAction: unlinkBandFileFromEventAction.bind(null, bandId, f.id, eventId),
   }));
 
+  const isGig = event.type === "GIG";
+  const settlementStatus = features.finance ? computeGigSettlementStatus(event.financeEntries) : "NONE";
+  const lineupMembers = members.map((m) => ({ id: m.user.id, name: m.user.name }));
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
@@ -192,11 +207,35 @@ export default async function EventDetailPage({
               </div>
             )}
           </div>
-          <Badge variant={eventTypeBadgeVariant[event.type]} className="shrink-0">
-            {eventTypeLabels[event.type]}
-          </Badge>
+          <div className="flex shrink-0 flex-col items-end gap-1.5">
+            <Badge variant={eventTypeBadgeVariant[event.type]}>{eventTypeLabels[event.type]}</Badge>
+            {isGig && event.gigStatus && (
+              <Badge variant={gigStatusVariant[event.gigStatus]}>
+                {t(`gigStatusValues.${event.gigStatus}`)}
+              </Badge>
+            )}
+          </div>
         </div>
         {event.description && <p className="mt-3 text-sm text-foreground">{event.description}</p>}
+
+        {isGig && (event.arrivalAt || event.soundcheckAt || event.technicalRequirements || settlementStatus !== "NONE") && (
+          <div className="mt-3 space-y-1 text-sm text-muted">
+            {event.arrivalAt && (
+              <p>{t("gigArrivalAt", { time: format.dateTime(event.arrivalAt, { dateStyle: "medium", timeStyle: "short" }) })}</p>
+            )}
+            {event.soundcheckAt && (
+              <p>{t("gigSoundcheckAt", { time: format.dateTime(event.soundcheckAt, { dateStyle: "medium", timeStyle: "short" }) })}</p>
+            )}
+            {event.technicalRequirements && (
+              <p className="whitespace-pre-line text-foreground">{event.technicalRequirements}</p>
+            )}
+            {settlementStatus !== "NONE" && (
+              <p>
+                {settlementStatus === "DONE" ? t("settlementDone") : t("settlementOpen")}
+              </p>
+            )}
+          </div>
+        )}
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
           {features.communication && <WhatsAppShareButton text={shareText} />}
@@ -253,6 +292,26 @@ export default async function EventDetailPage({
           ))}
         </div>
       </Card>
+
+      {isGig && (
+        <Card>
+          <h2 className="font-semibold text-foreground">{t("lineup.title")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("lineup.hint")}</p>
+          <div className="mt-3">
+            <LineupEditor
+              key={event.lineup.map((l) => l.id).join(",")}
+              action={saveLineupAction.bind(null, bandId, eventId)}
+              initialEntries={event.lineup.map((l) => ({
+                role: l.role,
+                assignedToId: l.assignedToId,
+                assignedToName: l.assignedToName,
+              }))}
+              members={lineupMembers}
+              readOnly={!canManage}
+            />
+          </div>
+        </Card>
+      )}
 
       <Card>
         <div className="flex items-center justify-between">

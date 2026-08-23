@@ -10,6 +10,8 @@ Die Anmeldung erfolgt wahlweise mit E-Mail-Adresse oder Benutzernamen. Alle Nutz
 
 Die Oberfläche ist auf Deutsch und Englisch verfügbar, umschaltbar über einen Sprachwähler im Kopfbereich. Die Wahl wird dauerhaft im Benutzerprofil gespeichert und gilt bandübergreifend; vor dem Login erkennt die App die Sprache automatisch aus den Browser-Einstellungen.
 
+Eine bebilderte, englischsprachige Bedienungsanleitung für Endnutzer:innen ist über das Info-Symbol (ⓘ) in der Kopfzeile jeder Seite verlinkt (Anleitung + aktuelle App-Version) und liegt als eigenständige HTML-Datei unter [public/docs/handbook/index.html](public/docs/handbook/index.html).
+
 Aktuell umgesetzte Module:
 
 - **Kalender & Termine** – Proben, Auftritte, Meetings und sonstige Termine inkl. Terminserien; je Terminart vorbelegter Teilnehmerkreis (bei Proben/Auftritten standardmäßig alle Mitglieder, bei Meetings nur die erstellende Person), individuell anpassbar. Abonnierbar als ICS-Feed für externe Kalender-Apps.
@@ -120,6 +122,7 @@ Für den produktiven Betrieb (z. B. per Docker auf einer Synology DiskStation od
 
 ## Weitere Ressourcen
 
+- [Bedienungsanleitung (Handbook)](public/docs/handbook/index.html) – bebilderte Anleitung für Endnutzer:innen (Englisch); in der laufenden App auch über das Info-Symbol (ⓘ) in der Kopfzeile erreichbar
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – vollständige fachliche Spezifikation inkl. Roadmap
 - [INSTALLATION.md](INSTALLATION.md) – Installationsanleitung für den Selbsthost-Betrieb
 - [Next.js Documentation](https://nextjs.org/docs)

@@ -10,7 +10,7 @@ import { uploadBandFileAction } from "../files/actions";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { randomUUID } from "crypto";
-import type { EventType, Role } from "@/generated/prisma/client";
+import type { EventType, GigStatus, Role } from "@/generated/prisma/client";
 
 export type FormState = { error?: string } | undefined;
 
@@ -68,6 +68,10 @@ async function parseEventForm(formData: FormData) {
     description: formData.get("description") || undefined,
     repeatWeekly: formData.get("repeatWeekly") === "on",
     repeatUntil: formData.get("repeatUntil") || undefined,
+    arrivalAt: formData.get("arrivalAt") || undefined,
+    soundcheckAt: formData.get("soundcheckAt") || undefined,
+    technicalRequirements: formData.get("technicalRequirements") || undefined,
+    gigStatus: formData.get("gigStatus") || undefined,
   });
 }
 
@@ -121,6 +125,13 @@ export async function createEventAction(
     }
   }
 
+  // Vorlage fuer die Besetzung: nur einmal vorab gelesen, damit alle Termine
+  // einer wiederkehrenden Serie denselben Ausgangsstand erhalten.
+  const lineupTemplate =
+    data.type === "GIG"
+      ? await prisma.bandLineupRole.findMany({ where: { bandId }, orderBy: { order: "asc" } })
+      : [];
+
   const firstEvent = await prisma.$transaction(async (tx) => {
     let first: { id: string } | null = null;
     for (const occ of occurrences) {
@@ -136,11 +147,25 @@ export async function createEventAction(
           description: data.description || null,
           seriesId,
           createdById: user.id,
+          arrivalAt: data.arrivalAt ? new Date(data.arrivalAt) : null,
+          soundcheckAt: data.soundcheckAt ? new Date(data.soundcheckAt) : null,
+          technicalRequirements: data.technicalRequirements || null,
+          gigStatus: data.type === "GIG" ? ((data.gigStatus as GigStatus | undefined) ?? "INQUIRY") : null,
         },
       });
       if (participantIds.length > 0) {
         await tx.eventParticipant.createMany({
           data: participantIds.map((userId) => ({ eventId: created.id, userId })),
+        });
+      }
+      if (lineupTemplate.length > 0) {
+        await tx.eventLineupEntry.createMany({
+          data: lineupTemplate.map((role) => ({
+            eventId: created.id,
+            role: role.name,
+            order: role.order,
+            assignedToId: role.defaultAssigneeId,
+          })),
         });
       }
       if (!first) first = created;
@@ -217,6 +242,28 @@ export async function updateEventAction(
     return { error: locationResult.error };
   }
 
+  // Beim (erneuten) Umstellen auf GIG die Besetzung aus dem globalen Katalog
+  // vorbefuellen, aber nur, solange der Termin noch keine eigene Besetzung hat -
+  // verhindert Doppel-Seeding beim mehrfachen Hin- und Herschalten der Terminart.
+  const lineupTemplate =
+    data.type === "GIG" && (await prisma.eventLineupEntry.count({ where: { eventId } })) === 0
+      ? await prisma.bandLineupRole.findMany({ where: { bandId }, orderBy: { order: "asc" } })
+      : [];
+
+  // Die Gig-Felder werden nur bei type "GIG" ueberhaupt im Formular angezeigt.
+  // Beim Wechsel zu einer anderen Terminart bleiben bereits gesetzte Werte in
+  // der DB unangetastet (nur ausgeblendet, nicht geloescht) - analog zur
+  // Besetzung (siehe lineupTemplate oben).
+  const gigFieldUpdates =
+    data.type === "GIG"
+      ? {
+          arrivalAt: data.arrivalAt ? new Date(data.arrivalAt) : null,
+          soundcheckAt: data.soundcheckAt ? new Date(data.soundcheckAt) : null,
+          technicalRequirements: data.technicalRequirements || null,
+          gigStatus: (data.gigStatus as GigStatus | undefined) ?? "INQUIRY",
+        }
+      : {};
+
   await prisma.$transaction([
     prisma.event.update({
       where: { id: eventId, bandId },
@@ -228,12 +275,25 @@ export async function updateEventAction(
         location: locationResult.location,
         locationId: locationResult.locationId,
         description: data.description || null,
+        ...gigFieldUpdates,
       },
     }),
     prisma.eventParticipant.deleteMany({ where: { eventId } }),
     prisma.eventParticipant.createMany({
       data: participantIds.map((userId) => ({ eventId, userId })),
     }),
+    ...(lineupTemplate.length > 0
+      ? [
+          prisma.eventLineupEntry.createMany({
+            data: lineupTemplate.map((role) => ({
+              eventId,
+              role: role.name,
+              order: role.order,
+              assignedToId: role.defaultAssigneeId,
+            })),
+          }),
+        ]
+      : []),
   ]);
 
   await notifyBand({
@@ -317,4 +377,51 @@ export async function uploadEventFileAction(
   const result = await uploadBandFileAction(bandId, prevState, formData);
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   return result;
+}
+
+/**
+ * Ersetzt die komplette Besetzung eines Gigs durch die im Formular uebermittelte
+ * Liste (gleiches "alles ersetzen"-Muster wie bei updateLineupRolesAction fuer
+ * den globalen Katalog) - einfacher und robuster als Einzel-Diffing bei einer
+ * kurzen, gelegentlich bearbeiteten Liste.
+ */
+export async function saveLineupAction(
+  bandId: string,
+  eventId: string,
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return undefined;
+
+  const event = await prisma.event.findUnique({ where: { id: eventId, bandId }, select: { id: true } });
+  if (!event) return undefined;
+
+  const roles = formData.getAll("role").map(String);
+  const assignedToIds = formData.getAll("assignedToId").map(String);
+  const assignedToNames = formData.getAll("assignedToName").map(String);
+
+  const entries = roles
+    .map((role, i) => ({
+      role: role.trim(),
+      assignedToId: assignedToIds[i] || null,
+      assignedToName: assignedToNames[i]?.trim() || null,
+    }))
+    .filter((entry) => entry.role.length > 0);
+
+  await prisma.$transaction([
+    prisma.eventLineupEntry.deleteMany({ where: { eventId } }),
+    prisma.eventLineupEntry.createMany({
+      data: entries.map((entry, order) => ({
+        eventId,
+        order,
+        role: entry.role,
+        assignedToId: entry.assignedToId,
+        assignedToName: entry.assignedToId ? null : entry.assignedToName,
+      })),
+    }),
+  ]);
+
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  return undefined;
 }

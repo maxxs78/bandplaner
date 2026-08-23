@@ -5,9 +5,11 @@ import { requireUser } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { InfoMenu } from "@/components/info-menu";
 import { Avatar } from "@/components/avatar";
 import { signOutAction } from "./actions";
 import { Button } from "@/components/ui/button";
+import packageJson from "../../../package.json";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const sessionUser = await requireUser();
@@ -33,6 +35,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Avatar src={user.avatarUrl} name={user.name} size="sm" />
             </Link>
             <LocaleSwitcher />
+            <InfoMenu version={packageJson.version} />
             <ThemeToggle />
             <form action={signOutAction}>
               <Button type="submit" variant="secondary" size="sm">

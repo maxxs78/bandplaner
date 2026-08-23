@@ -8,6 +8,13 @@
     "deleting": "Werd fottgemacht…",
     "deleteConfirmDefault": "Bisch de sicher? Es gebbt kä zerick meh."
   },
+  "info": {
+    "triggerLabel": "Hilf unn Info",
+    "title": "Iwwer Bandplaner",
+    "handbookLink": "Gebrauchsaaweisung",
+    "handbookHint": "Macht's Handbuch in me neie Tab uff.",
+    "appVersion": "App-Version"
+  },
   "bandNav": {
     "editTitle": "Band ännere (Profil, Mitglieder, Innladunge)",
     "viewTitle": "Band aaluure",
