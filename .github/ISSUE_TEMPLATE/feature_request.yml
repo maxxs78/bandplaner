@@ -1,0 +1,48 @@
+name: Feature request / Funktionswunsch
+description: Suggest an improvement or new capability / Eine Verbesserung oder neue Funktion vorschlagen
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bandplaner is a hobby project. Feature requests are welcome, but there is
+        **no guarantee that any will be implemented**, and no timeline. Pull
+        requests are not accepted — see
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+
+        For larger ideas, consider a [Discussion](../discussions) first. Please
+        check the
+        [Funktionsspezifikation](../blob/main/Funktionsspezifikation-Bandplaner.md)
+        — the feature may already be planned.
+
+        ---
+
+        Bandplaner ist ein Hobbyprojekt. Funktionswünsche sind willkommen, es
+        gibt aber **keine Zusage, dass etwas umgesetzt wird**, und keinen
+        Zeitplan. Pull Requests werden nicht angenommen – siehe
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+
+        Für größere Ideen zuerst eine [Discussion](../discussions) öffnen. Ein
+        Blick in die
+        [Funktionsspezifikation](../blob/main/Funktionsspezifikation-Bandplaner.md)
+        lohnt sich – die Funktion ist eventuell schon geplant.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / Anwendungsfall
+      description: What are you trying to do, and why is it hard today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution / Lösungsvorschlag
+      description: How could Bandplaner solve this?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered / Alternativen
+    validations:
+      required: false

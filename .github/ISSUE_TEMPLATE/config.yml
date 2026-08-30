@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Setup help — Discussions
+    url: https://github.com/maxxs78/bandplaner/discussions
+    about: Usage questions, self-hosting help, and open-ended ideas. / Fragen zur Nutzung, Hilfe beim Selbsthosten und offene Ideen.
+  - name: Security vulnerability
+    url: https://github.com/maxxs78/bandplaner/security/advisories/new
+    about: Report security issues privately, never as a public issue. / Sicherheitslücken vertraulich melden, nie als öffentliches Issue.

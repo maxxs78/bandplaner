@@ -18,6 +18,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     select: { name: true, avatarUrl: true },
   });
   const t = await getTranslations("common");
+  const repositoryUrl = packageJson.repository.url
+    .replace(/^git\+/, "")
+    .replace(/\.git$/, "");
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -35,7 +38,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               <Avatar src={user.avatarUrl} name={user.name} size="sm" />
             </Link>
             <LocaleSwitcher />
-            <InfoMenu version={packageJson.version} />
+            <InfoMenu version={packageJson.version} repositoryUrl={repositoryUrl} />
             <ThemeToggle />
             <form action={signOutAction}>
               <Button type="submit" variant="secondary" size="sm">

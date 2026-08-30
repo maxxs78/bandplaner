@@ -10,7 +10,7 @@ Die Anmeldung erfolgt wahlweise mit E-Mail-Adresse oder Benutzernamen. Alle Nutz
 
 Die Oberfläche ist auf Deutsch und Englisch verfügbar, umschaltbar über einen Sprachwähler im Kopfbereich. Die Wahl wird dauerhaft im Benutzerprofil gespeichert und gilt bandübergreifend; vor dem Login erkennt die App die Sprache automatisch aus den Browser-Einstellungen.
 
-Eine bebilderte, englischsprachige Bedienungsanleitung für Endnutzer:innen ist über das Info-Symbol (ⓘ) in der Kopfzeile jeder Seite verlinkt (Anleitung + aktuelle App-Version) und liegt als eigenständige HTML-Datei unter [public/docs/handbook/index.html](public/docs/handbook/index.html).
+Eine bebilderte, englischsprachige Bedienungsanleitung für Endnutzer:innen ist über das Info-Symbol (ⓘ) in der Kopfzeile jeder Seite verlinkt (Anleitung, Link zum Quellcode-Repository, Lizenzhinweis und aktuelle App-Version) und liegt als eigenständige HTML-Datei unter [public/docs/handbook/index.html](public/docs/handbook/index.html).
 
 Aktuell umgesetzte Module:
 
@@ -127,3 +127,19 @@ Für den produktiven Betrieb (z. B. per Docker auf einer Synology DiskStation od
 - [INSTALLATION.md](INSTALLATION.md) – Installationsanleitung für den Selbsthost-Betrieb
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Learn Next.js](https://nextjs.org/learn)
+
+## Mitwirken
+
+Bandplaner ist ein **Hobbyprojekt**, das in der Freizeit entsteht.
+
+**Fehlerberichte und Funktionswünsche sind willkommen** – über die [Issues](https://github.com/maxxs78/bandplaner/issues) mit den bereitgestellten Vorlagen. Eine Zusage, **ob und wann** etwas umgesetzt wird, gibt es nicht.
+
+**Pull Requests werden nicht angenommen.** Der Review-Aufwand ist für ein Ein-Personen-Hobbyprojekt nicht leistbar; PRs aus Forks werden automatisch mit Verweis auf die Issues geschlossen. Forken und unter der AGPL-3.0 selbst anpassen ist natürlich erlaubt. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Sicherheitslücken bitte vertraulich melden – siehe [SECURITY.md](SECURITY.md), **nicht** als öffentliches Issue. Umgangston: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+
+## Lizenz und Haftung
+
+Bandplaner steht unter der [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-only). Wer eine geänderte Fassung über ein Netzwerk zugänglich macht, muss deren vollständigen Quellcode den Nutzer:innen bereitstellen (AGPL § 13); bei unveränderter Nutzung genügt der Hinweis auf dieses Repository.
+
+Die Software wird **ohne jede Gewährleistung** bereitgestellt, die **Verwendung erfolgt auf eigene Gefahr** (siehe [LICENSE](LICENSE), Abschnitte 15–17). Für produktiven Betrieb und das Hosten für Dritte liegen Sicherung, Datenschutz und Verfügbarkeit vollständig bei der betreibenden Person.

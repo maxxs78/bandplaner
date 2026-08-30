@@ -2,6 +2,17 @@
   "name": "bandplaner",
   "version": "1.2.7",
   "private": true,
+  "description": "Webbasierte Band-Organisations-App: Termine, Verfügbarkeiten, Repertoire, Setlisten, Dateien, Equipment und Finanzen an einem Ort.",
+  "license": "AGPL-3.0-only",
+  "author": "maxxs78",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/maxxs78/bandplaner.git"
+  },
+  "homepage": "https://github.com/maxxs78/bandplaner#readme",
+  "bugs": {
+    "url": "https://github.com/maxxs78/bandplaner/issues"
+  },
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "dev:raw": "next dev --webpack",

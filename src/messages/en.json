@@ -13,7 +13,10 @@
     "title": "About Bandplaner",
     "handbookLink": "User Handbook",
     "handbookHint": "Opens the full manual in a new tab.",
-    "appVersion": "App version"
+    "sourceLink": "Source code",
+    "sourceHint": "Bandplaner is free software (AGPL-3.0). Opens the repository in a new tab.",
+    "appVersion": "App version",
+    "license": "License: AGPL-3.0"
   },
   "bandNav": {
     "editTitle": "Edit band (profile, members, invites)",

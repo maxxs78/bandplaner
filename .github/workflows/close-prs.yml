@@ -1,0 +1,59 @@
+name: Close pull requests
+
+# Bandplaner is a hobby project and does not accept pull requests (see
+# CONTRIBUTING.md). PRs from forks are closed automatically with a comment
+# pointing to the issue tracker. Branches pushed within this repository and
+# opened as a PR by the maintainer are left alone.
+
+on:
+  pull_request_target:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  close:
+    if: ${{ github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const body = [
+              "Thanks for your interest — but **Bandplaner does not accept pull requests**.",
+              "",
+              "It is a hobby project maintained in spare time, and external code changes",
+              "cannot be reviewed responsibly. This PR is being closed automatically.",
+              "",
+              "**What helps instead:** open an issue describing the bug or the idea:",
+              "https://github.com/maxxs78/bandplaner/issues",
+              "",
+              "You are free to fork and modify Bandplaner under the GNU AGPL-3.0.",
+              "",
+              "---",
+              "",
+              "Danke für dein Interesse — **Bandplaner nimmt jedoch keine Pull Requests an**.",
+              "",
+              "Es ist ein Hobbyprojekt, das in der Freizeit gepflegt wird; externe",
+              "Codeänderungen können nicht verlässlich geprüft werden. Dieser PR wird",
+              "automatisch geschlossen.",
+              "",
+              "**Was stattdessen hilft:** ein Issue mit der Fehlerbeschreibung oder Idee:",
+              "https://github.com/maxxs78/bandplaner/issues",
+              "",
+              "Forken und unter der GNU AGPL-3.0 anpassen ist jederzeit erlaubt.",
+            ].join("\n");
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body,
+            });
+            await github.rest.pulls.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              state: "closed",
+            });

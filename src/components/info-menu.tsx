@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Info, BookOpen } from "lucide-react";
+import { Info, BookOpen, Code } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-export function InfoMenu({ version }: { version: string }) {
+export function InfoMenu({
+  version,
+  repositoryUrl,
+}: {
+  version: string;
+  repositoryUrl: string;
+}) {
   const t = useTranslations("info");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -57,9 +63,21 @@ export function InfoMenu({ version }: { version: string }) {
             {t("handbookLink")}
           </a>
           <p className="mt-1.5 text-xs text-muted">{t("handbookHint")}</p>
+          <a
+            href={repositoryUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+            className="mt-3 flex items-center gap-2 rounded-md border border-border px-3 py-2 text-sm text-foreground hover:bg-surface-muted"
+          >
+            <Code className="h-4 w-4 shrink-0 text-muted" aria-hidden />
+            {t("sourceLink")}
+          </a>
+          <p className="mt-1.5 text-xs text-muted">{t("sourceHint")}</p>
           <p className="mt-3 border-t border-border pt-2 text-xs text-muted">
             {t("appVersion")} {version}
           </p>
+          <p className="mt-1 text-xs text-muted">{t("license")}</p>
         </div>
       )}
     </div>

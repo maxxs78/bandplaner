@@ -1,0 +1,79 @@
+name: Bug report / Fehlerbericht
+description: Report a reproducible problem / Ein reproduzierbares Problem melden
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bandplaner is a hobby project. Bug reports are welcome and are read, but
+        there is **no guarantee if or when** a fix ships. Pull requests are not
+        accepted — see [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+
+        Please **do not** report security vulnerabilities here — see
+        [SECURITY.md](../blob/main/SECURITY.md).
+
+        ---
+
+        Bandplaner ist ein Hobbyprojekt. Fehlerberichte sind willkommen und
+        werden gelesen, es gibt aber **keine Zusage, ob oder wann** etwas behoben
+        wird. Pull Requests werden nicht angenommen – siehe
+        [CONTRIBUTING.md](../blob/main/CONTRIBUTING.md).
+
+        Bitte **keine** Sicherheitslücken hier melden – siehe
+        [SECURITY.md](../blob/main/SECURITY.md).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened? / Was ist passiert?
+      description: What did you do, what did you expect, what happened instead?
+      placeholder: |
+        1. Go to ...
+        2. Click on ...
+        3. Expected: ...
+        4. Actual: ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Bandplaner version
+      description: Visible via the ⓘ button in the app header, or the git tag/commit.
+      placeholder: "v1.2.7"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How do you run it? / Wie betreibst du es?
+      options:
+        - Docker (docker compose)
+        - Local dev (npm run dev)
+        - Other / Sonstiges
+    validations:
+      required: true
+  - type: dropdown
+    id: reverse-proxy
+    attributes:
+      label: Behind a reverse proxy? / Hinter einem Reverse Proxy?
+      options:
+        - "No / Nein"
+        - "Yes / Ja"
+        - "Not sure / Unklar"
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment / Umgebung
+      description: Browser + OS, host platform (Synology / Proxmox / other), anything relevant.
+      placeholder: "Firefox 130 on Windows 11; host: Synology DS220+"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / Relevante Logs
+      description: Container log (`docker compose logs`) or browser console output. Remove secrets.
+      render: shell
+    validations:
+      required: false

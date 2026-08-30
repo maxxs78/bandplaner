@@ -1,0 +1,59 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref (e.g. new push to a PR branch).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    # This project does not accept pull requests (see CONTRIBUTING.md); PRs from
+    # forks are closed by close-prs.yml. Don't spend CI minutes on them — still
+    # run for direct pushes and for the maintainer's own in-repo branch PRs.
+    if: ${{ github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Compiles the native better-sqlite3 module; ubuntu-latest ships the
+      # required build tools. Also runs postinstall (patch-package +
+      # copy-audio-worklet).
+      - name: Install dependencies
+        run: npm ci
+
+      # Generates the Prisma client into src/generated/prisma (gitignored),
+      # mirroring the Dockerfile builder stage. No database needed.
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Validate Prisma schema
+        run: npx prisma validate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Check translations
+        run: npm run check:i18n
+
+      # Matches the Dockerfile: `next build` runs without DATABASE_URL.
+      - name: Build
+        run: npm run build
