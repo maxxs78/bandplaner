@@ -124,7 +124,7 @@ Open [http://localhost:3000](http://localhost:3000). On first start, create an a
 
 For production use, a prebuilt multi-arch Docker image (amd64/arm64) is published at [`ghcr.io/maxxs78/bandplaner`](https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner) – no local build needed.
 
-Quick start (details, HTTPS/reverse proxy, and platform-specific steps in the [installation guide](INSTALLATION.md), currently German only):
+Quick start (details, HTTPS/reverse proxy, and platform-specific steps in the [installation guide](INSTALLATION.md)):
 
 ```bash
 mkdir bandplaner && cd bandplaner
@@ -142,7 +142,7 @@ To modify the code yourself, build the image locally – see [`docker-compose.bu
 
 - [User handbook](public/docs/handbook/index.html) – illustrated guide for end users (English); also reachable in the running app via the info icon (ⓘ) in the header
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – complete functional specification incl. roadmap (German)
-- [INSTALLATION.md](INSTALLATION.md) – installation guide for self-hosting (German)
+- [INSTALLATION.md](INSTALLATION.md) – installation guide for self-hosting
 - [Next.js documentation](https://nextjs.org/docs)
 - [Learn Next.js](https://nextjs.org/learn)
 

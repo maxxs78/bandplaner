@@ -1,137 +1,139 @@
-# Bandplaner – Installationsanleitung (Self-Hosting)
+# Bandplaner – installation guide (self-hosting)
 
-Diese Anleitung beschreibt die Installation von Bandplaner mit Schwerpunkt auf **Docker**. Sie deckt folgende Wege ab:
+> 🇩🇪 Diese Anleitung gibt es auch [auf Deutsch](INSTALLATION.de.md).
 
-1. [Kurz: Lokales Testen](#1-kurz-lokales-testen-ohne-docker) (ohne Docker, zum Entwickeln/Ausprobieren)
-2. [Docker-Grundlagen](#2-docker--grundlagen) (gilt für jede Plattform)
-3. [Synology DiskStation mit Container Manager](#3-installation-auf-synology-diskstation-container-manager) (detailliert)
-4. [Proxmox VE](#4-installation-auf-proxmox-ve) (detailliert)
+This guide describes installing Bandplaner with a focus on **Docker**. It covers the following paths:
 
-Technischer Hintergrund: Bandplaner ist eine Next.js-App mit Prisma/SQLite als Datenbank und NextAuth (Auth.js) für den Login. Persistiert werden drei Dinge: die SQLite-Datenbankdatei, hochgeladene Song-/Band-Dateien sowie Profil-, Band- und Song-Coverbilder.
+1. [Quick: local testing](#1-quick-local-testing-without-docker) (without Docker, for development/trying it out)
+2. [Docker basics](#2-docker-basics) (applies to every platform)
+3. [Synology DiskStation with Container Manager](#3-installing-on-a-synology-diskstation-container-manager) (detailed)
+4. [Proxmox VE](#4-installing-on-proxmox-ve) (detailed)
 
-### Zwei Betriebsarten
+Technical background: Bandplaner is a Next.js app with Prisma/SQLite as the database and NextAuth (Auth.js) for login. Three things are persisted: the SQLite database file, uploaded song/band files, and profile, band, and song cover images.
 
-| | **Fertiges Image (empfohlen)** | **Selbst bauen** |
+### Two operating modes
+
+| | **Prebuilt image (recommended)** | **Build it yourself** |
 |---|---|---|
-| Herkunft | vorgebautes Multi-Arch-Image (amd64/arm64) aus der GitHub Container Registry: `ghcr.io/maxxs78/bandplaner` | lokaler Docker-Build aus dem Quellcode |
-| Nötige Dateien | nur `docker-compose.yml` + `.env` | das komplette Repository |
-| Erststart | Image-Download, ~1 Minute | nativer Build, auf schwacher Hardware 10–20 Minuten |
-| Compose-Aufruf | `docker compose up -d` | `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build` |
+| Origin | prebuilt multi-arch image (amd64/arm64) from the GitHub Container Registry: `ghcr.io/maxxs78/bandplaner` | local Docker build from source |
+| Files needed | only `docker-compose.yml` + `.env` | the complete repository |
+| First start | image download, ~1 minute | native build, 10–20 minutes on weak hardware |
+| Compose command | `docker compose up -d` | `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build` |
 | Update | `docker compose pull && docker compose up -d` | `git pull && docker compose … up -d --build` |
-| Wofür | normaler Selbsthost-Betrieb | Entwicklung, eigene Code-Anpassungen/Forks |
+| For whom | normal self-hosting | development, your own code changes/forks |
 
-Die restliche Anleitung geht vom **fertigen Image** aus. Die Selbst-Bauen-Variante unterscheidet sich nur im Compose-Aufruf und darin, dass das gesamte Repository vorliegen muss.
-
----
-
-## 1. Kurz: Lokales Testen (ohne Docker)
-
-Nur zum Entwickeln/Ausprobieren gedacht, nicht für den Dauerbetrieb. Die Schritte dafür (`npm install`, `.env` anlegen, `npx prisma migrate dev`, `npm run dev`) stehen im [README](README.de.md#lokale-entwicklung).
-
-**Windows-Hinweis:** Beim `npm install` wird das native Modul `better-sqlite3` kompiliert – dafür sind Build-Tools (Python, C++-Compiler) nötig; falls das fehlschlägt, ist WSL (Windows Subsystem for Linux) oder ein Linux/macOS-Rechner der unkompliziertere Weg.
-
-Für den produktiven Betrieb ab hier mit Docker weitermachen.
+The rest of the guide assumes the **prebuilt image**. The build-it-yourself variant differs only in the compose command and in that the whole repository must be present.
 
 ---
 
-## 2. Docker – Grundlagen
+## 1. Quick: local testing (without Docker)
 
-Dieser Abschnitt gilt unabhängig davon, ob Sie auf einer Synology DiskStation, in Proxmox oder sonstwo hosten – die Konzepte sind überall identisch.
+Intended only for development/trying it out, not for permanent operation. The steps for that (`npm install`, create `.env`, `npx prisma migrate dev`, `npm run dev`) are in the [README](README.md#local-development).
 
-### 2.1 Was im Repository bereits enthalten ist
+**Windows note:** `npm install` compiles the native module `better-sqlite3` – this needs build tools (Python, a C++ compiler); if that fails, WSL (Windows Subsystem for Linux) or a Linux/macOS machine is the easier path.
 
-| Datei | Zweck |
+For production use, continue with Docker from here.
+
+---
+
+## 2. Docker basics
+
+This section applies regardless of whether you host on a Synology DiskStation, in Proxmox, or elsewhere – the concepts are identical everywhere.
+
+### 2.1 What the repository already contains
+
+| File | Purpose |
 |---|---|
-| `docker-compose.yml` | Startet den Container aus dem GHCR-Image, verbindet drei benannte Volumes und liest `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` aus einer `.env`-Datei |
-| `docker-compose.build.yml` | Override, um das Image lokal zu bauen statt es zu ziehen (nur für Entwicklung/Forks) |
-| `.env.example` | Vorlage für die Umgebungsvariablen |
-| `Dockerfile` | Mehrstufiger Build: `deps` (npm-Install inkl. Kompilierung von `better-sqlite3`), `builder` (Prisma-Client generieren, `next build`), `runner` (schlankes Produktions-Image, Port 3000). Wird bei der Image-Variante nicht gebraucht – GitHub Actions baut damit die veröffentlichten Images. |
-| `docker-entrypoint.sh` | Läuft bei **jedem** Containerstart: repariert Dateirechte der Volumes, führt `prisma migrate deploy` aus, startet dann den Server (Teil des Images) |
+| `docker-compose.yml` | Starts the container from the GHCR image, connects three named volumes, and reads `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` from a `.env` file |
+| `docker-compose.build.yml` | Override to build the image locally instead of pulling it (development/forks only) |
+| `.env.example` | Template for the environment variables |
+| `Dockerfile` | Multi-stage build: `deps` (npm install incl. compiling `better-sqlite3`), `builder` (generate the Prisma client, `next build`), `runner` (slim production image, port 3000). Not needed for the image variant – GitHub Actions uses it to build the published images. |
+| `docker-entrypoint.sh` | Runs on **every** container start: repairs file permissions on the volumes, runs `prisma migrate deploy`, then starts the server (part of the image) |
 
-### 2.2 Persistente Daten (Volumes)
+### 2.2 Persistent data (volumes)
 
-| Volume | Inhalt | Container-Pfad |
+| Volume | Content | Container path |
 |---|---|---|
-| `bandplaner_data` | SQLite-Datenbankdatei | `/data` |
-| `bandplaner_storage` | Song-/Band-Dateien | `/app/storage` |
-| `bandplaner_uploads` | Profil-/Band-/Song-Coverbilder | `/app/public/uploads` |
+| `bandplaner_data` | SQLite database file | `/data` |
+| `bandplaner_storage` | song/band files | `/app/storage` |
+| `bandplaner_uploads` | profile/band/song cover images | `/app/public/uploads` |
 
-Diese drei Docker-Volumes überleben Updates (`docker compose pull && docker compose up -d`) und Container-Neustarts. **`docker compose down -v` löscht sie unwiderruflich** – nur bewusst verwenden, und vorher ein Backup ziehen (siehe unten).
+These three Docker volumes survive updates (`docker compose pull && docker compose up -d`) and container restarts. **`docker compose down -v` deletes them irreversibly** – use it deliberately only, and take a backup first (see below).
 
-### 2.3 Umgebungsvariablen
+### 2.3 Environment variables
 
-Diese kommen aus einer `.env`-Datei, die **neben** der `docker-compose.yml` liegt (nicht im Container-Image, sondern von `docker compose` beim Start eingelesen):
+These come from a `.env` file that sits **next to** `docker-compose.yml` (not inside the container image, but read by `docker compose` at start):
 
-| Variable | Bedeutung | Beispiel |
+| Variable | Meaning | Example |
 |---|---|---|
-| `AUTH_SECRET` | Geheimer Schlüssel für NextAuth-Sessions. **Pflicht**, sonst startet der Login nicht sicher. | per `openssl rand -base64 32` erzeugen |
-| `NEXT_PUBLIC_APP_URL` | Öffentlich erreichbare URL der App (für Links in E-Mails, ICS-Kalenderfeed) | `http://diskstation.local:3000` bzw. `https://bandplaner.example.com` |
-| `REGISTRATION_ENABLED` | Offene Selbstregistrierung unter `/register`. **Optional**, Standard `false`: nur das erste Konto (Erstinbetriebnahme) und per Einladungslink eingeladene Personen können ein Konto anlegen – alle anderen kommen ausschließlich über einen Einladungslink dazu. `true` öffnet die Registrierung für beliebige Besucher (nur sinnvoll, wenn der Zugang ohnehin auf vertrauenswürdige Nutzer:innen beschränkt ist). | `false` |
-| `SMTP_HOST` | Mailserver für Benachrichtigungen. **Optional** – bleibt er leer, verschickt die App keine E-Mails, funktioniert sonst aber unverändert. | `smtp.example.com` |
-| `SMTP_PORT` | Port des Mailservers (Standard 587) | `587` |
-| `SMTP_USER` / `SMTP_PASSWORD` | Zugangsdaten des Mailkontos, falls der Server Authentifizierung verlangt | `bandplaner@example.com` |
-| `SMTP_FROM` | Absenderadresse der Benachrichtigungen (leer = `SMTP_USER`) | `Bandplaner <noreply@example.com>` |
-| `SMTP_SECURE` | Nur nötig, wenn abweichend: `true` erzwingt TLS ab Verbindungsaufbau. Sonst automatisch aus dem Port abgeleitet (465 = TLS, sonst STARTTLS). | `true` |
-| `MUSICBRAINZ_USER_AGENT` | Aktiviert die Online-Recherche des Anlageassistenten (MusicBrainz als Primärquelle) beim Song-Neuanlegen. **Optional** – ohne gesetzten Wert bleibt nur die ID3-Vorschau aus hochgeladenen Dateien aktiv. MusicBrainz verlangt laut Nutzungsbedingungen einen identifizierenden Wert aus Name und Kontakt, kein generischer String. | `Bandplaner/1.0 (kontakt@example.com)` |
-| `DISCOGS_TOKEN` | Personal Access Token für Discogs, dient dem Anlageassistenten als Fallback für Genre/Jahr/Cover, falls MusicBrainz keinen Treffer liefert. **Optional.** | über den eigenen Discogs-Account unter „Developer Settings" erzeugen |
-| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Zugangsdaten einer Spotify-App (Client-Credentials-Flow), liefert dem Anlageassistenten ergänzend einen Track-Link zum recherchierten Song. **Optional.** | über das [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) erzeugen |
-| `NOMINATIM_BASE_URL` | Adresssuche/Kartenabgleich im Modul **Orte**. **Optional** – leer nutzt die öffentliche OpenStreetMap-Nominatim-Instanz; nur bei eigenem Nominatim-Betrieb anzupassen. | `https://nominatim.example.com` |
+| `AUTH_SECRET` | Secret key for NextAuth sessions. **Required**, otherwise login does not start securely. | generate with `openssl rand -base64 32` |
+| `NEXT_PUBLIC_APP_URL` | Publicly reachable URL of the app (for links in emails, the ICS calendar feed) | `http://diskstation.local:3000` or `https://bandplaner.example.com` |
+| `REGISTRATION_ENABLED` | Open self-registration at `/register`. **Optional**, default `false`: only the first account (initial setup) and people invited via an invitation link can create an account – everyone else joins exclusively via an invitation link. `true` opens registration to any visitor (only sensible if access is already restricted to trusted users). | `false` |
+| `SMTP_HOST` | Mail server for notifications. **Optional** – if empty, the app sends no email but otherwise works unchanged. | `smtp.example.com` |
+| `SMTP_PORT` | Mail server port (default 587) | `587` |
+| `SMTP_USER` / `SMTP_PASSWORD` | Credentials for the mail account, if the server requires authentication | `bandplaner@example.com` |
+| `SMTP_FROM` | Sender address of the notifications (empty = `SMTP_USER`) | `Bandplaner <noreply@example.com>` |
+| `SMTP_SECURE` | Only needed if it differs: `true` forces TLS from connection setup. Otherwise derived automatically from the port (465 = TLS, otherwise STARTTLS). | `true` |
+| `MUSICBRAINZ_USER_AGENT` | Enables the new-song assistant's online lookup (MusicBrainz as the primary source) when creating a song. **Optional** – without a value, only the ID3 preview from uploaded files stays active. MusicBrainz's terms require an identifying value made of name and contact, not a generic string. | `Bandplaner/1.0 (contact@example.com)` |
+| `DISCOGS_TOKEN` | Personal access token for Discogs, used by the new-song assistant as a fallback for genre/year/cover if MusicBrainz returns no match. **Optional.** | create via your own Discogs account under "Developer Settings" |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Credentials for a Spotify app (client-credentials flow); gives the new-song assistant a supplementary track link for the looked-up song. **Optional.** | create via the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) |
+| `NOMINATIM_BASE_URL` | Address search / map matching in the **Venues** module. **Optional** – empty uses the public OpenStreetMap Nominatim instance; only adjust if you run your own Nominatim. | `https://nominatim.example.com` |
 
-Die drei Anlageassistent-Quellen sind unabhängig voneinander optional konfigurierbar und degradieren bei fehlender Konfiguration still – die manuelle Song-Erfassung sowie die ID3-Vorschau bleiben davon unberührt.
+The three new-song-assistant sources are independently optional and degrade silently when unconfigured – manual song entry and the ID3 preview are unaffected.
 
-Damit tatsächlich Mails verschickt werden, müssen **beide** Bedingungen erfüllt sein:
+For mail to actually be sent, **both** conditions must be met:
 
-1. SMTP ist wie oben konfiguriert, **und**
-2. das Modul **Kommunikation** ist für die jeweilige Band eingeschaltet (Band → Verwaltung → Funktionen; standardmäßig aus).
+1. SMTP is configured as above, **and**
+2. the **Communication** module is enabled for the band in question (Band → Management → Features; off by default).
 
-Ist eines von beidem nicht erfüllt, funktioniert die App normal weiter – es werden dann nur keine Benachrichtigungen versendet. Welche Benachrichtigungen jemand bekommt, stellt jede Person anschließend selbst im eigenen Profil je Band ein (neuer Termin, Terminänderung, Songvorschlag, neue Datei, eigene Gagen/Kostenanteile). Fehlt der Mailserver, weist die Profilseite ausdrücklich darauf hin.
+If either is not met, the app keeps working normally – it just sends no notifications. Which notifications someone receives is then set by each person in their own profile, per band (new event, event change, song proposal, new file, one's own fees/cost shares). If the mail server is missing, the profile page points this out explicitly.
 
-`DATABASE_URL` und `AUTH_TRUST_HOST` sind bereits fest in `docker-compose.yml` gesetzt und müssen nicht angepasst werden. `AUTH_TRUST_HOST=true` ist nötig, weil der Host (IP, Hostname, Domain) je nach Netzwerk variiert – NextAuth würde im Produktionsmodus sonst mit „There was a problem with the server configuration“ abbrechen.
+`DATABASE_URL` and `AUTH_TRUST_HOST` are already set fixed in `docker-compose.yml` and do not need changing. `AUTH_TRUST_HOST=true` is needed because the host (IP, hostname, domain) varies by network – otherwise NextAuth would abort in production mode with "There was a problem with the server configuration".
 
-**`AUTH_SECRET` erzeugen:**
+**Generate `AUTH_SECRET`:**
 
 ```bash
 openssl rand -base64 32
 ```
 
-Falls `openssl` nicht verfügbar ist (z. B. auf Windows ohne Git Bash), alternativ mit Node.js:
+If `openssl` is not available (e.g. on Windows without Git Bash), use Node.js instead:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-### 2.4 Medienplayer
+### 2.4 Media player
 
-Der Medienplayer benötigt **keine** zusätzliche Konfiguration – er wird lediglich je Band unter *Verwaltung → Funktionen* eingeschaltet (standardmäßig aus). Zwei Punkte sind für den Betrieb dennoch relevant:
+The media player needs **no** additional configuration – it is simply enabled per band under *Management → Features* (off by default). Two points are still relevant for operation:
 
-- **Übungsmodus und Arbeitsspeicher:** Für Tempo-, Tonart- und Loop-Funktionen wird die Audiodatei vollständig dekodiert im Arbeitsspeicher gehalten – grob 20 MB je Minute Stereo, ein Vier-Minuten-Song also rund 85 MB. Das passiert ausschließlich **im Browser des jeweiligen Geräts**, nicht auf dem Server, und auch nur, wenn jemand den Übungsmodus aktiv startet. Auf älteren Mobilgeräten kann das spürbar sein; das normale Abspielen ist davon nicht betroffen.
-- **Audio-Worklet-Datei:** Für das Transponieren wird `public/audio-worklet/soundtouch-processor.js` benötigt. Diese Datei wird beim `npm install` automatisch aus den Abhängigkeiten kopiert (`scripts/copy-audio-worklet.mjs`) und liegt deshalb bewusst nicht im Repository. Im Docker-Build passiert das automatisch – bei einer manuellen Installation ohne `npm install` würde lediglich der Übungsmodus mit einer Fehlermeldung starten, alles andere bliebe nutzbar.
+- **Practice mode and memory:** for the tempo, key, and loop features, the audio file is held fully decoded in memory – roughly 20 MB per minute of stereo, so a four-minute song is around 85 MB. This happens exclusively **in the browser of the respective device**, not on the server, and only when someone actively starts practice mode. On older mobile devices it can be noticeable; normal playback is unaffected.
+- **Audio worklet file:** transposition needs `public/audio-worklet/soundtouch-processor.js`. This file is copied automatically from the dependencies during `npm install` (`scripts/copy-audio-worklet.mjs`) and is therefore deliberately not in the repository. In the Docker build this happens automatically – with a manual install without `npm install`, only practice mode would start with an error message; everything else stays usable.
 
-Der Player streamt Dateien über HTTP-Range-Requests, damit im Titel gesprungen werden kann. Wird Bandplaner hinter einem Reverse Proxy betrieben, sollte dieser Range-Requests unverändert durchreichen – die in Abschnitt 3.8 beschriebene DSM-Konfiguration tut das bereits.
+The player streams files via HTTP range requests so you can seek within a track. If Bandplaner runs behind a reverse proxy, that proxy should pass range requests through unchanged – the DSM configuration described in section 3.8 already does this.
 
-### 2.5 Erststart-Ablauf
+### 2.5 First-start sequence
 
-Beim `docker compose up -d` passiert:
+On `docker compose up -d` the following happens:
 
-1. Das Image wird aus der GitHub Container Registry geladen (einige hundert MB, meist unter einer Minute). *(Selbst-Bauen-Variante: hier wird stattdessen lokal gebaut – bei schwacher CPU 10–20 Minuten wegen der nativen Kompilierung von `better-sqlite3`.)*
-2. Container startet als `root`, `docker-entrypoint.sh` repariert die Besitzrechte der Volumes.
-3. `npx prisma migrate deploy` wendet ausstehende Datenbank-Migrationen an (auch bei jedem späteren Neustart – das ist ungefährlich, bei bereits aktueller DB passiert nichts).
-4. Der eigentliche Next.js-Server startet als unprivilegierter Benutzer `nextjs`, lauscht auf Port 3000.
+1. The image is pulled from the GitHub Container Registry (a few hundred MB, usually under a minute). *(Build-it-yourself variant: it builds locally here instead – 10–20 minutes on a weak CPU due to the native compilation of `better-sqlite3`.)*
+2. The container starts as `root`; `docker-entrypoint.sh` repairs ownership of the volumes.
+3. `npx prisma migrate deploy` applies pending database migrations (also on every later restart – harmless, nothing happens if the DB is already up to date).
+4. The actual Next.js server starts as the unprivileged user `nextjs`, listening on port 3000.
 
-### 2.6 Updates einspielen (generisch)
+### 2.6 Applying updates (generic)
 
 ```bash
-docker compose pull      # neuestes Image aus GHCR holen
-docker compose up -d     # Container mit dem neuen Image neu starten
+docker compose pull      # fetch the latest image from GHCR
+docker compose up -d     # restart the container with the new image
 ```
 
-Kein `git pull` nötig – bei der Image-Variante genügen `docker-compose.yml` und `.env`. Ausstehende Datenbank-Migrationen werden beim Neustart automatisch angewendet (Schritt 3 oben). Eine bestimmte Version statt `latest` betreiben? In `docker-compose.yml` den Tag anpassen (z. B. `:1.3.0`) – verfügbare Tags: <https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner>.
+No `git pull` needed – for the image variant, `docker-compose.yml` and `.env` are enough. Pending database migrations are applied automatically on restart (step 3 above). Want to run a specific version instead of `latest`? Adjust the tag in `docker-compose.yml` (e.g. `:1.3.0`) – available tags: <https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner>.
 
-*(Selbst-Bauen-Variante: `git pull` und danach `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
+*(Build-it-yourself variant: `git pull`, then `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
-### 2.7 Backup (generisch)
+### 2.7 Backup (generic)
 
-Die drei Volumes enthalten alle produktiven Daten. Einfachster Weg für ein Ad-hoc-Backup:
+The three volumes contain all production data. Simplest way to take an ad-hoc backup:
 
 ```bash
 docker run --rm -v bandplaner_data:/data -v bandplaner_storage:/storage -v bandplaner_uploads:/uploads \
@@ -139,81 +141,91 @@ docker run --rm -v bandplaner_data:/data -v bandplaner_storage:/storage -v bandp
   tar czf /backup/bandplaner-backup-$(date +%Y%m%d).tar.gz /data /storage /uploads
 ```
 
-Für regelmäßige/automatisierte Backups siehe die plattformspezifischen Abschnitte unten (Hyper Backup bzw. Proxmox vzdump/PBS).
+For regular/automated backups, see the platform-specific sections below (Hyper Backup or Proxmox vzdump/PBS).
+
+To restore: stop the container (`docker compose down`), extract the archive back into the same three volumes (the reverse `tar` call), then `docker compose up -d`. Example:
+
+```bash
+docker compose down
+docker run --rm -v bandplaner_data:/data -v bandplaner_storage:/storage -v bandplaner_uploads:/uploads \
+  -v "$(pwd)":/backup alpine \
+  sh -c "cd / && tar xzf /backup/bandplaner-backup-YYYYMMDD.tar.gz"
+docker compose up -d
+```
 
 ---
 
-## 3. Installation auf Synology DiskStation (Container Manager)
+## 3. Installing on a Synology DiskStation (Container Manager)
 
-Gilt für DSM 7.2+ (Paket heißt „Container Manager“). Auf älteren DSM-Versionen (7.0/7.1) heißt das Paket „Docker“ – die zugrunde liegende Docker-Engine und die Konzepte sind identisch, nur einzelne Menüpunkte heißen anders.
+Applies to DSM 7.2+ (the package is called "Container Manager"). On older DSM versions (7.0/7.1) the package is called "Docker" – the underlying Docker engine and the concepts are identical, only some menu items are named differently.
 
-### 3.1 Voraussetzungen
+### 3.1 Requirements
 
-- DiskStation mit x86_64- oder ARM-CPU, die **Container Manager** unterstützt (Paketzentrum zeigt es sonst nicht an). Das veröffentlichte Image deckt `linux/amd64` und `linux/arm64` ab – das schließt aktuelle x86-Modelle sowie ARM-Modelle mit 64-Bit-CPU (z. B. DS223, DS224+) ein. Sehr alte 32-Bit-ARM-NAS werden nicht abgedeckt; dort bleibt nur die Selbst-Bauen-Variante, sofern die CPU überhaupt reicht.
-- Einige hundert MB Plattenplatz für das Image. Für die **Image-Variante** wird **kein** nennenswerter Arbeitsspeicher für einen Build benötigt; nur bei der Selbst-Bauen-Variante sollten ~2 GB RAM frei sein.
-- Optional, aber empfohlen: SSH-Zugriff (Systemsteuerung → Terminal & SNMP → SSH-Dienst aktivieren), das macht das Anlegen der `.env`-Datei und spätere Updates deutlich einfacher als reines Klicken in File Station.
+- A DiskStation with an x86_64 or ARM CPU that supports **Container Manager** (otherwise the Package Center does not show it). The published image covers `linux/amd64` and `linux/arm64` – this includes current x86 models as well as ARM models with a 64-bit CPU (e.g. DS223, DS224+). Very old 32-bit ARM NAS units are not covered; there, only the build-it-yourself variant remains, if the CPU is even sufficient.
+- A few hundred MB of disk space for the image. For the **image variant**, **no** meaningful amount of memory is needed for a build; only the build-it-yourself variant should have ~2 GB RAM free.
+- Optional but recommended: SSH access (Control Panel → Terminal & SNMP → enable the SSH service), which makes creating the `.env` file and later updates much easier than clicking around in File Station.
 
-### 3.2 Container Manager installieren
+### 3.2 Install Container Manager
 
-Paketzentrum öffnen → „Container Manager“ suchen → Installieren.
+Open Package Center → search for "Container Manager" → Install.
 
-### 3.3 Projektordner auf der DiskStation anlegen
+### 3.3 Create the project folder on the DiskStation
 
-Für die Image-Variante werden nur **zwei Dateien** benötigt – das komplette Repository ist nicht nötig.
+For the image variant, only **two files** are needed – the complete repository is not required.
 
-1. In **File Station** einen Ordner anlegen, z. B. `/volume1/docker/bandplaner`.
-2. Dort die Datei `docker-compose.yml` ablegen. Entweder aus dem Repository herunterladen (<https://github.com/maxxs78/bandplaner/blob/main/docker-compose.yml>) oder den Inhalt kopieren.
-3. Die `.env`-Datei kommt in Schritt 3.4 in denselben Ordner.
+1. In **File Station**, create a folder, e.g. `/volume1/docker/bandplaner`.
+2. Put the file `docker-compose.yml` there. Either download it from the repository (<https://github.com/maxxs78/bandplaner/blob/main/docker-compose.yml>) or copy its contents.
+3. The `.env` file goes into the same folder in step 3.4.
 
-Merken Sie sich den absoluten Pfad auf der DiskStation selbst (nicht den Windows-Laufwerksbuchstaben, sondern z. B. `/volume1/docker/bandplaner`) – Container Manager zeigt in Schritt 3.5 direkt darauf.
+Note the absolute path on the DiskStation itself (not the Windows drive letter, but e.g. `/volume1/docker/bandplaner`) – Container Manager points directly at it in step 3.5.
 
-*(Selbst-Bauen-Variante: stattdessen das gesamte Repository per `git clone` oder File-Station-Upload in den Ordner bringen, inklusive `docker-compose.build.yml`.)*
+*(Build-it-yourself variant: instead, bring the whole repository into the folder via `git clone` or a File Station upload, including `docker-compose.build.yml`.)*
 
-### 3.4 `.env`-Datei anlegen
+### 3.4 Create the `.env` file
 
-Im selben Ordner wie `docker-compose.yml` eine Datei `.env` anlegen. Als Vorlage dient `.env.example` aus dem Repository (<https://github.com/maxxs78/bandplaner/blob/main/.env.example>); wer das Repository lokal hat, kopiert einfach:
+Create a file named `.env` in the same folder as `docker-compose.yml`. The template is `.env.example` from the repository (<https://github.com/maxxs78/bandplaner/blob/main/.env.example>); if you have the repository locally, simply copy it:
 
 ```bash
 cp .env.example .env
 ```
 
-Darin anpassen:
+Adjust in it:
 
-- `AUTH_SECRET` – eigenen Zufallswert erzeugen (siehe [2.3](#23-umgebungsvariablen))
-- `NEXT_PUBLIC_APP_URL` – die später genutzte Adresse, z. B. `http://diskstation.local:3000` oder die spätere HTTPS-Domain (siehe [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung))
-- `SMTP_*` – optional, nur falls E-Mail-Benachrichtigungen gewünscht sind (siehe [2.3](#23-umgebungsvariablen)); kann auch später jederzeit nachgetragen werden
-- `MUSICBRAINZ_USER_AGENT` / `DISCOGS_TOKEN` / `SPOTIFY_CLIENT_*` / `NOMINATIM_BASE_URL` – ebenfalls optional (Anlageassistent bzw. Orte-Adresssuche, siehe [2.3](#23-umgebungsvariablen)); ohne sie funktionieren die jeweiligen Grundfunktionen unverändert weiter
+- `AUTH_SECRET` – generate your own random value (see [2.3](#23-environment-variables))
+- `NEXT_PUBLIC_APP_URL` – the address you will use later, e.g. `http://diskstation.local:3000` or the later HTTPS domain (see [3.8](#38-making-it-reachable-from-the-internet-https-reverse-proxy-hardening))
+- `SMTP_*` – optional, only if email notifications are wanted (see [2.3](#23-environment-variables)); can also be added later at any time
+- `MUSICBRAINZ_USER_AGENT` / `DISCOGS_TOKEN` / `SPOTIFY_CLIENT_*` / `NOMINATIM_BASE_URL` – also optional (new-song assistant and venue address search, see [2.3](#23-environment-variables)); without them the respective core functions work unchanged
 
-`DATABASE_URL` unverändert lassen – wird im Container ohnehin auf `/data` umgebogen.
+Leave `DATABASE_URL` unchanged – inside the container it is redirected to `/data` anyway.
 
-Ohne SSH-Zugriff: `.env`-Datei lokal am PC erstellen und über File Station in den Projektordner hochladen (achten Sie darauf, dass sie wirklich `.env` heißt und nicht `.env.txt`).
+Without SSH access: create the `.env` file locally on your PC and upload it into the project folder via File Station (make sure it is really named `.env` and not `.env.txt`).
 
-### 3.5 Projekt in Container Manager erstellen
+### 3.5 Create the project in Container Manager
 
-1. Container Manager öffnen → **Projekt** → **Erstellen**.
-2. Projektname vergeben, z. B. `bandplaner`.
-3. Pfad: den Ordner wählen, in dem `docker-compose.yml` und `.env` liegen.
-4. Container Manager erkennt die `docker-compose.yml` automatisch und zeigt deren Inhalt an.
-5. Bestätigen. Container Manager lädt das Image aus der GitHub Container Registry (`ghcr.io/maxxs78/bandplaner`) und startet den Container – meist innerhalb einer Minute.
+1. Open Container Manager → **Project** → **Create**.
+2. Give it a project name, e.g. `bandplaner`.
+3. Path: choose the folder that contains `docker-compose.yml` and `.env`.
+4. Container Manager detects the `docker-compose.yml` automatically and shows its contents.
+5. Confirm. Container Manager pulls the image from the GitHub Container Registry (`ghcr.io/maxxs78/bandplaner`) and starts the container – usually within a minute.
 
-*(Selbst-Bauen-Variante: der Assistent bietet stattdessen einen Build an – das kann je nach Modell 10–20 Minuten dauern, siehe [2.5](#25-erststart-ablauf); nicht abbrechen, auch wenn es lange „hängt“. Container Manager lädt die zweite Compose-Datei nicht automatisch mit – dafür entweder `docker-compose.build.yml` als weitere Datei im Projekt angeben oder den `build:`-Block manuell in `docker-compose.yml` ergänzen.)*
+*(Build-it-yourself variant: the wizard offers a build instead – this can take 10–20 minutes depending on the model, see [2.5](#25-first-start-sequence); do not abort, even if it seems to "hang" for a long time. Container Manager does not load the second compose file automatically – either add `docker-compose.build.yml` as an additional file in the project or add the `build:` block to `docker-compose.yml` manually.)*
 
-### 3.6 Port & Firewall
+### 3.6 Port and firewall
 
-Standardmäßig ist die App über Port **3000** erreichbar (`http://<diskstation-ip>:3000`). Falls der Port schon belegt ist (z. B. durch DSM selbst auf 5000/5001 in der Regel nicht, aber ggf. durch andere Container), in `docker-compose.yml` den linken Wert der Portzuordnung ändern, z. B.:
+By default the app is reachable on port **3000** (`http://<diskstation-ip>:3000`). If the port is already taken (usually not by DSM itself on 5000/5001, but possibly by other containers), change the left value of the port mapping in `docker-compose.yml`, e.g.:
 
 ```yaml
 ports:
   - "8080:3000"
 ```
 
-Danach das Projekt in Container Manager neu starten (**Aktion → Erstellen/Neu starten**).
+Then restart the project in Container Manager (**Action → Build/Restart**).
 
-Falls die DSM-Firewall aktiv ist (Systemsteuerung → Sicherheit → Firewall): eine Regel für den gewählten Port und die gewünschten Quell-IPs/Netze ergänzen.
+If the DSM firewall is active (Control Panel → Security → Firewall): add a rule for the chosen port and the desired source IPs/networks.
 
-### 3.7 Erststart prüfen
+### 3.7 Check the first start
 
-Container Manager → **Container** → `bandplaner` → **Details** → **Log**. Sie sollten dort nacheinander sehen:
+Container Manager → **Container** → `bandplaner` → **Details** → **Log**. You should see, in order (the entrypoint logs in German):
 
 ```
 Bandplaner: repariere Dateirechte der persistenten Volumes…
@@ -221,120 +233,121 @@ Bandplaner: wende ausstehende Datenbank-Migrationen an…
 Bandplaner: starte Server…
 ```
 
-Anschließend `http://<diskstation-ip>:3000` (bzw. gewählter Port) im Browser öffnen und über `/register` das erste Konto anlegen.
+Then open `http://<diskstation-ip>:3000` (or the chosen port) in a browser and create the first account via `/register`.
 
-### 3.8 Aus dem Internet erreichbar machen (HTTPS, Reverse Proxy, Absicherung)
+### 3.8 Making it reachable from the internet (HTTPS, reverse proxy, hardening)
 
-Standardmäßig ist Bandplaner nur im eigenen Netz über `http://<diskstation-ip>:3000` erreichbar. Sollen Bandmitglieder auch von unterwegs zugreifen können, braucht es zwei getrennte Bausteine: Die **Router-Portfreigabe** sorgt dafür, dass Anfragen aus dem Internet überhaupt bis zur DiskStation durchgelassen werden (reiner Transportweg); die **DSM-Einrichtung** unten sorgt für Verschlüsselung (TLS-Zertifikat) und reicht die Anfrage intern an den Container weiter. Beides zusammen ist nötig – Portfreigabe allein liefert weder Verschlüsselung noch ein gültiges Zertifikat.
+By default Bandplaner is reachable only on your own network via `http://<diskstation-ip>:3000`. If band members should be able to access it from elsewhere, you need two separate building blocks: the **router port forward** ensures requests from the internet reach the DiskStation at all (pure transport); the **DSM setup** below provides encryption (TLS certificate) and forwards the request internally to the container. Both together are needed – a port forward alone provides neither encryption nor a valid certificate.
 
-**Voraussetzung:** eine Domain oder ein DDNS-Hostname, der auf Ihre öffentliche IP zeigt (bei dynamischer IP z. B. über Synologys eigenen DDNS-Dienst oder den Ihres Domain-Anbieters aktuell gehalten).
+**Prerequisite:** a domain or a DDNS hostname that points to your public IP (with a dynamic IP, kept current e.g. via Synology's own DDNS service or your domain provider's).
 
-**1. Router-Portfreigabe**
+**1. Router port forward**
 
-Nur Port **443** (HTTPS) an die DiskStation weiterleiten. Port 3000 (der App-Port) darf **nicht** direkt weitergeleitet werden – sonst liefe der Traffic unverschlüsselt am Reverse Proxy vorbei. Port 80 wird nur kurzzeitig gebraucht, falls DSM für die Zertifikatsausstellung die HTTP-01-Challenge nutzt; danach kann er wieder geschlossen werden.
+Forward only port **443** (HTTPS) to the DiskStation. Port 3000 (the app port) must **not** be forwarded directly – otherwise traffic would run unencrypted past the reverse proxy. Port 80 is only needed briefly if DSM uses the HTTP-01 challenge to issue the certificate; it can be closed again afterwards.
 
-**2. Zertifikat**
+**2. Certificate**
 
-Systemsteuerung → **Sicherheit** → **Zertifikat** → Hinzufügen → Let's Encrypt, Domain eintragen. Kostenlos, verlängert sich automatisch.
+Control Panel → **Security** → **Certificate** → Add → Let's Encrypt, enter the domain. Free, renews automatically.
 
-**3. Reverse-Proxy-Regel**
+**3. Reverse proxy rule**
 
-Systemsteuerung → **Anmeldeportal** → **Erweitert** → **Reverse-Proxy-Regel** → Erstellen:
+Control Panel → **Login Portal** → **Advanced** → **Reverse Proxy** → Create:
 
-| Feld | Wert |
+| Field | Value |
 |---|---|
-| Beschreibung | z. B. `Bandplaner` |
-| Quelle – Protokoll | HTTPS |
-| Quelle – Hostname | `<ihre-domain>` |
-| Quelle – Port | 443 |
-| Quelle – HSTS | optional, sobald alles läuft empfehlenswert |
-| Ziel – Protokoll | HTTP |
-| Ziel – Hostname | `localhost` |
-| Ziel – Port | 3000 (bzw. der in `docker-compose.yml` gewählte linke Port) |
+| Description | e.g. `Bandplaner` |
+| Source – Protocol | HTTPS |
+| Source – Hostname | `<your-domain>` |
+| Source – Port | 443 |
+| Source – HSTS | optional, recommended once everything works |
+| Destination – Protocol | HTTP |
+| Destination – Hostname | `localhost` |
+| Destination – Port | 3000 (or the left port chosen in `docker-compose.yml`) |
 
-Die Header `X-Forwarded-For`, `X-Forwarded-Proto` sowie der ursprüngliche `Host`-Header werden von DSMs Reverse Proxy bereits standardmäßig durchgereicht – dafür ist **keine** zusätzliche Einstellung im Reiter „Benutzerdefinierter Header" nötig. Das ist wichtig, weil `AUTH_TRUST_HOST=true` (bereits in `docker-compose.yml` gesetzt) NextAuth genau darauf verlässt, um zu erkennen, dass die Verbindung verschlüsselt ist.
+The headers `X-Forwarded-For`, `X-Forwarded-Proto`, and the original `Host` header are already passed through by DSM's reverse proxy by default – **no** additional setting in the "Custom Header" tab is needed. This matters because `AUTH_TRUST_HOST=true` (already set in `docker-compose.yml`) relies on exactly this to recognize that the connection is encrypted.
 
-**4. App-Konfiguration**
+**4. App configuration**
 
-`NEXT_PUBLIC_APP_URL` in der `.env` auf die neue `https://…`-Adresse setzen und das Projekt neu starten, damit z. B. Links im ICS-Kalenderfeed, in WhatsApp-Teilen-Buttons und in Benachrichtigungs-Mails korrekt sind.
+Set `NEXT_PUBLIC_APP_URL` in the `.env` to the new `https://…` address and restart the project, so that e.g. links in the ICS calendar feed, in WhatsApp share buttons, and in notification emails are correct.
 
-**5. Verifizieren**
+**5. Verify**
 
-Nach dem Umstellen einloggen und in den Browser-Entwicklertools unter *Application → Cookies* prüfen, ob der Session-Cookie mit `__Secure-` beginnt (`__Secure-authjs.session-token`). Ist das Präfix da, hat NextAuth HTTPS korrekt erkannt. Fehlt es, kommt der `X-Forwarded-Proto`-Header nicht an – typisches Symptom ist dann eine Login-Redirect-Schleife (siehe Fehlerbehebung unten). Anschließend auch von außerhalb des eigenen Netzes testen (z. B. Mobilfunknetz statt Heim-WLAN), da lokale Auflösung/Firewall-Effekte einen falschen Erfolg vortäuschen können.
+After switching, log in and check in the browser dev tools under *Application → Cookies* whether the session cookie starts with `__Secure-` (`__Secure-authjs.session-token`). If the prefix is there, NextAuth recognized HTTPS correctly. If it is missing, the `X-Forwarded-Proto` header is not arriving – the typical symptom is then a login redirect loop (see Troubleshooting below). Afterwards also test from outside your own network (e.g. mobile data instead of home Wi-Fi), since local name resolution/firewall effects can fake a false success.
 
-**6. Absicherung, weil jetzt öffentlich erreichbar**
+**6. Hardening, since it is now publicly reachable**
 
-Sobald ein Port aus dem Internet erreichbar ist, gehört mehr zur Grundabsicherung als nur das Zertifikat:
+Once a port is reachable from the internet, basic hardening involves more than just the certificate:
 
-- **Nur den nötigen Port exponieren:** Router leitet ausschließlich 443 weiter – nicht die DSM-Weboberfläche (5000/5001) und nicht SSH (22). SSH bleibt separat davon eine eigene Entscheidung; für reinen App-Zugriff wird es nicht gebraucht.
-- **DSM Auto Block aktivieren:** Systemsteuerung → Sicherheit → Schutz – sperrt IP-Adressen automatisch nach mehreren Fehlversuchen gegen DSM selbst.
-- **2FA für den DSM-Admin-Account** aktivieren, das Standardkonto „admin" deaktivieren oder umbenennen.
-- **Login-Schutz auf App-Ebene ist bereits eingebaut:** Bandplaner sperrt ein Konto nach 5 fehlgeschlagenen Loginversuchen automatisch für 2 Tage (siehe [README](README.de.md)) – dafür ist keine zusätzliche Konfiguration nötig.
-- **Backup vor der Umstellung** einmal gegenprüfen (siehe [3.10](#310-backup)), bevor der Server öffentlich erreichbar wird.
+- **Expose only the necessary port:** the router forwards only 443 – not the DSM web interface (5000/5001) and not SSH (22). SSH remains a separate decision; it is not needed for pure app access.
+- **Enable DSM Auto Block:** Control Panel → Security → Protection – automatically blocks IP addresses after several failed attempts against DSM itself.
+- **Enable 2FA for the DSM admin account**, disable or rename the default "admin" account.
+- **App-level login protection is already built in:** Bandplaner automatically locks an account for 2 days after 5 failed login attempts (see [README](README.md)) – no additional configuration needed.
+- **Keep registration closed:** leave `REGISTRATION_ENABLED` at `false` (the default) so that arbitrary visitors cannot create accounts (see [2.3](#23-environment-variables) and [7. Creating the first account](#7-creating-the-first-account)).
+- **Re-check the backup before the switch** (see [3.10](#310-backup)) before the server becomes publicly reachable.
 
 ### 3.9 Updates
 
-**Per SSH:**
+**Via SSH:**
 
 ```bash
-cd /volume1/docker/bandplaner   # oder Ihr Projektpfad
+cd /volume1/docker/bandplaner   # or your project path
 docker compose pull
 docker compose up -d
 ```
 
-**Ohne SSH, in Container Manager:** Projekt `bandplaner` → **Aktion** → **Erstellen/Neu starten** (bzw. „Zurücksetzen“). Bei einem `latest`-Tag holt Container Manager dabei das aktuelle Image; wird eine feste Version in `docker-compose.yml` betrieben, dort zuerst den Tag hochziehen und die Datei speichern.
+**Without SSH, in Container Manager:** project `bandplaner` → **Action** → **Build/Restart** (or "Reset"). With a `latest` tag, Container Manager pulls the current image; if a fixed version is used in `docker-compose.yml`, bump the tag there first and save the file.
 
-Die Datenbank-Migrationen laufen beim Neustart automatisch. Ein Backup vorher schadet nie (siehe [3.10](#310-backup)).
+Database migrations run automatically on restart. A backup beforehand never hurts (see [3.10](#310-backup)).
 
-*(Selbst-Bauen-Variante: `git pull` und `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`; ohne SSH die neuen Dateien über File Station hochladen und das Projekt erneut bauen.)*
+*(Build-it-yourself variant: `git pull` and `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`; without SSH, upload the new files via File Station and rebuild the project.)*
 
 ### 3.10 Backup
 
-Die drei benannten Volumes liegen physisch unterhalb des Docker-Datenverzeichnisses (meist `/volume1/@docker` bzw. je nach DSM-Version im „docker“-Systemordner) und sind damit für Synologys **Hyper Backup** nicht ohne Weiteres als eigener Freigabeordner sichtbar. Zwei praktikable Wege:
+The three named volumes physically live below the Docker data directory (usually `/volume1/@docker`, or in the "docker" system folder depending on DSM version) and are therefore not readily visible to Synology's **Hyper Backup** as a shared folder of their own. Two practical paths:
 
-- **Einfach:** Regelmäßig den Befehl aus [2.7](#27-backup-generisch) per Task-Planer (Systemsteuerung → Aufgabenplaner → geplante Aufgabe → Benutzerdefiniertes Skript) auf der DiskStation ausführen lassen; das Ergebnis-Archiv landet in einem normalen Freigabeordner, den Hyper Backup dann ganz regulär sichert.
-- **Alternativ (mehr Kontrolle):** In `docker-compose.yml` statt benannter Volumes Bind-Mounts auf einen Freigabeordner verwenden (z. B. `/volume1/docker/bandplaner-data:/data`), den Hyper Backup dann direkt sichert. Das ist ein bewusster Eingriff in die mitgelieferte `docker-compose.yml` – vor der Umstellung ein Backup der bestehenden Volumes ziehen.
+- **Simple:** run the command from [2.7](#27-backup-generic) regularly via Task Scheduler (Control Panel → Task Scheduler → scheduled task → user-defined script) on the DiskStation; the resulting archive lands in a normal shared folder that Hyper Backup then backs up as usual.
+- **Alternative (more control):** use bind mounts to a shared folder in `docker-compose.yml` instead of named volumes (e.g. `/volume1/docker/bandplaner-data:/data`), which Hyper Backup then backs up directly. This is a deliberate change to the shipped `docker-compose.yml` – take a backup of the existing volumes before switching.
 
 ---
 
-## 4. Installation auf Proxmox VE
+## 4. Installing on Proxmox VE
 
-Proxmox selbst ist ein Hypervisor – Docker sollte **nicht** direkt auf dem Proxmox-Host laufen, sondern in einem LXC-Container oder einer VM.
+Proxmox itself is a hypervisor – Docker should **not** run directly on the Proxmox host, but in an LXC container or a VM.
 
 ### 4.1 LXC vs. VM
 
-| | LXC-Container | VM |
+| | LXC container | VM |
 |---|---|---|
-| Ressourcenverbrauch | gering (teilt sich den Host-Kernel) | höher (eigener Kernel) |
-| Docker-Kompatibilität | sehr gut, benötigt aber „Nesting“-Feature | uneingeschränkt, da echter Kernel |
-| Empfehlung | **Standardweg für diesen Anwendungsfall** | Alternative, falls maximale Isolation gewünscht ist |
+| Resource usage | low (shares the host kernel) | higher (own kernel) |
+| Docker compatibility | very good, but needs the "nesting" feature | unrestricted, since a real kernel |
+| Recommendation | **the standard path for this use case** | alternative if maximum isolation is wanted |
 
-Im Folgenden Variante A (LXC) im Detail, Variante B (VM) kurz als Alternative.
+Below, option A (LXC) in detail, option B (VM) briefly as an alternative.
 
-### 4.2 Variante A: Debian-LXC-Container (empfohlen)
+### 4.2 Option A: Debian LXC container (recommended)
 
-**1. Container-Vorlage bereitstellen**
+**1. Provide the container template**
 
-Im Proxmox-Webinterface: gewünschter Storage (z. B. `local`) → **CT-Vorlagen** → **Vorlagen** → `debian-12-standard` herunterladen (falls nicht vorhanden).
+In the Proxmox web interface: desired storage (e.g. `local`) → **CT Templates** → **Templates** → download `debian-12-standard` (if not present).
 
-**2. Container erstellen**
+**2. Create the container**
 
-„Create CT“ im Proxmox-UI, dabei:
+"Create CT" in the Proxmox UI, with:
 
-- **General**: Hostname z. B. `bandplaner`, Passwort setzen. „Unprivileged container“ **aktiviert lassen** (Standard/sicherer) – das reicht für Docker, wenn zusätzlich die Features unten gesetzt werden.
+- **General**: hostname e.g. `bandplaner`, set a password. **Leave "Unprivileged container" enabled** (default/safer) – that is enough for Docker if the features below are also set.
 - **Template**: `debian-12-standard`
-- **Disks**: mind. 16 GB (Image-Build inkl. `node_modules` braucht Platz)
-- **CPU**: mind. 2 Cores
-- **Memory**: mind. 2048 MB, Swap 512 MB (der Image-Build kompiliert `better-sqlite3` nativ und braucht dafür etwas RAM)
-- **Network**: Bridge `vmbr0`, feste IP oder DHCP je nach Ihrem Netz
+- **Disks**: 4 GB is enough for the image variant; for the build-it-yourself variant at least 16 GB (build incl. `node_modules` needs space)
+- **CPU**: 1 core is enough for the image variant; for a local build at least 2 cores
+- **Memory**: 512–1024 MB is enough for the image variant; for a local build at least 2048 MB, swap 512 MB (the native compilation of `better-sqlite3` needs RAM)
+- **Network**: bridge `vmbr0`, static IP or DHCP depending on your network
 
-**3. Nesting aktivieren**
+**3. Enable nesting**
 
-Nach dem Erstellen: Container auswählen → **Options** → **Features** → bearbeiten → **Nesting** und **keyctl** aktivieren. Ohne dieses Feature kann der Docker-Daemon in einem unprivilegierten LXC-Container nicht starten. Container danach neu starten.
+After creating: select the container → **Options** → **Features** → edit → enable **Nesting** and **keyctl**. Without this feature the Docker daemon cannot start in an unprivileged LXC container. Restart the container afterwards.
 
-**4. Docker Engine installieren**
+**4. Install the Docker engine**
 
-Container-Konsole öffnen (`pct enter <ID>` auf dem Proxmox-Host, oder über die Web-Konsole) und ausführen:
+Open the container console (`pct enter <ID>` on the Proxmox host, or via the web console) and run:
 
 ```bash
 apt update && apt install -y ca-certificates curl gnupg git
@@ -347,9 +360,9 @@ apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
-**5. Projektordner anlegen**
+**5. Create the project folder**
 
-Für die Image-Variante genügen `docker-compose.yml` und `.env`:
+For the image variant, `docker-compose.yml` and `.env` are enough:
 
 ```bash
 mkdir -p /opt/bandplaner && cd /opt/bandplaner
@@ -357,30 +370,30 @@ curl -fsSLO https://raw.githubusercontent.com/maxxs78/bandplaner/main/docker-com
 curl -fsSL  https://raw.githubusercontent.com/maxxs78/bandplaner/main/.env.example -o .env
 ```
 
-*(Selbst-Bauen-Variante: stattdessen `git clone https://github.com/maxxs78/bandplaner.git /opt/bandplaner`.)*
+*(Build-it-yourself variant: instead `git clone https://github.com/maxxs78/bandplaner.git /opt/bandplaner`.)*
 
-**6. `.env` ausfüllen und starten**
+**6. Fill in `.env` and start**
 
 ```bash
 cd /opt/bandplaner
-nano .env   # AUTH_SECRET und NEXT_PUBLIC_APP_URL setzen, siehe 2.3
+nano .env   # set AUTH_SECRET and NEXT_PUBLIC_APP_URL, see 2.3
 docker compose up -d
 ```
 
-*(Selbst-Bauen-Variante: `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
+*(Build-it-yourself variant: `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
-**7. Autostart & Firewall**
+**7. Autostart & firewall**
 
-- Proxmox: Container → **Options** → „Start at boot“ aktivieren, damit der Container beim Hochfahren des Proxmox-Hosts mitstartet. Der Docker-Dienst selbst ist nach der Installation bereits als systemd-Dienst aktiviert und startet mit dem Container automatisch.
-- Firewall: falls die Proxmox-Firewall oder `ufw` im Container aktiv ist, Port 3000 (bzw. den in `docker-compose.yml` gewählten Port) für Zugriffe aus Ihrem Netz freigeben.
+- Proxmox: container → **Options** → enable "Start at boot" so the container starts with the Proxmox host. The Docker service itself is already enabled as a systemd service after installation and starts automatically with the container.
+- Firewall: if the Proxmox firewall or `ufw` inside the container is active, open port 3000 (or the port chosen in `docker-compose.yml`) for access from your network.
 
-### 4.3 Variante B: VM statt LXC
+### 4.3 Option B: VM instead of LXC
 
-Falls Sie lieber eine VM verwenden (z. B. Ubuntu Server 22.04/24.04): VM wie gewohnt in Proxmox anlegen (mind. 2 vCPU, 2 GB RAM, 16 GB Disk), Docker darin exakt wie in Schritt 4.2.4 installieren (Repo-URL entsprechend `ubuntu` statt `debian` verwenden), dann Schritte 4.2.5–4.2.7 identisch. Nesting/keyctl entfällt, da eine VM einen eigenen Kernel hat.
+If you prefer a VM (e.g. Ubuntu Server 22.04/24.04): create the VM as usual in Proxmox (at least 2 vCPU, 2 GB RAM, 16 GB disk), install Docker in it exactly as in step 4.2.4 (use the `ubuntu` repo URL instead of `debian`), then steps 4.2.5–4.2.7 identically. Nesting/keyctl is not needed, since a VM has its own kernel.
 
-### 4.4 Exkurs: Fertige Docker-LXC-Vorlagen per Community-Skript
+### 4.4 Aside: ready-made Docker LXC templates via community scripts
 
-Es existieren Community-Helferskripte (z. B. „Proxmox VE Helper-Scripts“), die einen fertig eingerichteten Docker-LXC-Container per Ein-Zeiler auf dem Proxmox-Host erzeugen. Das spart Schritte 4.2.1–4.2.4, ist aber ein Skript eines Drittanbieters, das mit Root-Rechten auf Ihrem Proxmox-Host läuft. Prüfen Sie den Skriptinhalt vor der Ausführung selbst, wenn Sie diesen Weg gehen möchten – die manuelle Variante oben ist der sicherere Standardweg und unterscheidet sich am Ende nur in wenigen Kommandos.
+There are community helper scripts (e.g. "Proxmox VE Helper-Scripts") that create a fully set-up Docker LXC container via a one-liner on the Proxmox host. That saves steps 4.2.1–4.2.4, but it is a third-party script that runs with root rights on your Proxmox host. Review the script's contents yourself before running it if you want to go this way – the manual variant above is the safer standard path and differs only in a few commands in the end.
 
 ### 4.5 Updates
 
@@ -390,45 +403,46 @@ docker compose pull
 docker compose up -d
 ```
 
-*(Selbst-Bauen-Variante: `git pull` und `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
+*(Build-it-yourself variant: `git pull` and `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
 ### 4.6 Backup
 
-Da bei einem LXC-Container die Docker-Volumes Teil des Container-Dateisystems sind, sichert ein normaler Proxmox-Container-Snapshot/Backup automatisch auch die Bandplaner-Daten mit:
+Since with an LXC container the Docker volumes are part of the container file system, a normal Proxmox container snapshot/backup automatically backs up the Bandplaner data as well:
 
-- **Datacenter → Backup** → geplanten Backup-Job für den `bandplaner`-Container anlegen (Ziel: lokaler Storage oder Proxmox Backup Server).
-- Vor größeren Updates zusätzlich manuell: Container auswählen → **Backup** → **Backup jetzt**.
+- **Datacenter → Backup** → create a scheduled backup job for the `bandplaner` container (target: local storage or Proxmox Backup Server).
+- Before larger updates, additionally do a manual one: select the container → **Backup** → **Backup now**.
 
-Das ist der empfohlene Weg unter Proxmox – deutlich einfacher als das volume-basierte Backup aus [2.7](#27-backup-generisch), da gleich der komplette Container gesichert wird.
-
----
-
-## 5. Reverse Proxy & HTTPS (plattformübergreifend, optional)
-
-Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von der Plattform mehrere gängige Optionen: Synologys eingebauter Reverse-Proxy (siehe [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung), inkl. Absicherungs-Checkliste, die sinngemäß auch auf anderen Plattformen gilt), oder – z. B. bei Proxmox – ein zusätzlicher Reverse Proxy wie **Nginx Proxy Manager**, **Caddy** oder **Traefik** in einem eigenen Container/LXC, der Let's-Encrypt-Zertifikate verwaltet und Anfragen an `bandplaner:3000` weiterleitet. `AUTH_TRUST_HOST=true` ist bereits in der `docker-compose.yml` gesetzt, wodurch der Login unabhängig vom verwendeten Host funktioniert. `NEXT_PUBLIC_APP_URL` sollte nach Einrichtung auf die finale `https://…`-Adresse gesetzt werden, damit Links (z. B. im ICS-Kalenderfeed) korrekt sind.
+This is the recommended path on Proxmox – considerably simpler than the volume-based backup from [2.7](#27-backup-generic), since the whole container is backed up at once.
 
 ---
 
-## 6. Fehlerbehebung
+## 5. Reverse proxy and HTTPS (cross-platform, optional)
 
-| Symptom | Ursache / Lösung |
+For your own domain with HTTPS instead of `http://ip:3000` there are several common options regardless of platform: Synology's built-in reverse proxy (see [3.8](#38-making-it-reachable-from-the-internet-https-reverse-proxy-hardening), incl. the hardening checklist, which applies analogously on other platforms), or – e.g. on Proxmox – an additional reverse proxy such as **Nginx Proxy Manager**, **Caddy**, or **Traefik** in its own container/LXC that manages Let's Encrypt certificates and forwards requests to `bandplaner:3000`. `AUTH_TRUST_HOST=true` is already set in `docker-compose.yml`, so login works regardless of the host used. `NEXT_PUBLIC_APP_URL` should be set to the final `https://…` address after setup so that links (e.g. in the ICS calendar feed) are correct.
+
+---
+
+## 6. Troubleshooting
+
+| Symptom | Cause / fix |
 |---|---|
-| „There was a problem with the server configuration“ beim Login | `AUTH_SECRET` fehlt oder ist leer in der `.env` |
-| Build bricht mit Speicherfehler ab / hängt sehr lange | Betrifft nur die **Selbst-Bauen-Variante**: zu wenig RAM für die Kompilierung von `better-sqlite3` – Container/VM-Speicher erhöhen (mind. 2 GB), ggf. Swap hinzufügen. Mit dem fertigen Image aus GHCR entfällt der Build ganz. |
-| `docker compose pull` schlägt fehl (`denied` / `not found`) | Tag in `docker-compose.yml` prüfen (`:latest` oder eine existierende Version). Das Image ist öffentlich – kein `docker login` nötig. Sehr alte Docker-Versionen ohne Multi-Arch-Manifest-Unterstützung können scheitern; dann Docker aktualisieren. |
-| Port bereits belegt | Linken Wert in `ports:` der `docker-compose.yml` ändern (z. B. `8080:3000`), Projekt neu starten |
-| Container startet, aber Seite nicht erreichbar | Firewall (DSM-Firewall bzw. Proxmox-/`ufw`-Firewall) prüfen, ob der gewählte Port freigegeben ist |
-| „Permission denied“ auf Datenbank/Uploads | Wird bei jedem Start automatisch durch `docker-entrypoint.sh` repariert (`chown`) – tritt in der Regel nur bei manuell veränderten Bind-Mounts mit exotischen Host-Rechten auf |
-| Es kommen keine Benachrichtigungs-E-Mails an | Der Reihe nach prüfen: (1) `SMTP_*` in der `.env` gesetzt und Projekt danach neu gestartet? (2) Modul **Kommunikation** in der Band-Verwaltung eingeschaltet? (3) Im eigenen Profil der passende Ereignistyp aktiviert? (4) Container-Log auf `[mail] Versand fehlgeschlagen` prüfen. Hinweis: Über eigene Aktionen wird man bewusst nicht selbst benachrichtigt – zum Testen die Aktion von einem zweiten Konto aus auslösen. |
-| Kein Ton / „Übungsmodus konnte nicht geladen werden“ | Modul **Medienplayer** in der Band-Verwaltung eingeschaltet? Fehlt `public/audio-worklet/soundtouch-processor.js` (siehe [2.4](#24-medienplayer)), lässt sich nur der Übungsmodus nicht starten – normales Abspielen bleibt nutzbar. Springen im Titel setzt voraus, dass ein vorgeschalteter Reverse Proxy HTTP-Range-Requests durchreicht. |
-| Login-Redirect-Schleife bzw. Session hält nicht (hinter Reverse Proxy) | `X-Forwarded-Proto` kommt nicht beim Server an, NextAuth erkennt HTTPS nicht. Prüfen wie in [3.8](#38-aus-dem-internet-erreichbar-machen-https-reverse-proxy-absicherung) Schritt 5 beschrieben (Cookie-Präfix `__Secure-` in den Browser-Entwicklertools). |
-| „Zu viele fehlgeschlagene Loginversuche“ trotz korrektem Passwort | Konto wurde nach 5 Fehlversuchen für 2 Tage automatisch gesperrt (Brute-Force-Schutz). Läuft von selbst ab, oder ein Admin setzt über Band → Mitglieder ein neues Initialpasswort – das hebt die Sperre sofort auf. |
-| Nach Update Migrationsfehler | Vor dem Update ein Backup ziehen (siehe [2.7](#27-backup-generisch) bzw. [4.6](#46-backup)), Log per `docker compose logs -f` bzw. Container Manager prüfen |
+| "There was a problem with the server configuration" on login | `AUTH_SECRET` is missing or empty in the `.env` |
+| Build aborts with a memory error / hangs for a very long time | Affects only the **build-it-yourself variant**: too little RAM to compile `better-sqlite3` – increase container/VM memory (at least 2 GB), add swap if needed. With the prebuilt image from GHCR the build is skipped entirely. |
+| `docker compose pull` fails (`denied` / `not found`) | Check the tag in `docker-compose.yml` (`:latest` or an existing version). The image is public – no `docker login` needed. Very old Docker versions without multi-arch manifest support can fail; update Docker then. |
+| Port already in use | Change the left value in `ports:` of `docker-compose.yml` (e.g. `8080:3000`), restart the project |
+| Container starts, but the page is not reachable | Check the firewall (DSM firewall or Proxmox/`ufw` firewall) for whether the chosen port is open |
+| "Permission denied" on the database/uploads | Repaired automatically on every start by `docker-entrypoint.sh` (`chown`) – usually only occurs with manually changed bind mounts with unusual host permissions |
+| No notification emails arrive | Check in order: (1) `SMTP_*` set in the `.env` and the project restarted afterwards? (2) the **Communication** module enabled in the band management? (3) the matching event type enabled in your own profile? (4) check the container log for `[mail] Versand fehlgeschlagen`. Note: you are deliberately not notified about your own actions – to test, trigger the action from a second account. |
+| No sound / "Practice mode could not be loaded" | Is the **media player** module enabled in the band management? If `public/audio-worklet/soundtouch-processor.js` is missing (see [2.4](#24-media-player)), only practice mode fails to start – normal playback stays usable. Seeking within a track requires an upstream reverse proxy to pass HTTP range requests through. |
+| Login redirect loop / session does not persist (behind a reverse proxy) | `X-Forwarded-Proto` does not arrive at the server, NextAuth does not recognize HTTPS. Check as described in [3.8](#38-making-it-reachable-from-the-internet-https-reverse-proxy-hardening) step 5 (cookie prefix `__Secure-` in the browser dev tools). |
+| "Too many failed login attempts" despite the correct password | The account was automatically locked for 2 days after 5 failed attempts (brute-force protection). It expires on its own, or an admin sets a new initial password via Band → Members – which lifts the lock immediately. |
+| "Registration unavailable" although wanted | Open registration is off by default. Set `REGISTRATION_ENABLED=true` in the `.env` and restart the project – or add new members via an invitation link (see [7. Creating the first account](#7-creating-the-first-account)). |
+| Migration error after an update | Take a backup before updating (see [2.7](#27-backup-generic) or [4.6](#46-backup)), check the log via `docker compose logs -f` or Container Manager |
 
 ---
 
-## 7. Erstes Konto anlegen
+## 7. Creating the first account
 
-Unabhängig von der gewählten Plattform: Nach erfolgreichem Start die App im Browser öffnen und über **`/register`** das erste Konto anlegen. Das Mitglied, das die erste Band anlegt, wird automatisch deren Administrator:in.
+Regardless of the chosen platform: after a successful start, open the app in a browser and create the first account via **`/register`**. The member who creates the first band automatically becomes its administrator.
 
-Das **erste** Konto lässt sich immer anlegen. Danach ist die freie Registrierung standardmäßig geschlossen (`REGISTRATION_ENABLED`, siehe [2.3](#23-umgebungsvariablen)): Weitere Mitglieder und Gäste werden dann über **Band → Mitglieder → Einladen** per Einladungslink hinzugefügt; die eingeladene Person kann sich über diesen Link ein Konto anlegen, auch bei geschlossener Registrierung. Wer stattdessen offene Selbstregistrierung möchte, setzt `REGISTRATION_ENABLED=true`.
+The **first** account can always be created. After that, open registration is closed by default (`REGISTRATION_ENABLED`, see [2.3](#23-environment-variables)): further members and guests are then added via **Band → Members → Invite** using an invitation link; the invited person can create an account via that link even with registration closed. If you want open self-registration instead, set `REGISTRATION_ENABLED=true`.

@@ -6,7 +6,7 @@
 #   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
 #
 # Der Build kompiliert better-sqlite3 nativ und dauert auf schwacher Hardware
-# (ARM-NAS) durchaus 10-20 Minuten - siehe INSTALLATION.md.
+# (ARM-NAS) durchaus 10-20 Minuten - siehe INSTALLATION.de.md.
 
 services:
   bandplaner:
