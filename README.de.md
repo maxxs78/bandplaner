@@ -136,7 +136,7 @@ docker compose up -d
 
 Updates: `docker compose pull && docker compose up -d`. Datenbank-Migrationen laufen beim Start automatisch; die Daten liegen in drei benannten Volumes und überstehen Updates.
 
-Wer den Code selbst anpassen will, baut das Image lokal – siehe [`docker-compose.build.yml`](docker-compose.build.yml) und [CONTRIBUTING.md](CONTRIBUTING.md).
+Wer den Code selbst anpassen will, baut das Image lokal – siehe [`docker-compose.build.yml`](docker-compose.build.yml) und [CONTRIBUTING.de.md](CONTRIBUTING.de.md).
 
 ## Weitere Ressourcen
 
@@ -152,9 +152,9 @@ Bandplaner ist ein **Hobbyprojekt**, das in der Freizeit entsteht.
 
 **Fehlerberichte und Funktionswünsche sind willkommen** – über die [Issues](https://github.com/maxxs78/bandplaner/issues) mit den bereitgestellten Vorlagen. Eine Zusage, **ob und wann** etwas umgesetzt wird, gibt es nicht.
 
-**Pull Requests werden nicht angenommen.** Der Review-Aufwand ist für ein Ein-Personen-Hobbyprojekt nicht leistbar; PRs aus Forks werden automatisch mit Verweis auf die Issues geschlossen. Forken und unter der AGPL-3.0 selbst anpassen ist natürlich erlaubt. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
+**Pull Requests werden nicht angenommen.** Der Review-Aufwand ist für ein Ein-Personen-Hobbyprojekt nicht leistbar; PRs aus Forks werden automatisch mit Verweis auf die Issues geschlossen. Forken und unter der AGPL-3.0 selbst anpassen ist natürlich erlaubt. Details: [CONTRIBUTING.de.md](CONTRIBUTING.de.md).
 
-Sicherheitslücken bitte vertraulich melden – siehe [SECURITY.md](SECURITY.md), **nicht** als öffentliches Issue. Umgangston: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
+Sicherheitslücken bitte vertraulich melden – siehe [SECURITY.de.md](SECURITY.de.md), **nicht** als öffentliches Issue. Umgangston: [CODE_OF_CONDUCT.de.md](CODE_OF_CONDUCT.de.md).
 
 ## Lizenz und Haftung
 

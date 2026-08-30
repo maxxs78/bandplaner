@@ -1,8 +1,6 @@
 # Contributor Covenant Code of Conduct
 
-_Eine deutsche Übersetzung dieses Textes ist unter
-<https://www.contributor-covenant.org/de/version/2/1/code_of_conduct/> verfügbar
-und gilt inhaltsgleich._
+> 🇩🇪 Diese Datei gibt es auch [auf Deutsch](CODE_OF_CONDUCT.de.md).
 
 ## Our Pledge
 
