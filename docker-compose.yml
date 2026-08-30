@@ -8,6 +8,15 @@ services:
     # Image lieber selbst bauen (Entwicklung/Fork)? Siehe docker-compose.build.yml.
     image: ghcr.io/maxxs78/bandplaner:latest
     restart: unless-stopped
+    # Prueft, ob der Next.js-Server antwortet. Nutzt node (im Image vorhanden),
+    # damit weder curl noch wget nachinstalliert werden muessen. start_period
+    # deckt Migrationslauf + Serverstart ab (auf schwacher ARM-Hardware langsam).
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/login',r=>process.exit(r.statusCode<500?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
     ports:
       # Links der Port, auf dem die App auf der DiskStation erreichbar ist.
       # Bei Bedarf anpassen (z. B. "8080:3000"), falls Port 3000 schon belegt ist.

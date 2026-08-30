@@ -48,7 +48,7 @@ Sie brauchen **Docker mit dem Compose-Plugin** – sowohl `docker --version` als
 
 | Datei | Zweck |
 |---|---|
-| `docker-compose.yml` | Startet den Container aus dem GHCR-Image, verbindet drei benannte Volumes und liest `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` aus einer `.env`-Datei |
+| `docker-compose.yml` | Startet den Container aus dem GHCR-Image, verbindet drei benannte Volumes, liest `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` aus einer `.env`-Datei und definiert einen Health-Check |
 | `docker-compose.build.yml` | Override, um das Image lokal zu bauen statt es zu ziehen (nur für Entwicklung/Forks) |
 | `.env.example` | Vorlage für die Umgebungsvariablen |
 | `Dockerfile` | Mehrstufiger Build: `deps` (npm-Install inkl. Kompilierung von `better-sqlite3`), `builder` (Prisma-Client generieren, `next build`), `runner` (schlankes Produktions-Image, Port 3000). Wird bei der Image-Variante nicht gebraucht – GitHub Actions baut damit die veröffentlichten Images. |
@@ -123,6 +123,8 @@ Beim `docker compose up -d` passiert:
 2. Container startet als `root`, `docker-entrypoint.sh` repariert die Besitzrechte der Volumes.
 3. `npx prisma migrate deploy` wendet ausstehende Datenbank-Migrationen an (auch bei jedem späteren Neustart – das ist ungefährlich, bei bereits aktueller DB passiert nichts).
 4. Der eigentliche Next.js-Server startet als unprivilegierter Benutzer `nextjs`, lauscht auf Port 3000.
+
+Ein Health-Check (in `docker-compose.yml` definiert) prüft den Server danach alle 30 Sekunden; `docker compose ps` und Container Manager zeigen den Container als `healthy`, sobald er antwortet (bis zu einer Minute nach dem Start), sonst als `unhealthy`. Reines `docker compose` meldet diesen Status nur, handelt aber nicht darauf – `restart: unless-stopped` startet den Container nur neu, wenn der Prozess tatsächlich beendet wird. Für automatische Neustarts bei `unhealthy` einen kleinen Beiwagen wie `willfarrell/autoheal` ergänzen.
 
 ### 2.6 Updates einspielen (generisch)
 
