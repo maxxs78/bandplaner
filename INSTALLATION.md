@@ -26,7 +26,7 @@ Die restliche Anleitung geht vom **fertigen Image** aus. Die Selbst-Bauen-Varian
 
 ## 1. Kurz: Lokales Testen (ohne Docker)
 
-Nur zum Entwickeln/Ausprobieren gedacht, nicht für den Dauerbetrieb. Die Schritte dafür (`npm install`, `.env` anlegen, `npx prisma migrate dev`, `npm run dev`) stehen im [README](README.md#lokale-entwicklung).
+Nur zum Entwickeln/Ausprobieren gedacht, nicht für den Dauerbetrieb. Die Schritte dafür (`npm install`, `.env` anlegen, `npx prisma migrate dev`, `npm run dev`) stehen im [README](README.de.md#lokale-entwicklung).
 
 **Windows-Hinweis:** Beim `npm install` wird das native Modul `better-sqlite3` kompiliert – dafür sind Build-Tools (Python, C++-Compiler) nötig; falls das fehlschlägt, ist WSL (Windows Subsystem for Linux) oder ein Linux/macOS-Rechner der unkompliziertere Weg.
 
@@ -269,7 +269,7 @@ Sobald ein Port aus dem Internet erreichbar ist, gehört mehr zur Grundabsicheru
 - **Nur den nötigen Port exponieren:** Router leitet ausschließlich 443 weiter – nicht die DSM-Weboberfläche (5000/5001) und nicht SSH (22). SSH bleibt separat davon eine eigene Entscheidung; für reinen App-Zugriff wird es nicht gebraucht.
 - **DSM Auto Block aktivieren:** Systemsteuerung → Sicherheit → Schutz – sperrt IP-Adressen automatisch nach mehreren Fehlversuchen gegen DSM selbst.
 - **2FA für den DSM-Admin-Account** aktivieren, das Standardkonto „admin" deaktivieren oder umbenennen.
-- **Login-Schutz auf App-Ebene ist bereits eingebaut:** Bandplaner sperrt ein Konto nach 5 fehlgeschlagenen Loginversuchen automatisch für 2 Tage (siehe [README](README.md)) – dafür ist keine zusätzliche Konfiguration nötig.
+- **Login-Schutz auf App-Ebene ist bereits eingebaut:** Bandplaner sperrt ein Konto nach 5 fehlgeschlagenen Loginversuchen automatisch für 2 Tage (siehe [README](README.de.md)) – dafür ist keine zusätzliche Konfiguration nötig.
 - **Backup vor der Umstellung** einmal gegenprüfen (siehe [3.10](#310-backup)), bevor der Server öffentlich erreichbar wird.
 
 ### 3.9 Updates

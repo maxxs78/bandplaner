@@ -15,4 +15,5 @@ public/uploads/bands/*
 admin-login.txt
 *.tsbuildinfo
 npm-debug.log*
-README.md
+# Doku wird im Image nicht gebraucht (Handbook liegt als HTML unter public/)
+*.md
