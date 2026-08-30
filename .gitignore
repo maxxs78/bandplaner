@@ -69,3 +69,6 @@ next-env.d.ts
 /.agents/
 /.windsurf/
 skills-lock.json
+
+# lokaler Ablageordner (Icon-/Bildexperimente, nicht Teil der Anwendung)
+/scratch-icons/
