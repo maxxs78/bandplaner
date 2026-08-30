@@ -17,3 +17,6 @@ admin-login.txt
 npm-debug.log*
 # Doku wird im Image nicht gebraucht (Handbook liegt als HTML unter public/)
 *.md
+
+# GitHub-Pages-Landingpage - nicht Teil des App-Images
+/docs
