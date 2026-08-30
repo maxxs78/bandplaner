@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bandplaner — self-hosted band management</title>
+<meta name="description" content="Bandplaner is a free, self-hosted, open-source web app to organize a band: rehearsals and gigs, availability, repertoire with keys, setlists, equipment, finances and files. Runs on your own server, a NAS or a Raspberry Pi.">
+<link rel="canonical" href="https://maxxs78.github.io/bandplaner/">
+<link rel="alternate" hreflang="en" href="https://maxxs78.github.io/bandplaner/">
+<link rel="alternate" hreflang="de" href="https://maxxs78.github.io/bandplaner/de.html">
+<link rel="alternate" hreflang="x-default" href="https://maxxs78.github.io/bandplaner/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Bandplaner — self-hosted band management">
+<meta property="og:description" content="Your band's whole running order in one place: rehearsals, availability, repertoire, setlists, equipment, finances. Free, open source, self-hosted.">
+<meta property="og:url" content="https://maxxs78.github.io/bandplaner/">
+<meta property="og:image" content="https://maxxs78.github.io/bandplaner/img/setlist.png">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ctext y='26' font-size='26'%3E%F0%9F%8E%B8%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Bandplaner",
+  "applicationCategory": "BusinessApplication",
+  "operatingSystem": "Docker (Linux, self-hosted)",
+  "description": "Free, self-hosted, open-source web app to organize a band: rehearsals and gigs, availability, repertoire with keys, setlists, equipment, finances and files.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "license": "https://www.gnu.org/licenses/agpl-3.0.html",
+  "url": "https://github.com/maxxs78/bandplaner",
+  "softwareVersion": "1.3.0"
+}
+</script>
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --raised:#fffdf8;
+    --ink:#21201d;
+    --ink-soft:#4c4a43;
+    --rule:#d9d3c4;
+    --marker:#ffd84d;
+    --stage:#1f6f68;
+    --stage-ink:#f6f3ec;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --paper:#1a1917;
+      --raised:#232220;
+      --ink:#ece7db;
+      --ink-soft:#a9a498;
+      --rule:#38352d;
+      --marker:#e6bd2f;
+      --stage:#5aa39c;
+      --stage-ink:#12201e;
+    }
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:17px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:0 24px}
+  a{color:var(--stage);text-underline-offset:3px;text-decoration-thickness:1.5px}
+
+  /* ---- top bar ---- */
+  .topbar{display:flex;justify-content:space-between;align-items:baseline;padding:22px 0 0;font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.02em}
+  .topbar .lang a{color:var(--ink-soft)}
+
+  /* ---- hero: the setlist header ---- */
+  .hero{padding:54px 0 40px;border-bottom:2px solid var(--ink)}
+  .eyebrow{font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft)}
+  h1{
+    font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;
+    font-weight:800;
+    font-size:clamp(3.2rem,11vw,6.5rem);
+    line-height:.92;
+    letter-spacing:-.02em;
+    margin:.18em 0 .28em;
+  }
+  .lede{font-size:clamp(1.15rem,2.4vw,1.5rem);max-width:34ch;color:var(--ink-soft);line-height:1.4}
+  .lede b{color:var(--ink);font-weight:600;box-shadow:inset 0 -.42em 0 var(--marker)}
+  .cta{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+  .btn{
+    font-family:"Space Mono",monospace;font-weight:700;font-size:15px;
+    padding:13px 22px;border:2px solid var(--ink);background:transparent;color:var(--ink);
+    display:inline-flex;align-items:center;gap:.5em;text-decoration:none;
+    transition:transform .12s ease, background .12s ease, color .12s ease;
+  }
+  .btn:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+  .btn-primary{background:var(--stage);border-color:var(--stage);color:var(--stage-ink)}
+  .btn-primary:hover{box-shadow:4px 4px 0 var(--ink)}
+  .run-cmd{margin-top:22px;font-family:"Space Mono",monospace;font-size:14px;color:var(--ink-soft)}
+  .run-cmd b{color:var(--ink);font-weight:700}
+
+  /* ---- running order ---- */
+  .set-label{
+    font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.22em;text-transform:uppercase;
+    color:var(--ink-soft);display:flex;align-items:center;gap:16px;margin:52px 0 8px;
+  }
+  .set-label::after{content:"";flex:1;height:2px;background:var(--rule)}
+
+  .song{
+    display:grid;grid-template-columns:2.4rem 1fr;gap:20px;
+    padding:26px 0;border-bottom:1px solid var(--rule);
+  }
+  .song .num{font-family:"Space Mono",monospace;font-weight:700;font-size:1.4rem;color:var(--stage)}
+  .song h2{
+    font-family:"Bricolage Grotesque","IBM Plex Sans",sans-serif;font-weight:600;
+    font-size:clamp(1.5rem,3.6vw,2rem);line-height:1.1;letter-spacing:-.01em;margin-bottom:.35em;
+  }
+  .song .cue{
+    font-family:"Space Mono",monospace;font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    color:var(--ink-soft);border:1px solid var(--rule);padding:2px 8px;display:inline-block;margin-bottom:.9em;
+  }
+  .song p{max-width:56ch;color:var(--ink-soft)}
+  .song p b{color:var(--ink);font-weight:600}
+  .shot{margin-top:20px;border:2px solid var(--ink);background:var(--raised);line-height:0}
+  .shot img{width:100%;height:auto;display:block}
+  .shot figcaption{
+    font-family:"Space Mono",monospace;font-size:12px;color:var(--ink-soft);
+    padding:8px 12px;border-top:1px solid var(--rule);line-height:1.4;text-align:left;
+  }
+
+  /* ---- encore / self-hosted pitch ---- */
+  .encore{margin:56px 0 0;padding:36px 0;border-top:2px solid var(--ink);border-bottom:2px solid var(--ink)}
+  .encore h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(1.8rem,5vw,2.6rem);letter-spacing:-.02em;margin-bottom:.5em}
+  .encore .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:24px}
+  .encore .col h3{font-family:"Space Mono",monospace;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5em}
+  .encore .col p{font-size:15px;color:var(--ink-soft)}
+
+  /* ---- install ---- */
+  .install{padding:44px 0}
+  .install h2{font-family:"Bricolage Grotesque",sans-serif;font-weight:800;font-size:clamp(1.6rem,4vw,2.2rem);letter-spacing:-.02em;margin-bottom:.6em}
+  pre{
+    background:var(--ink);color:var(--paper);font-family:"Space Mono",monospace;font-size:13.5px;line-height:1.7;
+    padding:22px;overflow-x:auto;border:2px solid var(--ink);
+  }
+  pre .c{color:#9a978c}
+  .install .note{margin-top:14px;font-size:15px;color:var(--ink-soft)}
+  .install .note b{color:var(--ink);font-weight:600}
+
+  /* ---- footer ---- */
+  footer{border-top:2px solid var(--ink);padding:30px 0 60px;font-family:"Space Mono",monospace;font-size:13px}
+  footer .row{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:baseline}
+  footer .muted{color:var(--ink-soft)}
+  footer a{color:var(--ink)}
+
+  @media (max-width:640px){
+    .song{grid-template-columns:1fr;gap:4px}
+    .song .num{font-size:1.1rem}
+    .encore .cols{grid-template-columns:1fr;gap:16px}
+  }
+
+  @media (prefers-reduced-motion:no-preference){
+    .reveal{opacity:0;transform:translateY(14px);transition:opacity .5s ease, transform .5s ease}
+    .reveal.in{opacity:1;transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span>BANDPLANER v1.3.0</span>
+    <span class="lang"><a href="de.html">→ Deutsch</a></span>
+  </div>
+
+  <header class="hero">
+    <p class="eyebrow">Self-hosted · Open source · AGPL-3.0</p>
+    <h1>Bandplaner</h1>
+    <p class="lede">Your band's whole running order — rehearsals, setlists, repertoire, money — <b>in one place you actually own</b>.</p>
+    <div class="cta">
+      <a class="btn btn-primary" href="https://github.com/maxxs78/bandplaner#self-hosting--deployment">Load it in ▸</a>
+      <a class="btn" href="https://github.com/maxxs78/bandplaner">See it on GitHub</a>
+    </div>
+    <p class="run-cmd">No cloud, no subscription. <b>docker compose up -d</b> and it's running in about a minute.</p>
+  </header>
+
+  <p class="set-label">Tonight's set</p>
+
+  <article class="song reveal">
+    <div class="num">1.</div>
+    <div>
+      <span class="cue">rehearsals · gigs</span>
+      <h2>Calendar &amp; availability</h2>
+      <p>Rehearsals, gigs and meetings in a shared calendar. Everyone marks <b>yes / no / maybe</b> per date, so you stop asking "who's coming Thursday?" in three group chats. Subscribe it to your phone calendar as a feed.</p>
+      <figure class="shot">
+        <img src="img/calendar.png" alt="Bandplaner month calendar showing rehearsals and gigs with per-member availability" loading="lazy" width="1200" height="800">
+        <figcaption>Month view — every date shows who's in.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="song reveal">
+    <div class="num">2.</div>
+    <div>
+      <span class="cue">key · bpm · charts</span>
+      <h2>The repertoire, shared</h2>
+      <p>Every song with its key, tempo, time signature, audio files, lyrics and charts, plus private notes per player. New songs get <b>voted in</b> with a thumbs up or down. Drop in an audio file and the assistant fills the metadata for you.</p>
+    </div>
+  </article>
+
+  <article class="song reveal">
+    <div class="num">3.</div>
+    <div>
+      <span class="cue">retune · instrument change</span>
+      <h2>Setlists that print per player</h2>
+      <p>Build the set from the library, then each member marks their own copy — a colour here, a "capo 2" note there, an icon for the retune before the encore. Export to PDF, personalised. Link one setlist to several gigs; past shows <b>freeze as played</b>.</p>
+      <figure class="shot">
+        <img src="img/setlist.png" alt="Bandplaner setlist detail with per-member stage-cue icons and notes" loading="lazy" width="1200" height="800">
+        <figcaption>One shared list, a personal copy for everyone on stage.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="song reveal">
+    <div class="num">4.</div>
+    <div>
+      <span class="cue">slow it down · transpose</span>
+      <h2>A practice player built in</h2>
+      <p>Play any uploaded track at <b>50–150 % speed without the pitch going weird</b>, transpose it up to an octave either way, and loop a tricky four bars by dragging across the waveform. It even reads back the tempo and key.</p>
+      <figure class="shot">
+        <img src="img/practice.png" alt="Bandplaner practice player with waveform, tempo and transpose controls and an A/B loop" loading="lazy" width="1200" height="800">
+        <figcaption>Woodshed the bridge without leaving the app.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <article class="song reveal">
+    <div class="num">5.</div>
+    <div>
+      <span class="cue">gear · money · rooms</span>
+      <h2>Equipment, finances, venues, files</h2>
+      <p>Packing lists you tick off before load-in. The band's money — fees and cost shares, who's owed what, CSV out. Venues with a map, capacity and the stage notes. And a file drawer that clips a technical rider to both the venue and the gig at once.</p>
+      <figure class="shot">
+        <img src="img/finances.png" alt="Bandplaner finance overview with income, expenses and per-member shares" loading="lazy" width="1200" height="800">
+        <figcaption>After the gig: who gets what, settled.</figcaption>
+      </figure>
+    </div>
+  </article>
+
+  <section class="encore">
+    <h2>Encore: it's yours</h2>
+    <p style="max-width:56ch;color:var(--ink-soft)">Bandplaner runs on hardware you control. There is no account on someone else's server, nothing to cancel, and nothing watching your data.</p>
+    <div class="cols">
+      <div class="col"><h3>Free</h3><p>Open source under the AGPL-3.0. No tiers, no per-seat pricing, ever.</p></div>
+      <div class="col"><h3>Private</h3><p>SQLite and your files stay on your machine. Optional lookups can be switched off.</p></div>
+      <div class="col"><h3>Small</h3><p>One container, multi-arch. An x86 box, a Synology NAS, or a Raspberry Pi 4/5.</p></div>
+    </div>
+  </section>
+
+  <section class="install">
+    <h2>Get it running</h2>
+    <pre><span class="c"># two files, then start it</span>
+mkdir bandplaner &amp;&amp; cd bandplaner
+curl -fsSLO https://raw.githubusercontent.com/maxxs78/bandplaner/main/docker-compose.yml
+curl -fsSL  https://raw.githubusercontent.com/maxxs78/bandplaner/main/.env.example -o .env
+<span class="c"># set AUTH_SECRET and NEXT_PUBLIC_APP_URL in .env, then</span>
+docker compose up -d</pre>
+    <p class="note">The image is <b>ghcr.io/maxxs78/bandplaner</b>. Full guide with HTTPS, reverse proxy and step-by-step for Synology and Proxmox: <a href="https://github.com/maxxs78/bandplaner/blob/main/INSTALLATION.md">INSTALLATION.md</a>. There's an illustrated <a href="https://github.com/maxxs78/bandplaner/blob/main/public/docs/handbook/index.html">handbook</a> too.</p>
+  </section>
+
+  <footer>
+    <div class="row">
+      <a href="https://github.com/maxxs78/bandplaner">GitHub</a>
+      <a href="https://github.com/maxxs78/bandplaner/blob/main/INSTALLATION.md">Install guide</a>
+      <a href="https://github.com/maxxs78/bandplaner/discussions">Discussions</a>
+      <a href="de.html">Deutsch</a>
+      <span class="muted">AGPL-3.0 · a hobby project, maintained in spare time · no warranty</span>
+    </div>
+  </footer>
+
+</div>
+<script>
+  (function(){
+    var els=[].slice.call(document.querySelectorAll('.reveal'));
+    var show=function(e){e.classList.add('in')};
+    if(!('IntersectionObserver'in window)||window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+      els.forEach(show);return;
+    }
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){if(en.isIntersecting){show(en.target);io.unobserve(en.target)}});
+    },{rootMargin:'0px 0px -8% 0px'});
+    els.forEach(function(e){io.observe(e)});
+    setTimeout(function(){els.forEach(show)},3000);
+  })();
+</script>
+</body>
+</html>

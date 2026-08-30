@@ -2,7 +2,9 @@
 
 > 🇬🇧 This README is also available [in English](README.md).
 
-Bandplaner ist eine webbasierte Band-Organisations-App auf Basis von Next.js, Prisma und SQLite. Sie bündelt die Organisation einer Band oder Musikgruppe – Termine, Verfügbarkeiten, Repertoire, Setlisten, Dateien, Equipment und Finanzen – an einem Ort, statt sie über E-Mail, Messenger-Gruppen und Tabellen zu verstreuen.
+**Bandplaner ist eine selbstgehostete, quelloffene Software zur Bandorganisation.** Proben und Auftritte, wer wann kann, das Repertoire mit Tonart und Noten, Setlisten, Equipment und Packlisten, die Bandkasse, Auftrittsorte und geteilte Dateien – alles an einem Ort, statt über E-Mail, WhatsApp-Gruppen und Tabellen verstreut. Läuft auf deinem eigenen Server, einem NAS oder einem Raspberry Pi; keine Cloud, kein Abo, deine Daten bleiben bei dir.
+
+Basiert auf Next.js und SQLite, paketiert als einzelner Docker-Container. Oberfläche auf Deutsch und Englisch.
 
 ## Über die App
 
@@ -97,6 +99,32 @@ Lesehilfe:
 
 *(Nicht dargestellt, um die Übersicht lesbar zu halten: Einladungen, persönliche Song-Notizen, Bühnen-Hinweise auf Setlist-Einträgen, Finanzadmin-Zuordnung.)*
 
+## FAQ
+
+**Ist Bandplaner kostenlos?**
+Ja. Quelloffene Software unter der GNU AGPL-3.0. Kein Abo, keine kostenpflichtige Stufe, kein Konto auf einem fremden Server.
+
+**Braucht es die Cloud oder eine Internetverbindung?**
+Nein. Bandplaner wird selbst gehostet – es läuft komplett auf deinem eigenen Rechner, alle Daten bleiben dort. Die einzigen optionalen ausgehenden Aufrufe sind die Metadaten-Recherche des Anlageassistenten (MusicBrainz, Discogs, Spotify) und die Adresssuche für Orte (OpenStreetMap); beides lässt sich abgeschaltet lassen.
+
+**Läuft es auf einer Synology DiskStation oder einem Raspberry Pi?**
+Ja. Das Docker-Image ist Multi-Arch (`linux/amd64` + `linux/arm64`) und läuft damit auf x86-Servern, den meisten aktuellen Synology-/QNAP-NAS und einem Raspberry Pi 4/5.
+
+**Ist das eine selbstgehostete Alternative zu BandHelper, Set List Maker oder Gig-o-Matic?**
+Es deckt weite Teile davon ab – geteiltes Repertoire mit Tonarten, Setlisten, Terminplanung, Verfügbarkeiten und Dateien – plus einen Übungs-Player. Der Unterschied: Du hostest und aktualisierst es selbst, dafür ist es kostenlos, privat und ohne Preis pro Person.
+
+**Wie viele Bands und Mitglieder sind möglich?**
+Beliebig viele. Ein Konto kann zu mehreren Bands gehören und zwischen ihnen wechseln; jede Band hat eigene Mitglieder, ein eigenes Repertoire und eigene Einstellungen.
+
+**Gibt es eine gehostete Version oder eine öffentliche Demo?**
+Nein. Bandplaner wird ausschließlich selbst gehostet – du betreibst deine eigene Instanz. Die Einrichtung mit Docker dauert rund eine Minute (siehe unten).
+
+**Gibt es eine Mobile-App?**
+Keine native App. Die Oberfläche ist responsiv und funktioniert im Handy-Browser; per „Zum Startbildschirm hinzufügen" gibt es eine App-ähnliche Verknüpfung.
+
+**Was ist mit DSGVO / den Daten meiner Mitglieder?**
+Da du selbst hostest, bist du die verantwortliche Stelle. Bandplaner bringt einen persönlichen Datenexport und eine selbstbediente Konto-Löschung für jede Person mit.
+
 ## Bekannte Grenzen
 
 - **Übungsfunktionen nur für hochgeladene Dateien.** Eingebettete Streaming-Quellen lassen sich nicht verlangsamen oder transponieren: Spotify bietet über seinen Player keinerlei Tempo-/Tonhöhensteuerung, YouTube nur feste Geschwindigkeitsstufen und kein Transponieren. Ein direkter Zugriff auf die Audiodaten wäre bei beiden nicht zulässig.
@@ -142,6 +170,7 @@ Wer den Code selbst anpassen will, baut das Image lokal – siehe [`docker-compo
 
 - [Bedienungsanleitung (Handbook)](public/docs/handbook/index.html) – bebilderte Anleitung für Endnutzer:innen (Englisch); in der laufenden App auch über das Info-Symbol (ⓘ) in der Kopfzeile erreichbar
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – vollständige fachliche Spezifikation inkl. Roadmap
+- [Projekt-Website](https://maxxs78.github.io/bandplaner/de.html) – Überblick und Screenshots
 - [INSTALLATION.de.md](INSTALLATION.de.md) – Installationsanleitung für den Selbsthost-Betrieb (Deutsch), [English](INSTALLATION.md)
 - [CHANGELOG.md](CHANGELOG.md) – Änderungsprotokoll (Englisch)
 - [Next.js Documentation](https://nextjs.org/docs)

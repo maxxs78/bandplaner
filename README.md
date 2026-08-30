@@ -2,7 +2,9 @@
 
 > 🇩🇪 Dieses README gibt es auch [auf Deutsch](README.de.md).
 
-Bandplaner is a web-based band organization app built with Next.js, Prisma, and SQLite. It brings everything involved in running a band or musical group — events, availability, repertoire, setlists, files, equipment, and finances — into one place, instead of scattering it across email, messenger groups, and spreadsheets.
+**Bandplaner is a self-hosted, open-source band management web app.** Rehearsals and gigs, who's available, the repertoire with keys and sheet music, setlists, equipment and packing lists, the band's finances, venues, and shared files — all in one place, instead of scattered across email, WhatsApp groups, and spreadsheets. It runs on your own server, a NAS, or a Raspberry Pi; there is no cloud and no subscription, and your data stays with you.
+
+Built with Next.js and SQLite, packaged as a single Docker container. Interface in English and German.
 
 ## About the app
 
@@ -97,6 +99,32 @@ Reading aid:
 
 *(Not shown, to keep the overview readable: invitations, personal song notes, stage cues on setlist entries, finance-admin assignment.)*
 
+## FAQ
+
+**Is Bandplaner free?**
+Yes. It is open-source software under the GNU AGPL-3.0. There is no subscription, no paid tier, and no account on anyone else's server.
+
+**Does it need the cloud or an internet connection?**
+No. Bandplaner is self-hosted — it runs entirely on your own machine and all data stays there. The only optional outbound calls are the new-song assistant's metadata lookups (MusicBrainz, Discogs, Spotify) and venue address search (OpenStreetMap); each can be left disabled.
+
+**Can it run on a Synology NAS or a Raspberry Pi?**
+Yes. The Docker image is multi-arch (`linux/amd64` + `linux/arm64`), so it runs on x86 servers, most modern Synology/QNAP NAS models, and a Raspberry Pi 4/5.
+
+**Is it a self-hosted alternative to BandHelper, Set List Maker, or Gig-o-Matic?**
+It covers much of the same ground — shared repertoire with keys, setlists, scheduling, availability, and files — with a practice player on top. The trade-off: you host and update it yourself, and in return it is free, private, and has no per-seat pricing.
+
+**How many bands and members can I have?**
+Unlimited. One account can belong to several bands and switch between them; each band has its own members, repertoire, and settings.
+
+**Is there a hosted version or a public demo?**
+No. Bandplaner is self-hosted only — you run your own instance. Setup with Docker takes about a minute (see below).
+
+**Is there a mobile app?**
+No native app. The interface is responsive and works in a phone browser; you can "Add to Home Screen" for an app-like shortcut.
+
+**What about GDPR / my members' data?**
+Since you host it, you are the data controller. Bandplaner includes a personal data export and self-service account deletion for every user.
+
 ## Known limitations
 
 - **Practice features only for uploaded files.** Embedded streaming sources cannot be slowed down or transposed: Spotify offers no tempo/pitch control via its player, YouTube only fixed speed steps and no transposition. Direct access to the audio data would not be permitted for either.
@@ -142,6 +170,7 @@ To modify the code yourself, build the image locally – see [`docker-compose.bu
 
 - [User handbook](public/docs/handbook/index.html) – illustrated guide for end users (English); also reachable in the running app via the info icon (ⓘ) in the header
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – complete functional specification incl. roadmap (German)
+- [Project website](https://maxxs78.github.io/bandplaner/) – overview and screenshots
 - [INSTALLATION.md](INSTALLATION.md) – installation guide for self-hosting
 - [CHANGELOG.md](CHANGELOG.md) – release notes
 - [Next.js documentation](https://nextjs.org/docs)
