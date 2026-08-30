@@ -143,6 +143,7 @@ To modify the code yourself, build the image locally – see [`docker-compose.bu
 - [User handbook](public/docs/handbook/index.html) – illustrated guide for end users (English); also reachable in the running app via the info icon (ⓘ) in the header
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – complete functional specification incl. roadmap (German)
 - [INSTALLATION.md](INSTALLATION.md) – installation guide for self-hosting
+- [CHANGELOG.md](CHANGELOG.md) – release notes
 - [Next.js documentation](https://nextjs.org/docs)
 - [Learn Next.js](https://nextjs.org/learn)
 

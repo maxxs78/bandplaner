@@ -143,6 +143,7 @@ Wer den Code selbst anpassen will, baut das Image lokal – siehe [`docker-compo
 - [Bedienungsanleitung (Handbook)](public/docs/handbook/index.html) – bebilderte Anleitung für Endnutzer:innen (Englisch); in der laufenden App auch über das Info-Symbol (ⓘ) in der Kopfzeile erreichbar
 - [Funktionsspezifikation-Bandplaner.md](Funktionsspezifikation-Bandplaner.md) – vollständige fachliche Spezifikation inkl. Roadmap
 - [INSTALLATION.de.md](INSTALLATION.de.md) – Installationsanleitung für den Selbsthost-Betrieb (Deutsch), [English](INSTALLATION.md)
+- [CHANGELOG.md](CHANGELOG.md) – Änderungsprotokoll (Englisch)
 - [Next.js Documentation](https://nextjs.org/docs)
 - [Learn Next.js](https://nextjs.org/learn)
 
