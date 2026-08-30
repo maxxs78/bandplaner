@@ -1,0 +1,14 @@
+# Override zum lokalen Bauen des Images statt es aus der GitHub Container
+# Registry zu ziehen - fuer Entwicklung oder eigene (ggf. angepasste) Forks.
+#
+# Verwendung (immer beide Dateien angeben):
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# Der Build kompiliert better-sqlite3 nativ und dauert auf schwacher Hardware
+# (ARM-NAS) durchaus 10-20 Minuten - siehe INSTALLATION.md.
+
+services:
+  bandplaner:
+    build: .
+    image: ghcr.io/maxxs78/bandplaner:local

@@ -118,7 +118,21 @@ npm run dev
 
 ## Self-Hosting / Deployment
 
-Für den produktiven Betrieb (z. B. per Docker auf einer Synology DiskStation oder in Proxmox VE) siehe die ausführliche [Installationsanleitung](INSTALLATION.md).
+Für den produktiven Betrieb wird ein vorgebautes Multi-Arch-Docker-Image (amd64/arm64) unter [`ghcr.io/maxxs78/bandplaner`](https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner) veröffentlicht – kein lokaler Build nötig.
+
+Schnellstart (Details, HTTPS/Reverse-Proxy und plattformspezifische Schritte in der [Installationsanleitung](INSTALLATION.md)):
+
+```bash
+mkdir bandplaner && cd bandplaner
+curl -fsSLO https://raw.githubusercontent.com/maxxs78/bandplaner/main/docker-compose.yml
+curl -fsSL  https://raw.githubusercontent.com/maxxs78/bandplaner/main/.env.example -o .env
+# .env bearbeiten: AUTH_SECRET (openssl rand -base64 32) und NEXT_PUBLIC_APP_URL setzen
+docker compose up -d
+```
+
+Updates: `docker compose pull && docker compose up -d`. Datenbank-Migrationen laufen beim Start automatisch; die Daten liegen in drei benannten Volumes und überstehen Updates.
+
+Wer den Code selbst anpassen will, baut das Image lokal – siehe [`docker-compose.build.yml`](docker-compose.build.yml) und [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## Weitere Ressourcen
 

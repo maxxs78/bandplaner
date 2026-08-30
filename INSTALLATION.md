@@ -1,6 +1,6 @@
 # Bandplaner – Installationsanleitung (Self-Hosting)
 
-Diese Anleitung beschreibt die Installation von Bandplaner mit Schwerpunkt auf **Docker**. Sie deckt drei Wege ab:
+Diese Anleitung beschreibt die Installation von Bandplaner mit Schwerpunkt auf **Docker**. Sie deckt folgende Wege ab:
 
 1. [Kurz: Lokales Testen](#1-kurz-lokales-testen-ohne-docker) (ohne Docker, zum Entwickeln/Ausprobieren)
 2. [Docker-Grundlagen](#2-docker--grundlagen) (gilt für jede Plattform)
@@ -8,6 +8,19 @@ Diese Anleitung beschreibt die Installation von Bandplaner mit Schwerpunkt auf *
 4. [Proxmox VE](#4-installation-auf-proxmox-ve) (detailliert)
 
 Technischer Hintergrund: Bandplaner ist eine Next.js-App mit Prisma/SQLite als Datenbank und NextAuth (Auth.js) für den Login. Persistiert werden drei Dinge: die SQLite-Datenbankdatei, hochgeladene Song-/Band-Dateien sowie Profil-, Band- und Song-Coverbilder.
+
+### Zwei Betriebsarten
+
+| | **Fertiges Image (empfohlen)** | **Selbst bauen** |
+|---|---|---|
+| Herkunft | vorgebautes Multi-Arch-Image (amd64/arm64) aus der GitHub Container Registry: `ghcr.io/maxxs78/bandplaner` | lokaler Docker-Build aus dem Quellcode |
+| Nötige Dateien | nur `docker-compose.yml` + `.env` | das komplette Repository |
+| Erststart | Image-Download, ~1 Minute | nativer Build, auf schwacher Hardware 10–20 Minuten |
+| Compose-Aufruf | `docker compose up -d` | `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build` |
+| Update | `docker compose pull && docker compose up -d` | `git pull && docker compose … up -d --build` |
+| Wofür | normaler Selbsthost-Betrieb | Entwicklung, eigene Code-Anpassungen/Forks |
+
+Die restliche Anleitung geht vom **fertigen Image** aus. Die Selbst-Bauen-Variante unterscheidet sich nur im Compose-Aufruf und darin, dass das gesamte Repository vorliegen muss.
 
 ---
 
@@ -29,10 +42,11 @@ Dieser Abschnitt gilt unabhängig davon, ob Sie auf einer Synology DiskStation, 
 
 | Datei | Zweck |
 |---|---|
-| `Dockerfile` | Mehrstufiger Build: `deps` (npm-Install inkl. Kompilierung von `better-sqlite3`), `builder` (Prisma-Client generieren, `next build`), `runner` (schlankes Produktions-Image, Port 3000) |
-| `docker-compose.yml` | Startet den Container, verbindet drei benannte Volumes und liest `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` aus einer `.env`-Datei |
-| `docker-entrypoint.sh` | Läuft bei **jedem** Containerstart: repariert Dateirechte der Volumes, führt `prisma migrate deploy` aus, startet dann den Server |
+| `docker-compose.yml` | Startet den Container aus dem GHCR-Image, verbindet drei benannte Volumes und liest `AUTH_SECRET`/`NEXT_PUBLIC_APP_URL` aus einer `.env`-Datei |
+| `docker-compose.build.yml` | Override, um das Image lokal zu bauen statt es zu ziehen (nur für Entwicklung/Forks) |
 | `.env.example` | Vorlage für die Umgebungsvariablen |
+| `Dockerfile` | Mehrstufiger Build: `deps` (npm-Install inkl. Kompilierung von `better-sqlite3`), `builder` (Prisma-Client generieren, `next build`), `runner` (schlankes Produktions-Image, Port 3000). Wird bei der Image-Variante nicht gebraucht – GitHub Actions baut damit die veröffentlichten Images. |
+| `docker-entrypoint.sh` | Läuft bei **jedem** Containerstart: repariert Dateirechte der Volumes, führt `prisma migrate deploy` aus, startet dann den Server (Teil des Images) |
 
 ### 2.2 Persistente Daten (Volumes)
 
@@ -42,7 +56,7 @@ Dieser Abschnitt gilt unabhängig davon, ob Sie auf einer Synology DiskStation, 
 | `bandplaner_storage` | Song-/Band-Dateien | `/app/storage` |
 | `bandplaner_uploads` | Profil-/Band-/Song-Coverbilder | `/app/public/uploads` |
 
-Diese drei Docker-Volumes überleben `docker compose up -d --build` (Updates) und Container-Neustarts. **`docker compose down -v` löscht sie unwiderruflich** – nur bewusst verwenden, und vorher ein Backup ziehen (siehe unten).
+Diese drei Docker-Volumes überleben Updates (`docker compose pull && docker compose up -d`) und Container-Neustarts. **`docker compose down -v` löscht sie unwiderruflich** – nur bewusst verwenden, und vorher ein Backup ziehen (siehe unten).
 
 ### 2.3 Umgebungsvariablen
 
@@ -96,9 +110,9 @@ Der Player streamt Dateien über HTTP-Range-Requests, damit im Titel gesprungen 
 
 ### 2.5 Erststart-Ablauf
 
-Beim `docker compose up -d --build` passiert:
+Beim `docker compose up -d` passiert:
 
-1. Image wird gebaut (dauert bei schwacher CPU – z. B. ARM-NAS mit wenig RAM – durchaus 10–20 Minuten, wegen der nativen Kompilierung von `better-sqlite3`).
+1. Das Image wird aus der GitHub Container Registry geladen (einige hundert MB, meist unter einer Minute). *(Selbst-Bauen-Variante: hier wird stattdessen lokal gebaut – bei schwacher CPU 10–20 Minuten wegen der nativen Kompilierung von `better-sqlite3`.)*
 2. Container startet als `root`, `docker-entrypoint.sh` repariert die Besitzrechte der Volumes.
 3. `npx prisma migrate deploy` wendet ausstehende Datenbank-Migrationen an (auch bei jedem späteren Neustart – das ist ungefährlich, bei bereits aktueller DB passiert nichts).
 4. Der eigentliche Next.js-Server startet als unprivilegierter Benutzer `nextjs`, lauscht auf Port 3000.
@@ -106,9 +120,13 @@ Beim `docker compose up -d --build` passiert:
 ### 2.6 Updates einspielen (generisch)
 
 ```bash
-git pull   # oder: neue Dateien ins Projektverzeichnis kopieren
-docker compose up -d --build
+docker compose pull      # neuestes Image aus GHCR holen
+docker compose up -d     # Container mit dem neuen Image neu starten
 ```
+
+Kein `git pull` nötig – bei der Image-Variante genügen `docker-compose.yml` und `.env`. Ausstehende Datenbank-Migrationen werden beim Neustart automatisch angewendet (Schritt 3 oben). Eine bestimmte Version statt `latest` betreiben? In `docker-compose.yml` den Tag anpassen (z. B. `:1.3.0`) – verfügbare Tags: <https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner>.
+
+*(Selbst-Bauen-Variante: `git pull` und danach `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
 ### 2.7 Backup (generisch)
 
@@ -130,28 +148,29 @@ Gilt für DSM 7.2+ (Paket heißt „Container Manager“). Auf älteren DSM-Vers
 
 ### 3.1 Voraussetzungen
 
-- DiskStation mit x86_64- oder ARM-CPU, die **Container Manager** unterstützt (Paketzentrum zeigt es sonst nicht an).
-- Genug freier Speicher: mind. ~2 GB RAM frei für den Build-Vorgang empfohlen, sowie einige hundert MB Plattenplatz für Image + `node_modules`.
+- DiskStation mit x86_64- oder ARM-CPU, die **Container Manager** unterstützt (Paketzentrum zeigt es sonst nicht an). Das veröffentlichte Image deckt `linux/amd64` und `linux/arm64` ab – das schließt aktuelle x86-Modelle sowie ARM-Modelle mit 64-Bit-CPU (z. B. DS223, DS224+) ein. Sehr alte 32-Bit-ARM-NAS werden nicht abgedeckt; dort bleibt nur die Selbst-Bauen-Variante, sofern die CPU überhaupt reicht.
+- Einige hundert MB Plattenplatz für das Image. Für die **Image-Variante** wird **kein** nennenswerter Arbeitsspeicher für einen Build benötigt; nur bei der Selbst-Bauen-Variante sollten ~2 GB RAM frei sein.
 - Optional, aber empfohlen: SSH-Zugriff (Systemsteuerung → Terminal & SNMP → SSH-Dienst aktivieren), das macht das Anlegen der `.env`-Datei und spätere Updates deutlich einfacher als reines Klicken in File Station.
 
 ### 3.2 Container Manager installieren
 
 Paketzentrum öffnen → „Container Manager“ suchen → Installieren.
 
-### 3.3 Projektdateien auf die DiskStation bringen
+### 3.3 Projektordner auf der DiskStation anlegen
 
-Sie haben zwei Möglichkeiten:
+Für die Image-Variante werden nur **zwei Dateien** benötigt – das komplette Repository ist nicht nötig.
 
-**Variante A – das Repository liegt bereits auf der DiskStation** (z. B. wenn Sie wie hier über eine SMB-Freigabe direkt auf der DiskStation entwickeln): Sie müssen nichts kopieren. Merken Sie sich einfach den absoluten Pfad auf der DiskStation selbst (nicht den Windows-Laufwerksbuchstaben, sondern z. B. `/volume1/daten/Markus/BandPlaner`) – Container Manager kann in Schritt 3.5 direkt darauf zeigen.
+1. In **File Station** einen Ordner anlegen, z. B. `/volume1/docker/bandplaner`.
+2. Dort die Datei `docker-compose.yml` ablegen. Entweder aus dem Repository herunterladen (<https://github.com/maxxs78/bandplaner/blob/main/docker-compose.yml>) oder den Inhalt kopieren.
+3. Die `.env`-Datei kommt in Schritt 3.4 in denselben Ordner.
 
-**Variante B – Repository liegt (noch) nicht auf der DiskStation:**
+Merken Sie sich den absoluten Pfad auf der DiskStation selbst (nicht den Windows-Laufwerksbuchstaben, sondern z. B. `/volume1/docker/bandplaner`) – Container Manager zeigt in Schritt 3.5 direkt darauf.
 
-- Per SSH + `git`: `ssh admin@diskstation` und dort `git clone <repo-url> /volume1/docker/bandplaner` (Git muss ggf. vorher über das Paketzentrum oder Entware installiert werden).
-- Oder ohne SSH: In **File Station** einen Freigabeordner-Unterordner anlegen (z. B. `docker/bandplaner`) und die Projektdateien per Drag & Drop / Upload dorthin kopieren.
+*(Selbst-Bauen-Variante: stattdessen das gesamte Repository per `git clone` oder File-Station-Upload in den Ordner bringen, inklusive `docker-compose.build.yml`.)*
 
 ### 3.4 `.env`-Datei anlegen
 
-Im selben Ordner wie `docker-compose.yml` eine Datei `.env` anlegen (Vorlage: `.env.example`):
+Im selben Ordner wie `docker-compose.yml` eine Datei `.env` anlegen. Als Vorlage dient `.env.example` aus dem Repository (<https://github.com/maxxs78/bandplaner/blob/main/.env.example>); wer das Repository lokal hat, kopiert einfach:
 
 ```bash
 cp .env.example .env
@@ -168,13 +187,15 @@ Darin anpassen:
 
 Ohne SSH-Zugriff: `.env`-Datei lokal am PC erstellen und über File Station in den Projektordner hochladen (achten Sie darauf, dass sie wirklich `.env` heißt und nicht `.env.txt`).
 
-### 3.5 Projekt in Container Manager erstellen & bauen
+### 3.5 Projekt in Container Manager erstellen
 
 1. Container Manager öffnen → **Projekt** → **Erstellen**.
 2. Projektname vergeben, z. B. `bandplaner`.
 3. Pfad: den Ordner wählen, in dem `docker-compose.yml` und `.env` liegen.
 4. Container Manager erkennt die `docker-compose.yml` automatisch und zeigt deren Inhalt an.
-5. **Build starten**. Je nach DiskStation-Modell kann das mehrere Minuten dauern (native Kompilierung von `better-sqlite3`, siehe [2.5](#25-erststart-ablauf)) – nicht abbrechen, auch wenn es lange „hängt“.
+5. Bestätigen. Container Manager lädt das Image aus der GitHub Container Registry (`ghcr.io/maxxs78/bandplaner`) und startet den Container – meist innerhalb einer Minute.
+
+*(Selbst-Bauen-Variante: der Assistent bietet stattdessen einen Build an – das kann je nach Modell 10–20 Minuten dauern, siehe [2.5](#25-erststart-ablauf); nicht abbrechen, auch wenn es lange „hängt“. Container Manager lädt die zweite Compose-Datei nicht automatisch mit – dafür entweder `docker-compose.build.yml` als weitere Datei im Projekt angeben oder den `build:`-Block manuell in `docker-compose.yml` ergänzen.)*
 
 ### 3.6 Port & Firewall
 
@@ -185,7 +206,7 @@ ports:
   - "8080:3000"
 ```
 
-Danach das Projekt in Container Manager neu bauen/starten.
+Danach das Projekt in Container Manager neu starten (**Aktion → Erstellen/Neu starten**).
 
 Falls die DSM-Firewall aktiv ist (Systemsteuerung → Sicherheit → Firewall): eine Regel für den gewählten Port und die gewünschten Quell-IPs/Netze ergänzen.
 
@@ -252,13 +273,19 @@ Sobald ein Port aus dem Internet erreichbar ist, gehört mehr zur Grundabsicheru
 
 ### 3.9 Updates
 
+**Per SSH:**
+
 ```bash
 cd /volume1/docker/bandplaner   # oder Ihr Projektpfad
-git pull
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
 
-Ohne SSH: neue Dateien über File Station hochladen (bestehende überschreiben), dann in Container Manager das Projekt erneut **bauen**.
+**Ohne SSH, in Container Manager:** Projekt `bandplaner` → **Aktion** → **Erstellen/Neu starten** (bzw. „Zurücksetzen“). Bei einem `latest`-Tag holt Container Manager dabei das aktuelle Image; wird eine feste Version in `docker-compose.yml` betrieben, dort zuerst den Tag hochziehen und die Datei speichern.
+
+Die Datenbank-Migrationen laufen beim Neustart automatisch. Ein Backup vorher schadet nie (siehe [3.10](#310-backup)).
+
+*(Selbst-Bauen-Variante: `git pull` und `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`; ohne SSH die neuen Dateien über File Station hochladen und das Projekt erneut bauen.)*
 
 ### 3.10 Backup
 
@@ -319,29 +346,27 @@ apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin
 ```
 
-**5. Projekt übertragen**
+**5. Projektordner anlegen**
 
-Falls Sie ein eigenes Git-Repository (GitHub/GitLab/Gitea o. ä.) für Bandplaner eingerichtet haben:
-
-```bash
-git clone <ihre-repo-url> /opt/bandplaner
-cd /opt/bandplaner
-```
-
-Ohne eigenes Git-Repo: Projektordner per `scp`/`rsync` von Ihrem Rechner auf den Container kopieren, z. B. von Windows aus mit `scp` (Git Bash) oder einem SFTP-Client:
+Für die Image-Variante genügen `docker-compose.yml` und `.env`:
 
 ```bash
-scp -r "M:/Markus/BandPlaner" root@<container-ip>:/opt/bandplaner
+mkdir -p /opt/bandplaner && cd /opt/bandplaner
+curl -fsSLO https://raw.githubusercontent.com/maxxs78/bandplaner/main/docker-compose.yml
+curl -fsSL  https://raw.githubusercontent.com/maxxs78/bandplaner/main/.env.example -o .env
 ```
 
-**6. `.env` anlegen und starten**
+*(Selbst-Bauen-Variante: stattdessen `git clone https://github.com/maxxs78/bandplaner.git /opt/bandplaner`.)*
+
+**6. `.env` ausfüllen und starten**
 
 ```bash
 cd /opt/bandplaner
-cp .env.example .env
 nano .env   # AUTH_SECRET und NEXT_PUBLIC_APP_URL setzen, siehe 2.3
-docker compose up -d --build
+docker compose up -d
 ```
+
+*(Selbst-Bauen-Variante: `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
 **7. Autostart & Firewall**
 
@@ -360,9 +385,11 @@ Es existieren Community-Helferskripte (z. B. „Proxmox VE Helper-Scripts“), d
 
 ```bash
 cd /opt/bandplaner
-git pull   # oder erneut per scp/rsync übertragen
-docker compose up -d --build
+docker compose pull
+docker compose up -d
 ```
+
+*(Selbst-Bauen-Variante: `git pull` und `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
 ### 4.6 Backup
 
@@ -386,7 +413,8 @@ Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von
 | Symptom | Ursache / Lösung |
 |---|---|
 | „There was a problem with the server configuration“ beim Login | `AUTH_SECRET` fehlt oder ist leer in der `.env` |
-| Build bricht mit Speicherfehler ab / hängt sehr lange | Zu wenig RAM für die Kompilierung von `better-sqlite3` – Container/VM-Speicher erhöhen (mind. 2 GB), ggf. Swap hinzufügen |
+| Build bricht mit Speicherfehler ab / hängt sehr lange | Betrifft nur die **Selbst-Bauen-Variante**: zu wenig RAM für die Kompilierung von `better-sqlite3` – Container/VM-Speicher erhöhen (mind. 2 GB), ggf. Swap hinzufügen. Mit dem fertigen Image aus GHCR entfällt der Build ganz. |
+| `docker compose pull` schlägt fehl (`denied` / `not found`) | Tag in `docker-compose.yml` prüfen (`:latest` oder eine existierende Version). Das Image ist öffentlich – kein `docker login` nötig. Sehr alte Docker-Versionen ohne Multi-Arch-Manifest-Unterstützung können scheitern; dann Docker aktualisieren. |
 | Port bereits belegt | Linken Wert in `ports:` der `docker-compose.yml` ändern (z. B. `8080:3000`), Projekt neu starten |
 | Container startet, aber Seite nicht erreichbar | Firewall (DSM-Firewall bzw. Proxmox-/`ufw`-Firewall) prüfen, ob der gewählte Port freigegeben ist |
 | „Permission denied“ auf Datenbank/Uploads | Wird bei jedem Start automatisch durch `docker-entrypoint.sh` repariert (`chown`) – tritt in der Regel nur bei manuell veränderten Bind-Mounts mit exotischen Host-Rechten auf |

@@ -1,7 +1,12 @@
 services:
   bandplaner:
-    build: .
-    image: bandplaner:latest
+    # Vorgefertigtes Multi-Arch-Image (amd64/arm64) aus der GitHub Container
+    # Registry - kein lokaler Build noetig. Aktualisieren:
+    #   docker compose pull && docker compose up -d
+    # Statt "latest" eine feste Version pinnen? Dann z. B. ":1.3.0" eintragen
+    # (verfuegbare Tags: https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner).
+    # Image lieber selbst bauen (Entwicklung/Fork)? Siehe docker-compose.build.yml.
+    image: ghcr.io/maxxs78/bandplaner:latest
     restart: unless-stopped
     ports:
       # Links der Port, auf dem die App auf der DiskStation erreichbar ist.
