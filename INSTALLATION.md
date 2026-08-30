@@ -66,6 +66,7 @@ Diese kommen aus einer `.env`-Datei, die **neben** der `docker-compose.yml` lieg
 |---|---|---|
 | `AUTH_SECRET` | Geheimer Schlüssel für NextAuth-Sessions. **Pflicht**, sonst startet der Login nicht sicher. | per `openssl rand -base64 32` erzeugen |
 | `NEXT_PUBLIC_APP_URL` | Öffentlich erreichbare URL der App (für Links in E-Mails, ICS-Kalenderfeed) | `http://diskstation.local:3000` bzw. `https://bandplaner.example.com` |
+| `REGISTRATION_ENABLED` | Offene Selbstregistrierung unter `/register`. **Optional**, Standard `false`: nur das erste Konto (Erstinbetriebnahme) und per Einladungslink eingeladene Personen können ein Konto anlegen – alle anderen kommen ausschließlich über einen Einladungslink dazu. `true` öffnet die Registrierung für beliebige Besucher (nur sinnvoll, wenn der Zugang ohnehin auf vertrauenswürdige Nutzer:innen beschränkt ist). | `false` |
 | `SMTP_HOST` | Mailserver für Benachrichtigungen. **Optional** – bleibt er leer, verschickt die App keine E-Mails, funktioniert sonst aber unverändert. | `smtp.example.com` |
 | `SMTP_PORT` | Port des Mailservers (Standard 587) | `587` |
 | `SMTP_USER` / `SMTP_PASSWORD` | Zugangsdaten des Mailkontos, falls der Server Authentifizierung verlangt | `bandplaner@example.com` |
@@ -429,3 +430,5 @@ Für eine eigene Domain mit HTTPS statt `http://ip:3000` gibt es unabhängig von
 ## 7. Erstes Konto anlegen
 
 Unabhängig von der gewählten Plattform: Nach erfolgreichem Start die App im Browser öffnen und über **`/register`** das erste Konto anlegen. Das Mitglied, das die erste Band anlegt, wird automatisch deren Administrator:in.
+
+Das **erste** Konto lässt sich immer anlegen. Danach ist die freie Registrierung standardmäßig geschlossen (`REGISTRATION_ENABLED`, siehe [2.3](#23-umgebungsvariablen)): Weitere Mitglieder und Gäste werden dann über **Band → Mitglieder → Einladen** per Einladungslink hinzugefügt; die eingeladene Person kann sich über diesen Link ein Konto anlegen, auch bei geschlossener Registrierung. Wer stattdessen offene Selbstregistrierung möchte, setzt `REGISTRATION_ENABLED=true`.

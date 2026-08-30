@@ -12,12 +12,17 @@ import { Card } from "@/components/ui/card";
 export function LoginForm({
   callbackUrl,
   showForgotPasswordLink = false,
+  showRegisterLink = true,
 }: {
   callbackUrl: string;
   /** Nur true, wenn ein Mailserver konfiguriert ist - ohne Versandweg waere
    * der Link ein toter Verweis auf eine Seite, die nur den Admin-Reset-Hinweis
    * zeigt (siehe forgot-password/page.tsx). */
   showForgotPasswordLink?: boolean;
+  /** false, wenn die offene Registrierung deaktiviert ist (REGISTRATION_ENABLED)
+   * und der Login nicht aus einem Einladungslink kommt - dann fuehrt der
+   * Registrieren-Link nur auf einen Hinweis. */
+  showRegisterLink?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(loginAction, undefined);
   const t = useTranslations("auth.login");
@@ -57,15 +62,17 @@ export function LoginForm({
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-muted">
-        {t("noAccount")}{" "}
-        <Link
-          href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
-          className="font-medium text-primary hover:underline"
-        >
-          {t("registerLink")}
-        </Link>
-      </p>
+      {showRegisterLink && (
+        <p className="mt-6 text-center text-sm text-muted">
+          {t("noAccount")}{" "}
+          <Link
+            href={`/register?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {t("registerLink")}
+          </Link>
+        </p>
+      )}
     </Card>
   );
 }

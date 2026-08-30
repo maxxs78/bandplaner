@@ -259,7 +259,10 @@
       "passwordTooShort": "Password must be at least 8 characters",
       "invalidInput": "Invalid input",
       "emailTaken": "This email address is already in use",
-      "loginFailedAfterRegister": "Registration successful, sign-in failed"
+      "loginFailedAfterRegister": "Registration successful, sign-in failed",
+      "closedTitle": "Registration unavailable",
+      "closedBody": "Open registration is disabled on this server. New members need an invitation link from a band administrator.",
+      "registrationClosed": "Open registration is disabled on this server. You can only create an account via an invitation link."
     },
     "forgotPassword": {
       "title": "Forgot password",

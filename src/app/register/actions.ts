@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { getRegisterSchema } from "@/lib/validation";
+import { canRegister } from "@/lib/registration";
 import { signIn } from "@/lib/auth";
 import { AuthError } from "next-auth";
 
@@ -26,6 +27,10 @@ export async function registerAction(
   }
 
   const email = parsed.data.email.toLowerCase().trim();
+
+  if (!(await canRegister(email))) {
+    return { error: t("registrationClosed") };
+  }
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {

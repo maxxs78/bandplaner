@@ -1,6 +1,7 @@
 import { getTranslations } from "next-intl/server";
 import { LoginForm } from "@/components/login-form";
 import { isMailConfigured } from "@/lib/mail";
+import { isOpenRegistrationEnabled, isFirstAccount } from "@/lib/registration";
 import { Card } from "@/components/ui/card";
 
 export default async function LoginPage({
@@ -10,6 +11,12 @@ export default async function LoginPage({
 }) {
   const { callbackUrl, accountDeleted } = await searchParams;
   const t = await getTranslations("auth.login");
+  const target = callbackUrl ?? "/dashboard";
+
+  const showRegisterLink =
+    isOpenRegistrationEnabled() ||
+    target.startsWith("/invite/") ||
+    (await isFirstAccount());
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-12">
@@ -19,7 +26,11 @@ export default async function LoginPage({
             {t("accountDeletedNotice")}
           </Card>
         )}
-        <LoginForm callbackUrl={callbackUrl ?? "/dashboard"} showForgotPasswordLink={isMailConfigured()} />
+        <LoginForm
+          callbackUrl={target}
+          showForgotPasswordLink={isMailConfigured()}
+          showRegisterLink={showRegisterLink}
+        />
       </div>
     </main>
   );
