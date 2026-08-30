@@ -48,6 +48,12 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Generates next-env.d.ts and .next/types/** (LayoutProps, typed image
+      # imports, …) that tsc needs but that aren't committed. Locally these
+      # come from `next dev`.
+      - name: Generate Next.js types
+        run: npx next typegen
+
       - name: Type check
         run: npx tsc --noEmit
 
