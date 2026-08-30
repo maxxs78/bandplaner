@@ -24,6 +24,8 @@ Technischer Hintergrund: Bandplaner ist eine Next.js-App mit Prisma/SQLite als D
 
 Die restliche Anleitung geht vom **fertigen Image** aus. Die Selbst-Bauen-Variante unterscheidet sich nur im Compose-Aufruf und darin, dass das gesamte Repository vorliegen muss.
 
+Das veröffentlichte Image ist **öffentlich** – `docker compose up -d` zieht es ohne `docker login` und ohne GitHub-Konto.
+
 ---
 
 ## 1. Kurz: Lokales Testen (ohne Docker)
@@ -39,6 +41,8 @@ Für den produktiven Betrieb ab hier mit Docker weitermachen.
 ## 2. Docker – Grundlagen
 
 Dieser Abschnitt gilt unabhängig davon, ob Sie auf einer Synology DiskStation, in Proxmox oder sonstwo hosten – die Konzepte sind überall identisch.
+
+Sie brauchen **Docker mit dem Compose-Plugin** – sowohl `docker --version` als auch `docker compose version` sollten etwas ausgeben. Unter Windows/macOS ist das Docker Desktop; auf einem reinen Linux-Server die Docker Engine plus das Paket `docker-compose-plugin`. Die Abschnitte zu Synology und Proxmox decken diese Plattformen konkret ab.
 
 ### 2.1 Was im Repository bereits enthalten ist
 
@@ -161,7 +165,7 @@ Gilt für DSM 7.2+ (Paket heißt „Container Manager“). Auf älteren DSM-Vers
 
 ### 3.1 Voraussetzungen
 
-- DiskStation mit x86_64- oder ARM-CPU, die **Container Manager** unterstützt (Paketzentrum zeigt es sonst nicht an). Das veröffentlichte Image deckt `linux/amd64` und `linux/arm64` ab – das schließt aktuelle x86-Modelle sowie ARM-Modelle mit 64-Bit-CPU (z. B. DS223, DS224+) ein. Sehr alte 32-Bit-ARM-NAS werden nicht abgedeckt; dort bleibt nur die Selbst-Bauen-Variante, sofern die CPU überhaupt reicht.
+- DiskStation mit x86_64- oder ARM-CPU, die **Container Manager** unterstützt (Paketzentrum zeigt es sonst nicht an). Das veröffentlichte Image deckt `linux/amd64` und `linux/arm64` ab – das schließt die Intel/AMD-Modelle sowie die 64-Bit-ARM-Modelle (ARMv8) wie DS124, DS223 oder DS423 ein. Sehr alte 32-Bit-ARM-NAS werden nicht abgedeckt; dort bleibt nur die Selbst-Bauen-Variante, sofern die CPU überhaupt reicht.
 - Einige hundert MB Plattenplatz für das Image. Für die **Image-Variante** wird **kein** nennenswerter Arbeitsspeicher für einen Build benötigt; nur bei der Selbst-Bauen-Variante sollten ~2 GB RAM frei sein.
 - Optional, aber empfohlen: SSH-Zugriff (Systemsteuerung → Terminal & SNMP → SSH-Dienst aktivieren), das macht das Anlegen der `.env`-Datei und spätere Updates deutlich einfacher als reines Klicken in File Station.
 

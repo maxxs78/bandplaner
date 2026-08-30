@@ -24,6 +24,8 @@ Technical background: Bandplaner is a Next.js app with Prisma/SQLite as the data
 
 The rest of the guide assumes the **prebuilt image**. The build-it-yourself variant differs only in the compose command and in that the whole repository must be present.
 
+The published image is **public** — `docker compose up -d` pulls it with no `docker login` and no GitHub account.
+
 ---
 
 ## 1. Quick: local testing (without Docker)
@@ -39,6 +41,8 @@ For production use, continue with Docker from here.
 ## 2. Docker basics
 
 This section applies regardless of whether you host on a Synology DiskStation, in Proxmox, or elsewhere – the concepts are identical everywhere.
+
+You need **Docker with the Compose plugin** – both `docker --version` and `docker compose version` should print something. On Windows/macOS that is Docker Desktop; on a plain Linux server, install Docker Engine plus the `docker-compose-plugin` package. The Synology and Proxmox sections below cover those platforms specifically.
 
 ### 2.1 What the repository already contains
 
@@ -161,7 +165,7 @@ Applies to DSM 7.2+ (the package is called "Container Manager"). On older DSM ve
 
 ### 3.1 Requirements
 
-- A DiskStation with an x86_64 or ARM CPU that supports **Container Manager** (otherwise the Package Center does not show it). The published image covers `linux/amd64` and `linux/arm64` – this includes current x86 models as well as ARM models with a 64-bit CPU (e.g. DS223, DS224+). Very old 32-bit ARM NAS units are not covered; there, only the build-it-yourself variant remains, if the CPU is even sufficient.
+- A DiskStation with an x86_64 or ARM CPU that supports **Container Manager** (otherwise the Package Center does not show it). The published image covers `linux/amd64` and `linux/arm64` – this includes the Intel/AMD models as well as the 64-bit ARM (ARMv8) models such as the DS124, DS223 or DS423. Very old 32-bit ARM NAS units are not covered; there, only the build-it-yourself variant remains, if the CPU is even sufficient.
 - A few hundred MB of disk space for the image. For the **image variant**, **no** meaningful amount of memory is needed for a build; only the build-it-yourself variant should have ~2 GB RAM free.
 - Optional but recommended: SSH access (Control Panel → Terminal & SNMP → enable the SSH service), which makes creating the `.env` file and later updates much easier than clicking around in File Station.
 
