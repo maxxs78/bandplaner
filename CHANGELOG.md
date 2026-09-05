@@ -4,6 +4,22 @@ All notable changes to Bandplaner are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [semantic](https://semver.org/spec/v2.0.0.html). Dates are ISO 8601.
 
+## [1.4.0] – 2026-09-05
+
+### Added
+
+- Spotify album cover as an additional automatic cover-art fallback (after
+  Cover Art Archive and Discogs) when creating a song or refreshing an
+  existing one's metadata. Requires `SPOTIFY_CLIENT_ID`/`SPOTIFY_CLIENT_SECRET`.
+- Docker health check for the app container, so `docker compose ps` reports
+  `healthy`/`unhealthy` instead of just `running`.
+
+### Changed
+
+- INSTALLATION: documented the Docker prerequisite and the prebuilt-image note.
+
+[1.4.0]: https://github.com/maxxs78/bandplaner/releases/tag/v1.4.0
+
 ## [1.3.0] – 2026-08-30
 
 First release prepared for public self-hosting.
