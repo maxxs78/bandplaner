@@ -80,7 +80,7 @@ These come from a `.env` file that sits **next to** `docker-compose.yml` (not in
 | `SMTP_SECURE` | Only needed if it differs: `true` forces TLS from connection setup. Otherwise derived automatically from the port (465 = TLS, otherwise STARTTLS). | `true` |
 | `MUSICBRAINZ_USER_AGENT` | Enables the new-song assistant's online lookup (MusicBrainz as the primary source) when creating a song. **Optional** – without a value, only the ID3 preview from uploaded files stays active. MusicBrainz's terms require an identifying value made of name and contact, not a generic string. | `Bandplaner/1.0 (contact@example.com)` |
 | `DISCOGS_TOKEN` | Personal access token for Discogs, used by the new-song assistant as a fallback for genre/year/cover if MusicBrainz returns no match. **Optional.** | create via your own Discogs account under "Developer Settings" |
-| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Credentials for a Spotify app (client-credentials flow); gives the new-song assistant a supplementary track link for the looked-up song. **Optional.** | create via the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) |
+| `SPOTIFY_CLIENT_ID` / `SPOTIFY_CLIENT_SECRET` | Credentials for a Spotify app (client-credentials flow); gives the new-song assistant a track link plus, as a further cover fallback if MusicBrainz/Discogs found none, its catalog artwork. **Optional.** | create via the [Spotify Developer Dashboard](https://developer.spotify.com/dashboard) |
 | `NOMINATIM_BASE_URL` | Address search / map matching in the **Venues** module. **Optional** – empty uses the public OpenStreetMap Nominatim instance; only adjust if you run your own Nominatim. | `https://nominatim.example.com` |
 
 The three new-song-assistant sources are independently optional and degrade silently when unconfigured – manual song entry and the ID3 preview are unaffected.
@@ -133,7 +133,7 @@ docker compose pull      # fetch the latest image from GHCR
 docker compose up -d     # restart the container with the new image
 ```
 
-No `git pull` needed – for the image variant, `docker-compose.yml` and `.env` are enough. Pending database migrations are applied automatically on restart (step 3 above). Want to run a specific version instead of `latest`? Adjust the tag in `docker-compose.yml` (e.g. `:1.3.0`) – available tags: <https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner>.
+No `git pull` needed – for the image variant, `docker-compose.yml` and `.env` are enough. Pending database migrations are applied automatically on restart (step 3 above). Want to run a specific version instead of `latest`? Adjust the tag in `docker-compose.yml` (e.g. `:1.4.2`) – available tags: <https://github.com/maxxs78/bandplaner/pkgs/container/bandplaner>.
 
 *(Build-it-yourself variant: `git pull`, then `docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build`.)*
 
