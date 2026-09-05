@@ -11,7 +11,12 @@ COPY package.json package-lock.json ./
 # MODULE_NOT_FOUND ab, noch bevor der eigentliche Quellcode kopiert wird.
 COPY patches ./patches
 COPY scripts ./scripts
-RUN npm ci
+# --legacy-peer-deps: next-auth@5-beta declares nodemailer as an optional peer
+# pinned to "^7 || ^8" (last updated before nodemailer 9/10) - this app never
+# uses next-auth's own Email provider (see src/lib/mail.ts), so the mismatch
+# with our nodemailer 10 is harmless, but npm's stricter "ci" peer resolution
+# (unlike "install") hard-fails on it otherwise.
+RUN npm ci --legacy-peer-deps
 
 # ---- builder: Prisma-Client generieren und Next.js-App bauen ----
 FROM node:20-bookworm-slim AS builder

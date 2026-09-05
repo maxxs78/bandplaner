@@ -4,6 +4,21 @@ All notable changes to Bandplaner are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [semantic](https://semver.org/spec/v2.0.0.html). Dates are ISO 8601.
 
+## [1.4.2] – 2026-09-05
+
+Supersedes 1.4.1: that tag's image build failed (see below) and was never
+published to GHCR.
+
+### Fixed
+
+- Docker build: `npm ci` failed with an ERESOLVE peer-dependency conflict
+  after the nodemailer 10 bump below (`next-auth`'s optional peer on
+  nodemailer is pinned to `^7 || ^8`, unused here - this app has its own SMTP
+  code, not next-auth's Email provider). Now installs with
+  `--legacy-peer-deps`.
+
+[1.4.2]: https://github.com/maxxs78/bandplaner/releases/tag/v1.4.2
+
 ## [1.4.1] – 2026-09-05
 
 ### Security
