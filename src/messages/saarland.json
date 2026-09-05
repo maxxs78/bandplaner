@@ -433,7 +433,10 @@
         "researching": "Mer sucht grad…",
         "noResults": "Nix gfunn.",
         "spotifyLinkLabel": "Spotify",
-        "coverPreviewAlt": "Cover-Vorschau"
+        "coverPreviewAlt": "Cover-Vorschau",
+        "applyHint": "Übernimmt Titel, Interpret, Album, Johr un Genre un ersetzt debei, was schun drinsteht.",
+        "coverPickLabel": "Cover ausvähle",
+        "closeResults": "Zumache"
       }
     },
     "actions": {

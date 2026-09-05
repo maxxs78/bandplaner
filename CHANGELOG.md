@@ -4,6 +4,23 @@ All notable changes to Bandplaner are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [semantic](https://semver.org/spec/v2.0.0.html). Dates are ISO 8601.
 
+## [1.5.0] – 2026-09-05
+
+### Changed
+
+- **New-song assistant: richer, pickable result list.** The online lookup now
+  queries MusicBrainz, Discogs and Spotify in parallel and shows all matches
+  together – each with a source label, metadata (album · year · genre) and a
+  cover thumbnail – instead of silently taking the first hit. A separate cover
+  strip lets you pick the artwork independently of the metadata row.
+- Picking a result now **replaces** existing title/artist/album/year/genre
+  values (it previously only filled blank fields), so the assistant is usable
+  for editing an existing song, not just for completing a new one. Fields the
+  chosen result does not carry are left untouched. On the edit page an
+  explicitly picked cover also replaces an existing one.
+
+[1.5.0]: https://github.com/maxxs78/bandplaner/releases/tag/v1.5.0
+
 ## [1.4.2] – 2026-09-05
 
 Supersedes 1.4.1: that tag's image build failed (see below) and was never

@@ -433,7 +433,10 @@
         "researching": "Recherche en cours…",
         "noResults": "Aucun résultat trouvé.",
         "spotifyLinkLabel": "Spotify",
-        "coverPreviewAlt": "Aperçu de la pochette"
+        "coverPreviewAlt": "Aperçu de la pochette",
+        "applyHint": "Applique le titre, l'artiste, l'album, l'année et le genre en remplaçant les valeurs existantes.",
+        "coverPickLabel": "Choisir la pochette",
+        "closeResults": "Fermer"
       }
     },
     "actions": {

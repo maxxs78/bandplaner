@@ -1,6 +1,6 @@
 {
   "name": "bandplaner",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "private": true,
   "description": "Webbasierte Band-Organisations-App: Termine, Verfügbarkeiten, Repertoire, Setlisten, Dateien, Equipment und Finanzen an einem Ort.",
   "license": "AGPL-3.0-only",

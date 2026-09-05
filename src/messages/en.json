@@ -452,7 +452,10 @@
         "researching": "Searching…",
         "noResults": "No matches found.",
         "spotifyLinkLabel": "Spotify",
-        "coverPreviewAlt": "Cover preview"
+        "coverPreviewAlt": "Cover preview",
+        "applyHint": "Applies title, artist, album, year and genre, replacing existing values.",
+        "coverPickLabel": "Choose cover",
+        "closeResults": "Close"
       }
     },
     "actions": {

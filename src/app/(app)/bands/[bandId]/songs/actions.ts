@@ -20,10 +20,13 @@ import { previewAudioMetadata, previewStoredAudioMetadata, type AudioMetadataPre
 import { isPlayableAudio } from "@/lib/media";
 import {
   searchMusicBrainzCandidates,
+  searchDiscogsCandidates,
   searchDiscogsGenre,
+  searchSpotifyTracks,
   searchSpotifyTrack,
   getCoverArt,
   fetchRemoteCoverBytes,
+  fetchCoverThumbDataUrl,
   hasRefreshableSongGaps,
   type SongMetadataCandidate,
 } from "@/lib/song-metadata-lookup";
@@ -286,11 +289,13 @@ export async function updateSongAction(
   });
 
   // Anlageassistent (Online-Recherche-Cover, angehängte Datei, Vorschlags-Links):
-  // gleiche Logik wie beim Neuanlegen (createSongAction), nur zusätzlich mit
-  // Schutz gegen Überschreiben eines bereits vorhandenen Covers, da hier - anders
-  // als beim Neuanlegen - schon eines gesetzt sein kann.
+  // gleiche Logik wie beim Neuanlegen (createSongAction). Ein im Assistenten
+  // ausdruecklich ausgewaehltes Cover ersetzt hier auch ein bereits
+  // vorhandenes - der Nutzer hat es bewusst gewaehlt (die automatische
+  // Cover-Uebernahme aus einer angehaengten Datei weiter unten schuetzt ein
+  // vorhandenes Cover dagegen weiterhin).
   const pendingCoverDataUrl = formData.get("pendingCoverDataUrl") as string | null;
-  if (pendingCoverDataUrl && !existing.coverUrl) {
+  if (pendingCoverDataUrl) {
     const decoded = decodeDataUrl(pendingCoverDataUrl);
     if (decoded) {
       const stored = await storeRemoteImage(decoded.bytes, decoded.mimeType, "songs");
@@ -656,11 +661,12 @@ export type SongMetadataSearchResult = {
 };
 
 /**
- * Kombiniert MusicBrainz (primäre Quelle), Discogs (Fallback für Genre/Cover,
- * falls MusicBrainz nichts liefert) und Spotify (Track-Link, plus dessen
- * Album-Cover als letzter Cover-Fallback) zu einer Kandidatenliste fürs UI.
- * Alle drei Quellen sind einzeln optional konfiguriert und degradieren
- * still, siehe song-metadata-lookup.ts.
+ * Fragt MusicBrainz, Discogs und Spotify parallel ab und liefert alle Treffer
+ * gebuendelt als eine Kandidatenliste fuers UI - je Treffer mit Quelle,
+ * Metadaten und (serverseitig nachgeladen) einer kleinen Cover-Vorschau, aus
+ * der im Formular Metadaten und Cover einzeln ausgewaehlt werden koennen.
+ * Alle drei Quellen sind einzeln optional konfiguriert und degradieren still,
+ * siehe song-metadata-lookup.ts.
  */
 export async function searchSongMetadataAction(
   bandId: string,
@@ -670,38 +676,24 @@ export async function searchSongMetadataAction(
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role) || !title.trim()) return { candidates: [] };
 
-  const [mbCandidates, spotifyTrack] = await Promise.all([
+  const [mb, discogs, spotify] = await Promise.all([
     searchMusicBrainzCandidates(title, artist),
-    searchSpotifyTrack(title, artist),
+    searchDiscogsCandidates(title, artist),
+    searchSpotifyTracks(title, artist),
   ]);
 
-  let candidates = mbCandidates;
-  if (candidates.length === 0) {
-    const discogsResult = await searchDiscogsGenre(title, artist);
-    if (discogsResult) {
-      candidates = [
-        {
-          title,
-          artist,
-          genre: discogsResult.genre,
-          year: discogsResult.year,
-          mbid: "discogs-fallback",
-          coverImageUrl: discogsResult.coverImageUrl,
-        },
-      ];
-    } else if (spotifyTrack?.coverImageUrl) {
-      candidates = [
-        {
-          title,
-          artist,
-          mbid: "spotify-fallback",
-          coverImageUrl: spotifyTrack.coverImageUrl,
-        },
-      ];
-    }
-  }
+  // Nach Quelle gruppiert (MusicBrainz zuerst als Primaerquelle), insgesamt
+  // begrenzt, damit die Antwort mit den eingebetteten Thumbnails handlich bleibt.
+  const merged = [...mb, ...discogs, ...spotify].slice(0, 16);
 
-  return { candidates, spotifyUrl: spotifyTrack?.url };
+  const candidates = await Promise.all(
+    merged.map(async (c) => {
+      const coverThumbDataUrl = (await fetchCoverThumbDataUrl(c).catch(() => null)) ?? undefined;
+      return { ...c, coverThumbDataUrl };
+    })
+  );
+
+  return { candidates, spotifyUrl: spotify.find((s) => s.spotifyUrl)?.spotifyUrl };
 }
 
 /**

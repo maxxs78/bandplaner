@@ -433,7 +433,10 @@
         "researching": "Söker…",
         "noResults": "Inga träffar hittades.",
         "spotifyLinkLabel": "Spotify",
-        "coverPreviewAlt": "Förhandsvisning av omslag"
+        "coverPreviewAlt": "Förhandsvisning av omslag",
+        "applyHint": "Tillämpar titel, artist, album, år och genre och ersätter befintliga värden.",
+        "coverPickLabel": "Välj omslag",
+        "closeResults": "Stäng"
       }
     },
     "actions": {

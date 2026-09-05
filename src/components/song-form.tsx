@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useRef, useState } from "react";
-import { Save, Upload, Search } from "lucide-react";
+import { Save, Upload, Search, Music } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea, FieldError } from "@/components/ui/input";
@@ -11,6 +11,15 @@ import type { AudioMetadataPreview } from "@/lib/audio-metadata";
 import type { SongMetadataCandidate } from "@/lib/song-metadata-lookup";
 
 const statusValues = ["PROPOSED", "NEW", "IN_PROGRESS", "STAGE_READY", "ACTIVE", "ARCHIVED"] as const;
+
+const SOURCE_LABEL: Record<SongMetadataCandidate["source"], string> = {
+  musicbrainz: "MusicBrainz",
+  discogs: "Discogs",
+  spotify: "Spotify",
+};
+
+/** Cover-Treffer verschiedener Kandidaten, die auf dasselbe Bild zeigen, nur einmal anbieten. */
+const coverKeyOf = (c: SongMetadataCandidate) => c.releaseMbid ?? c.coverImageUrl ?? c.id;
 
 type PendingLink = { url: string; label?: string };
 
@@ -77,14 +86,36 @@ export function SongForm({
   const [pendingLinks, setPendingLinks] = useState<PendingLink[]>([]);
   const [spotifyUrl, setSpotifyUrl] = useState<string | null>(null);
   const [candidates, setCandidates] = useState<SongMetadataCandidate[] | null>(null);
+  const [appliedCandidateId, setAppliedCandidateId] = useState<string | null>(null);
+  const [selectedCoverKey, setSelectedCoverKey] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [searching, setSearching] = useState(false);
-  const [fetchingCoverFor, setFetchingCoverFor] = useState<string | null>(null);
+  const [coverBusyKey, setCoverBusyKey] = useState<string | null>(null);
 
   const showAssistant = Boolean(previewMetadataAction && searchMetadataAction);
 
+  const coverChoices: SongMetadataCandidate[] = (() => {
+    if (!candidates) return [];
+    const seen = new Set<string>();
+    return candidates.filter((c) => {
+      if (!c.coverThumbDataUrl) return false;
+      const key = coverKeyOf(c);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  })();
+
+  /** Fuellt nur leere Felder - fuer die automatische ID3-Vorschau, die manuell Erfasstes nie ueberschreiben soll. */
   function fillIfEmpty(ref: React.RefObject<HTMLInputElement | null>, value: string | number | undefined) {
     if (ref.current && !ref.current.value && value !== undefined && value !== "") {
+      ref.current.value = String(value);
+    }
+  }
+
+  /** Setzt das Feld auch ueber einen bestehenden Wert - fuer die ausdrueckliche Auswahl eines Suchtreffers. */
+  function applyValue(ref: React.RefObject<HTMLInputElement | null>, value: string | number | undefined) {
+    if (ref.current && value !== undefined && value !== "") {
       ref.current.value = String(value);
     }
   }
@@ -126,6 +157,7 @@ export function SongForm({
     if (!title) return;
     setSearching(true);
     setCandidates(null);
+    setAppliedCandidateId(null);
     try {
       const result = await searchMetadataAction(title, artistRef.current?.value.trim() || undefined);
       setCandidates(result.candidates);
@@ -135,35 +167,44 @@ export function SongForm({
     }
   }
 
-  async function handleSelectCandidate(candidate: SongMetadataCandidate) {
-    fillIfEmpty(titleRef, candidate.title);
-    fillIfEmpty(artistRef, candidate.artist);
-    fillIfEmpty(genreRef, candidate.genre);
-    fillIfEmpty(albumRef, candidate.album);
-    fillIfEmpty(releaseYearRef, candidate.year);
-
-    if (spotifyUrl && !pendingLinks.some((l) => l.url === spotifyUrl)) {
-      setPendingLinks((prev) => [...prev, { url: spotifyUrl, label: ta("spotifyLinkLabel") }]);
-    }
-
-    if ((candidate.releaseMbid || candidate.coverImageUrl) && fetchCoverAction) {
-      setFetchingCoverFor(candidate.mbid);
-      try {
-        const cover = await fetchCoverAction({
-          releaseMbid: candidate.releaseMbid,
-          coverImageUrl: candidate.coverImageUrl,
-          title: candidate.title,
-          artist: candidate.artist,
-        });
-        if (cover) {
-          setCoverPreview(cover.dataUrl);
-          setPendingCoverDataUrl(cover.dataUrl);
-        }
-      } finally {
-        setFetchingCoverFor(null);
+  /** Laed das Vollcover eines Kandidaten nach und macht es zum ausgewaehlten Cover - ohne die Metadaten anzufassen. */
+  async function applyCoverFromCandidate(candidate: SongMetadataCandidate) {
+    if (!fetchCoverAction || (!candidate.releaseMbid && !candidate.coverImageUrl)) return;
+    const key = coverKeyOf(candidate);
+    setCoverBusyKey(key);
+    try {
+      const cover = await fetchCoverAction({
+        releaseMbid: candidate.releaseMbid,
+        coverImageUrl: candidate.coverImageUrl,
+        title: candidate.title,
+        artist: candidate.artist,
+      });
+      if (cover) {
+        setCoverPreview(cover.dataUrl);
+        setPendingCoverDataUrl(cover.dataUrl);
+        setSelectedCoverKey(key);
       }
+    } finally {
+      setCoverBusyKey(null);
     }
-    setCandidates(null);
+  }
+
+  async function handleSelectCandidate(candidate: SongMetadataCandidate) {
+    applyValue(titleRef, candidate.title);
+    applyValue(artistRef, candidate.artist);
+    applyValue(genreRef, candidate.genre);
+    applyValue(albumRef, candidate.album);
+    applyValue(releaseYearRef, candidate.year);
+    setAppliedCandidateId(candidate.id);
+
+    const link = candidate.spotifyUrl ?? spotifyUrl;
+    if (link && !pendingLinks.some((l) => l.url === link)) {
+      setPendingLinks((prev) => [...prev, { url: link, label: ta("spotifyLinkLabel") }]);
+    }
+
+    if (candidate.releaseMbid || candidate.coverImageUrl) {
+      await applyCoverFromCandidate(candidate);
+    }
   }
 
   const statusLabel = (value: string) =>
@@ -208,27 +249,88 @@ export function SongForm({
           </div>
 
           {candidates && (
-            <div className="mt-3 space-y-1.5 border-t border-border pt-3">
+            <div className="mt-3 space-y-3 border-t border-border pt-3">
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-xs text-muted">{ta("applyHint")}</p>
+                <button
+                  type="button"
+                  onClick={() => setCandidates(null)}
+                  className="shrink-0 text-xs text-muted hover:text-foreground"
+                >
+                  {ta("closeResults")}
+                </button>
+              </div>
+
               {candidates.length === 0 ? (
                 <p className="text-sm text-muted">{ta("noResults")}</p>
               ) : (
-                candidates.map((c) => (
-                  <button
-                    key={c.mbid}
-                    type="button"
-                    onClick={() => handleSelectCandidate(c)}
-                    disabled={fetchingCoverFor === c.mbid}
-                    className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left text-sm hover:border-primary hover:bg-surface disabled:opacity-60"
-                  >
-                    <span className="min-w-0 truncate text-foreground">
-                      {c.title}
-                      {c.artist && <span className="text-muted"> – {c.artist}</span>}
-                      {c.album && <span className="text-muted"> – {c.album}</span>}
-                      {c.year && <span className="text-muted"> ({c.year})</span>}
-                    </span>
-                    <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />
-                  </button>
-                ))
+                <>
+                  <ul className="space-y-1.5">
+                    {candidates.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          type="button"
+                          onClick={() => handleSelectCandidate(c)}
+                          className={`flex w-full items-center gap-3 rounded-lg border px-3 py-2 text-left hover:border-primary hover:bg-surface ${
+                            appliedCandidateId === c.id ? "border-primary bg-surface" : "border-border"
+                          }`}
+                        >
+                          {c.coverThumbDataUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={c.coverThumbDataUrl}
+                              alt=""
+                              className="h-10 w-10 shrink-0 rounded border border-border object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded border border-border bg-surface-muted text-muted">
+                              <Music className="h-4 w-4" />
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm text-foreground">
+                              {c.title}
+                              {c.artist && <span className="text-muted"> – {c.artist}</span>}
+                            </span>
+                            <span className="block truncate text-xs text-muted">
+                              {[c.album, c.year, c.genre].filter(Boolean).join(" · ")}
+                              {[c.album, c.year, c.genre].some(Boolean) ? " · " : ""}
+                              {SOURCE_LABEL[c.source]}
+                            </span>
+                          </span>
+                          <Upload className="h-3.5 w-3.5 shrink-0 text-primary" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {coverChoices.length > 0 && (
+                    <div>
+                      <p className="mb-1.5 text-xs text-muted">{ta("coverPickLabel")}</p>
+                      <div className="flex flex-wrap gap-2">
+                        {coverChoices.map((c) => {
+                          const key = coverKeyOf(c);
+                          return (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => applyCoverFromCandidate(c)}
+                              disabled={coverBusyKey === key}
+                              className={`overflow-hidden rounded border transition disabled:opacity-50 ${
+                                selectedCoverKey === key
+                                  ? "border-primary ring-2 ring-primary"
+                                  : "border-border hover:border-primary"
+                              }`}
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={c.coverThumbDataUrl} alt="" className="h-14 w-14 object-cover" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           )}
