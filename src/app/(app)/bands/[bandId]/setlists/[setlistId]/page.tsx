@@ -10,9 +10,17 @@ import { SetlistBuilder } from "@/components/setlist-builder";
 import { EventContextSelector } from "@/components/event-context-selector";
 import { EquipmentIconDisplaySelector } from "@/components/equipment-icon-display-selector";
 import { computeSetlistNumbers, totalSetlistDurationSec, formatSetlistAsText, type SetlistDisplayItem } from "@/lib/setlist-items";
-import { deleteSetlistAction, saveSetlistNoteAction, saveEquipmentIconDisplayAction, saveSetlistTechNotesAction } from "../actions";
+import {
+  deleteSetlistAction,
+  saveSetlistNoteAction,
+  saveEquipmentIconDisplayAction,
+  saveSetlistTechNotesAction,
+  syncAllItemsFromSongNotesAction,
+} from "../actions";
 import { DeleteButton } from "@/components/delete-button";
 import { WhatsAppShareButton } from "@/components/whatsapp-share-button";
+import { SetlistTools } from "@/components/setlist-tools";
+import { SetlistCopyButton } from "@/components/setlist-copy-button";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/input";
@@ -38,7 +46,19 @@ export default async function SetlistDetailPage({
       items: {
         orderBy: { order: "asc" },
         include: {
-          song: true,
+          song: {
+            include: {
+              files: {
+                where: { OR: [{ visibility: "BAND" }, { visibility: "PRIVATE", uploadedById: user.id }] },
+                orderBy: { createdAt: "asc" },
+                select: { id: true, filename: true },
+              },
+              notes: {
+                where: { userId: user.id },
+                select: { shortNote: true, color: true, cues: true },
+              },
+            },
+          },
           annotations: { where: { userId: user.id } },
           eventAnnotations: { where: { userId: user.id } },
         },
@@ -94,6 +114,9 @@ export default async function SetlistDetailPage({
     : (setlist.notes[0]?.content ?? "");
   const items = setlist.items.map((item) => ({
     ...item,
+    song: item.song
+      ? { ...item.song, myNote: item.song.notes[0] ?? null }
+      : null,
     myAnnotation: activeEventId
       ? (item.eventAnnotations.find((a) => a.eventId === activeEventId) ?? null)
       : (item.annotations[0] ?? null),
@@ -108,6 +131,7 @@ export default async function SetlistDetailPage({
       bpm: item.song?.bpm ?? null,
       durationSec: item.song?.durationSec ?? item.durationSec ?? null,
       excludeFromNumbering: item.excludeFromNumbering,
+      segueToNext: item.segueToNext,
     }));
 
   const shareText = [
@@ -179,6 +203,13 @@ export default async function SetlistDetailPage({
                 {t("printTech")}
               </Button>
             </Link>
+            {displayItems.length > 0 && (
+              <SetlistCopyButton
+                text={shareText}
+                label={t("copyText")}
+                copiedLabel={t("copied")}
+              />
+            )}
             {canManage && (
               <DeleteButton action={deleteSetlistAction.bind(null, bandId, setlistId)} label={t("delete")} />
             )}
@@ -246,10 +277,25 @@ export default async function SetlistDetailPage({
                     </li>
                   );
                 }
+                const prev = frozenItems[index - 1];
+                const linkedUp = Boolean(
+                  prev && prev.segueToNext && prev.kind !== "SECTION" && prev.kind !== "COMMENT"
+                );
+                const next = frozenItems[index + 1];
+                const linkedDown = Boolean(
+                  item.segueToNext && next && next.kind !== "SECTION" && next.kind !== "COMMENT"
+                );
                 return (
-                  <li key={index} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                  <li
+                    key={index}
+                    className={`flex items-center gap-3 border border-border px-3 py-2 text-sm ${
+                      linkedUp || linkedDown ? "border-l-[3px] border-l-primary bg-primary/5" : ""
+                    } ${
+                      linkedUp ? "-mt-1.5 rounded-t-none border-t-0" : "rounded-t-lg"
+                    } ${linkedDown ? "rounded-b-none" : "rounded-b-lg"}`}
+                  >
                     <span className="w-6 shrink-0 text-muted">
-                      {frozenNumbers[index] !== null ? `${frozenNumbers[index]}.` : ""}
+                      {linkedUp ? "↳" : frozenNumbers[index] !== null ? `${frozenNumbers[index]}.` : ""}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-foreground">{item.title}</span>
                     {item.key && <span className="shrink-0 text-xs text-muted">{item.key}</span>}
@@ -261,17 +307,35 @@ export default async function SetlistDetailPage({
             </ol>
           </Card>
         ) : (
-          <SetlistBuilder
-            key={`${setlist.items.map((i) => i.id).join(",")}-${activeEventId ?? "none"}`}
-            bandId={bandId}
-            setlistId={setlistId}
-            eventId={activeEventId}
-            initialItems={items}
-            librarySongs={songs}
-            readOnly={!canManage || isPastActiveEvent}
-            equipmentOptions={equipmentOptions}
-            equipmentIconDisplay={setlist.equipmentIconDisplay}
-          />
+          <>
+            {displayItems.length > 0 && (
+              <SetlistTools
+                syncAllAction={syncAllItemsFromSongNotesAction.bind(null, bandId, setlistId, activeEventId)}
+                labels={{
+                  syncAll: t("syncAll"),
+                  syncAllConfirm: t("syncAllConfirm"),
+                  syncing: t("syncing"),
+                  synced: t("synced"),
+                }}
+              />
+            )}
+            <SetlistBuilder
+              key={`${items
+                .map(
+                  (i) =>
+                    `${i.id}:${i.segueToNext}:${i.myAnnotation?.note ?? ""}:${i.myAnnotation?.color ?? ""}:${i.myAnnotation?.cues ?? ""}`
+                )
+                .join(",")}-${activeEventId ?? "none"}`}
+              bandId={bandId}
+              setlistId={setlistId}
+              eventId={activeEventId}
+              initialItems={items}
+              librarySongs={songs}
+              readOnly={!canManage || isPastActiveEvent}
+              equipmentOptions={equipmentOptions}
+              equipmentIconDisplay={setlist.equipmentIconDisplay}
+            />
+          </>
         )}
       </div>
 

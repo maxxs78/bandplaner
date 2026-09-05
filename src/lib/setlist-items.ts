@@ -15,6 +15,8 @@ export type SetlistDisplayItem = {
   bpm?: number | null;
   durationSec?: number | null;
   excludeFromNumbering?: boolean;
+  /** Segue/Medley: Uebergang ohne Pause zum naechsten Eintrag. Rein visuell/Text - beeinflusst die Nummerierung nicht. */
+  segueToNext?: boolean;
 };
 
 /**
@@ -53,13 +55,20 @@ function formatSectionLine(label: string | null): string {
   return `${left}${middle}${"-".repeat(rightLen)}`;
 }
 
-/** Reiner Text-Export (z. B. WhatsApp-Teilen) mit Nummerierung, Kommentaren und Abschnittslinien. */
+/**
+ * Reiner Text-Export (z. B. WhatsApp-Teilen / Zwischenablage) mit Nummerierung,
+ * Kommentaren und Abschnittslinien. Segued Eintraege (der vorige Eintrag hat
+ * segueToNext) werden mit "  ↳ " eingerueckt, damit ein Medley als Block lesbar bleibt.
+ */
 export function formatSetlistAsText(items: SetlistDisplayItem[]): string[] {
   const numbers = computeSetlistNumbers(items);
   return items.map((item, index) => {
     if (item.kind === "SECTION") return formatSectionLine(item.title || null);
     if (item.kind === "COMMENT") return item.title;
+    const prev = items[index - 1];
+    const segued = Boolean(prev && prev.segueToNext && prev.kind !== "SECTION" && prev.kind !== "COMMENT");
     const number = numbers[index];
-    return number !== null ? `${number}. ${item.title}` : item.title;
+    const line = number !== null ? `${number}. ${item.title}` : item.title;
+    return segued ? `  ↳ ${line}` : line;
   });
 }

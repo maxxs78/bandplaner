@@ -425,3 +425,59 @@ export async function saveLineupAction(
   revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
   return undefined;
 }
+
+/**
+ * Proben-Tracking (Modul rehearsalTrackingEnabled): explizite Zuordnung
+ * "dieser Song wurde an diesem Probentermin geuebt". Nur fuer Termine vom Typ
+ * REHEARSAL, nur bei aktivem Modul.
+ */
+async function assertRehearsalTrackingEvent(bandId: string, eventId: string) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return null;
+  if (!getEnabledFeatures(membership.band).rehearsalTracking) return null;
+  const event = await prisma.event.findUnique({
+    where: { id: eventId, bandId },
+    select: { id: true, type: true },
+  });
+  if (!event || event.type !== "REHEARSAL") return null;
+  return { userId: membership.userId };
+}
+
+export async function addRehearsalSongAction(bandId: string, eventId: string, songId: string) {
+  const ctx = await assertRehearsalTrackingEvent(bandId, eventId);
+  if (!ctx) return;
+  const song = await prisma.song.findUnique({ where: { id: songId, bandId }, select: { id: true } });
+  if (!song) return;
+  await prisma.rehearsalSong.upsert({
+    where: { eventId_songId: { eventId, songId } },
+    create: { eventId, songId, addedById: ctx.userId },
+    update: {},
+  });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+}
+
+export async function removeRehearsalSongAction(bandId: string, eventId: string, songId: string) {
+  const ctx = await assertRehearsalTrackingEvent(bandId, eventId);
+  if (!ctx) return;
+  await prisma.rehearsalSong.deleteMany({ where: { eventId, songId } });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+}
+
+export async function saveRehearsalSongNoteAction(
+  bandId: string,
+  eventId: string,
+  songId: string,
+  formData: FormData
+) {
+  const ctx = await assertRehearsalTrackingEvent(bandId, eventId);
+  if (!ctx) return;
+  const note = ((formData.get("note") as string) ?? "").trim() || null;
+  await prisma.rehearsalSong.upsert({
+    where: { eventId_songId: { eventId, songId } },
+    create: { eventId, songId, addedById: ctx.userId, note },
+    update: { note },
+  });
+  revalidatePath(`/bands/${bandId}/calendar/${eventId}`);
+}

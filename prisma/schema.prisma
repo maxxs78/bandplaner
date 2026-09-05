@@ -120,6 +120,8 @@ model User {
   setlistEventNotes                 SetlistEventNote[]
   assignedLineupEntries             EventLineupEntry[]
   defaultLineupRoles                BandLineupRole[]
+  rehearsalSongsAdded               RehearsalSong[]             @relation("RehearsalSongAddedBy")
+  practiceLoopsCreated              PracticeLoop[]             @relation("PracticeLoopCreatedBy")
 
   passwordResetTokens PasswordResetToken[]
 }
@@ -202,6 +204,11 @@ model Band {
   /// Orte-Katalog (Venues) mit Adresse/Karte, Kontakt- und Technik-Infos,
   /// verknuepfbar mit Terminen - "Advanced Feature", daher Standard aus.
   locationsEnabled Boolean @default(false)
+
+  /// Proben-Tracking: je Probentermin festhalten, welche Songs geuebt wurden
+  /// (explizit zugeordnet und/oder aus verknuepften Setlisten abgeleitet),
+  /// mit Historie auf der Song-Detailseite. Neues Feature, Standard aus.
+  rehearsalTrackingEnabled Boolean @default(false)
 
   memberships    Membership[]
   events         Event[]
@@ -407,6 +414,7 @@ model Event {
   setlistEventSnapshots       SetlistEventSnapshot[]
   packlistEventSnapshots      PacklistEventSnapshot[]
   lineup                      EventLineupEntry[]
+  rehearsalSongs              RehearsalSong[]
 }
 
 /// Mitglieder, für die ein Termin gilt. Standard: bei Probe/Auftritt alle Mitglieder,
@@ -501,6 +509,8 @@ model Song {
   album         String?
   /// Erscheinungsjahr, aus ID3-Tags oder Online-Recherche übernehmbar
   releaseYear   Int?
+  /// Lead-Gesang / Besetzung als Freitext, z. B. "Lead: Anna, BGV: Ben" (Spez. 3.3)
+  cast          String?
   /// Coverbild des Songs, wird u. a. bei reiner Audiowiedergabe im Player angezeigt.
   coverUrl      String?
   status        SongStatus @default(NEW)
@@ -514,6 +524,13 @@ model Song {
   /// jeder Setlist, die diesen Song enthaelt (SetlistItem.techNotes ergaenzt dies
   /// nur fuer eine konkrete Setlist).
   techNotes     String?
+  /// Vorzähler-Schläge im Übungsmodus (Klick vor Wiedergabe-/Loop-Start), z. B. 3
+  /// oder 4. null/0 = kein Einzähler. Grundwert kommt sonst aus der Taktart.
+  countInBeats  Int?
+  /// Feinversatz der Klick-Spur zum Song-Anfang in Millisekunden (Downbeat-Phase).
+  /// Wird beim Analysieren automatisch aus der Beat-Erkennung vorbelegt, im
+  /// Übungsmodus manuell nachjustierbar und übernehmbar.
+  clickOffsetMs Int?
   createdAt     DateTime   @default(now())
 
   band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
@@ -522,12 +539,33 @@ model Song {
   proposedBy   User?   @relation("SongProposedBy", fields: [proposedById], references: [id], onDelete: SetNull)
   proposedById String?
 
-  notes        SongNote[]
-  setlistItems SetlistItem[]
-  files        SongFile[]
-  links        SongLink[]
-  votes        SongVote[]
-  bandFiles    BandFile[]
+  notes          SongNote[]
+  setlistItems   SetlistItem[]
+  files          SongFile[]
+  links          SongLink[]
+  votes          SongVote[]
+  bandFiles      BandFile[]
+  rehearsalSongs RehearsalSong[]
+  practiceLoops  PracticeLoop[]
+}
+
+/// Gespeicherter Übungsabschnitt eines Songs (z. B. "Solo", "Bridge") für den
+/// Übungsmodus des Medienplayers. Bandweit geteilt - jedes Mitglied kann einen
+/// Abschnitt anlegen; löschen darf die anlegende Person oder ein Content-Manager.
+model PracticeLoop {
+  id        String   @id @default(cuid())
+  name      String
+  startSec  Float
+  endSec    Float
+  createdAt DateTime @default(now())
+
+  song   Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId String
+
+  createdBy   User?   @relation("PracticeLoopCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdById String?
+
+  @@index([songId])
 }
 
 /// Daumen-hoch/-runter-Abstimmung über einen vorgeschlagenen Song, optional mit für alle sichtbarem Kommentar.
@@ -634,6 +672,28 @@ model SongNote {
   @@unique([songId, userId])
 }
 
+/// Proben-Tracking (abschaltbares Modul, siehe Band.rehearsalTrackingEnabled):
+/// explizite Zuordnung "dieser Song wurde an diesem Probentermin geuebt". Zusaetzlich
+/// gelten Songs aus Setlisten, die mit dem Probentermin verknuepft sind, als geuebt -
+/// das wird jedoch abgeleitet und nicht hier gespeichert (siehe src/lib/rehearsal-songs.ts).
+model RehearsalSong {
+  id        String   @id @default(cuid())
+  /// Optionale Kurznotiz zum Uebungsstand an diesem Termin
+  note      String?
+  createdAt DateTime @default(now())
+
+  event   Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  eventId String
+  song    Song   @relation(fields: [songId], references: [id], onDelete: Cascade)
+  songId  String
+
+  /// Optional statt Pflicht: bleibt bei Konto-Loeschung erhalten (SetNull).
+  addedBy   User?   @relation("RehearsalSongAddedBy", fields: [addedById], references: [id], onDelete: SetNull)
+  addedById String?
+
+  @@unique([eventId, songId])
+}
+
 /// Steuert, wie das Equipment-Icon eines INSTRUMENT_CHANGE-Hinweises je Setlist
 /// dargestellt wird (siehe CueBadges/setlist-builder.tsx): IN_TAG = klein im
 /// Hinweis-Badge (bisheriges Verhalten), LARGE = grosses Icon neben Tonart/BPM,
@@ -720,6 +780,11 @@ model SetlistItem {
   /// Setlist, ergaenzt Song.techNotes - editierbar von Content-Managern, sichtbar
   /// fuer alle im technischen Ablaufplan-Ausdruck.
   techNotes            String?
+  /// Uebergang ohne Pause zum unmittelbar folgenden Eintrag (Segue/Medley) -
+  /// nur bei SONG/CUSTOM sinnvoll. Aufeinanderfolgende segued Eintraege werden
+  /// in Ansicht/Druck/Text-Export als zusammenhaengender Block dargestellt;
+  /// die Nummerierung bleibt unveraendert.
+  segueToNext          Boolean         @default(false)
 
   setlist   Setlist @relation(fields: [setlistId], references: [id], onDelete: Cascade)
   setlistId String

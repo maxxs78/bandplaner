@@ -4,7 +4,7 @@ import { useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
-import { PracticePlayer } from "@/components/practice-player";
+import { PracticePlayer, type PracticeLoopItem } from "@/components/practice-player";
 
 /**
  * Zweistufiger Player: normal ein schlankes <audio>-Element, das die Datei
@@ -20,6 +20,14 @@ export function SongAudioPlayer({
   bandId,
   songId,
   keyDetectionEnabled,
+  timeSignature,
+  countInBeats,
+  clickOffsetMs,
+  canManageSong = false,
+  practiceLoops = [],
+  saveLoopAction,
+  deleteLoopAction,
+  saveClickSettingsAction,
 }: {
   src: string;
   filename: string;
@@ -28,6 +36,14 @@ export function SongAudioPlayer({
   bandId: string;
   songId: string;
   keyDetectionEnabled?: boolean;
+  timeSignature?: string | null;
+  countInBeats?: number | null;
+  clickOffsetMs?: number | null;
+  canManageSong?: boolean;
+  practiceLoops?: PracticeLoopItem[];
+  saveLoopAction?: (input: { name: string; startSec: number; endSec: number }) => Promise<{ error?: string; id?: string } | undefined>;
+  deleteLoopAction?: (loopId: string) => Promise<{ error?: string } | undefined>;
+  saveClickSettingsAction?: (settings: { countInBeats?: number | null; clickOffsetMs?: number | null }) => Promise<{ error?: string } | undefined>;
 }) {
   const [practiceMode, setPracticeMode] = useState(false);
   const t = useTranslations("songs.audioPlayer");
@@ -41,6 +57,14 @@ export function SongAudioPlayer({
         bandId={bandId}
         songId={songId}
         keyDetectionEnabled={keyDetectionEnabled}
+        timeSignature={timeSignature}
+        countInBeats={countInBeats}
+        clickOffsetMs={clickOffsetMs}
+        canManageSong={canManageSong}
+        practiceLoops={practiceLoops}
+        saveLoopAction={saveLoopAction}
+        deleteLoopAction={deleteLoopAction}
+        saveClickSettingsAction={saveClickSettingsAction}
         onClose={() => setPracticeMode(false)}
       />
     );

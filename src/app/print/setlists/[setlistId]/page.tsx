@@ -50,6 +50,31 @@ export default async function SetlistPrintPage({
   const numbers = computeSetlistNumbers(
     frozenItems ?? setlist.items.map((item) => ({ kind: item.kind, excludeFromNumbering: item.excludeFromNumbering }))
   );
+  const isPlayableKind = (k?: string | null) => k === "SONG" || k === "CUSTOM";
+  const liveSeguedFromPrev = (index: number) => {
+    const p = setlist.items[index - 1];
+    return Boolean(p?.segueToNext && isPlayableKind(p.kind) && isPlayableKind(setlist.items[index]?.kind));
+  };
+  const liveSeguesToNext = (index: number) => {
+    const cur = setlist.items[index];
+    return Boolean(cur?.segueToNext && isPlayableKind(cur.kind) && isPlayableKind(setlist.items[index + 1]?.kind));
+  };
+  const frozenSeguedFromPrev = (index: number) => {
+    const list = frozenItems ?? [];
+    const p = list[index - 1];
+    return Boolean(p?.segueToNext && isPlayableKind(p.kind) && isPlayableKind(list[index]?.kind));
+  };
+  const frozenSeguesToNext = (index: number) => {
+    const list = frozenItems ?? [];
+    const cur = list[index];
+    return Boolean(cur?.segueToNext && isPlayableKind(cur.kind) && isPlayableKind(list[index + 1]?.kind));
+  };
+  // Gemeinsame Klammer um einen Segue-Lauf: durchgehender schwarzer Balken links,
+  // Abstand zwischen den Songs geschlossen (space-y aufgehoben).
+  const segueBracket = (linkedUp: boolean, linkedDown: boolean) =>
+    linkedUp || linkedDown
+      ? `border-l-[3px] border-l-black py-3 pl-3 ${linkedUp ? "-mt-1" : ""}`
+      : "py-3";
 
   const t = await getTranslations("setlists.detail");
   const totalDurationSec = frozenItems
@@ -117,14 +142,20 @@ export default async function SetlistPrintPage({
                   </li>
                 );
               }
+              const fLinkedUp = frozenSeguedFromPrev(index);
+              const fLinkedDown = frozenSeguesToNext(index);
               return (
                 <li
                   key={index}
-                  className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
-                  style={{ paddingLeft: "26px" }}
+                  className={`flex items-start gap-4 border-b border-gray-200 break-inside-avoid ${segueBracket(fLinkedUp, fLinkedDown)}`}
+                  style={fLinkedUp || fLinkedDown ? undefined : { paddingLeft: "26px" }}
                 >
                   <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
-                    {numbers[index] !== null ? `${numbers[index]}.` : ""}
+                    {fLinkedUp
+                      ? "↳"
+                      : numbers[index] !== null
+                        ? `${numbers[index]}.`
+                        : ""}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">
@@ -171,18 +202,29 @@ export default async function SetlistPrintPage({
               }
               const annotation = eventId ? item.eventAnnotations?.[0] : item.annotations[0];
               const cues = parseCues(annotation?.cues);
+              const lLinkedUp = liveSeguedFromPrev(index);
+              const lLinkedDown = liveSeguesToNext(index);
+              const lBracket = (lLinkedUp || lLinkedDown) && !annotation?.color;
               return (
                 <li
                   key={item.id}
-                  className="flex items-start gap-4 border-b border-gray-200 py-3 break-inside-avoid"
+                  className={`flex items-start gap-4 border-b border-gray-200 break-inside-avoid py-3 ${
+                    lLinkedUp ? "-mt-1" : ""
+                  } ${lBracket ? "border-l-[3px] border-l-black pl-3" : ""}`}
                   style={
                     annotation?.color
                       ? { borderLeft: `12px solid ${annotation.color}`, paddingLeft: "14px" }
-                      : { paddingLeft: "26px" }
+                      : lBracket
+                        ? undefined
+                        : { paddingLeft: "26px" }
                   }
                 >
                   <span className="w-12 shrink-0 font-mono text-3xl font-bold text-gray-400">
-                    {numbers[index] !== null ? `${numbers[index]}.` : ""}
+                    {lLinkedUp
+                      ? "↳"
+                      : numbers[index] !== null
+                        ? `${numbers[index]}.`
+                        : ""}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-3">

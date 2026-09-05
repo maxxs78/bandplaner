@@ -93,11 +93,28 @@ export default async function SongsPage({
           statusLabel: t(`statusLabels.${song.status}`),
           statusVariant: statusVariant[song.status],
           rejected: song.rejected && song.status === "ARCHIVED",
+          artist: song.artist,
+          genre: song.genre,
+          album: song.album,
+          keyValue: song.key,
+          bpmValue: song.bpm,
+          createdAt: song.createdAt.toISOString(),
         }))}
         noSongsFoundText={t("noSongsFound")}
+        noSearchResultsText={t("noSearchResults")}
         rejectedBadgeText={t("rejectedBadge")}
         listViewLabel={t("listView")}
         gridViewLabel={t("gridView")}
+        searchPlaceholder={t("searchPlaceholder")}
+        sortLabel={t("sort.label")}
+        sortOptionLabels={{
+          title: t("sort.title"),
+          bpm: t("sort.bpm"),
+          key: t("sort.key"),
+          recent: t("sort.recent"),
+        }}
+        sortDirAscLabel={t("sort.directionAsc")}
+        sortDirDescLabel={t("sort.directionDesc")}
       />
     </div>
   );

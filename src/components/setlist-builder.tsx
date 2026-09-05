@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   closestCenter,
@@ -16,7 +17,7 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { ClipboardList, GripVertical, Plus, Tag, X } from "lucide-react";
+import { ClipboardList, CornerDownRight, FileText, GripVertical, Plus, RefreshCcw, Tag, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
   addSongToSetlistAction,
@@ -28,6 +29,8 @@ import {
   saveItemAnnotationAction,
   saveItemTechNoteAction,
   setItemNumberingAction,
+  toggleSegueAction,
+  syncItemFromSongNoteAction,
 } from "@/app/(app)/bands/[bandId]/setlists/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +53,8 @@ type SetlistItem = {
   /** Nur bei kind=CUSTOM relevant - siehe computeNumbers(). */
   excludeFromNumbering: boolean;
   songDeleted: boolean;
+  /** Segue/Medley: Uebergang ohne Pause zum naechsten Eintrag. */
+  segueToNext: boolean;
   song: {
     id: string;
     title: string;
@@ -57,6 +62,10 @@ type SetlistItem = {
     bpm: number | null;
     durationSec: number | null;
     status: string;
+    /** Fuer alle sichtbare bzw. eigene Song-Dokumente (Downloads) - siehe Setlist-Detailseite. */
+    files?: { id: string; filename: string }[];
+    /** Aktuelle persoenliche Song-Notiz des Nutzers (Vorgabewerte fuer die Sync-Funktion). */
+    myNote?: { shortNote: string | null; color: string | null; cues: string | null } | null;
   } | null;
   myAnnotation?: MyAnnotation;
   /** Geteilter technischer Zusatzhinweis (FOH/Licht/Technik) nur fuer diese Setlist. */
@@ -87,6 +96,7 @@ function itemTitleAndMeta(item: SetlistItem, t: (key: string) => string) {
 function RowContent({
   item,
   number,
+  seguedFromPrev,
   isExpanded,
   onToggleExpand,
   onSetNumbering,
@@ -94,6 +104,7 @@ function RowContent({
 }: {
   item: SetlistItem;
   number: number | null;
+  seguedFromPrev?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSetNumbering?: (exclude: boolean) => void;
@@ -107,7 +118,9 @@ function RowContent({
 
   return (
     <>
-      <span className="w-6 shrink-0 text-sm text-muted">{number !== null ? `${number}.` : ""}</span>
+      <span className="w-6 shrink-0 text-sm text-muted">
+        {seguedFromPrev ? "↳" : number !== null ? `${number}.` : ""}
+      </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
           <p
@@ -185,6 +198,7 @@ function SectionContent({ item }: { item: SetlistItem }) {
 function ItemContent({
   item,
   number,
+  seguedFromPrev,
   isExpanded,
   onToggleExpand,
   onSetNumbering,
@@ -192,6 +206,7 @@ function ItemContent({
 }: {
   item: SetlistItem;
   number: number | null;
+  seguedFromPrev?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onSetNumbering?: (exclude: boolean) => void;
@@ -203,6 +218,7 @@ function ItemContent({
     <RowContent
       item={item}
       number={number}
+      seguedFromPrev={seguedFromPrev}
       isExpanded={isExpanded}
       onToggleExpand={onToggleExpand}
       onSetNumbering={onSetNumbering}
@@ -214,12 +230,14 @@ function ItemContent({
 function ReadOnlyRow({
   item,
   number,
+  seguedFromPrev,
   isExpanded,
   onToggleExpand,
   equipmentIconDisplay,
 }: {
   item: SetlistItem;
   number: number | null;
+  seguedFromPrev?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
   equipmentIconDisplay: EquipmentIconDisplay;
@@ -235,6 +253,7 @@ function ReadOnlyRow({
       <ItemContent
         item={item}
         number={number}
+        seguedFromPrev={seguedFromPrev}
         isExpanded={isExpanded}
         onToggleExpand={onToggleExpand}
         equipmentIconDisplay={equipmentIconDisplay}
@@ -246,6 +265,7 @@ function ReadOnlyRow({
 function SortableRow({
   item,
   number,
+  seguedFromPrev,
   isExpanded,
   onToggleExpand,
   onRemove,
@@ -254,6 +274,7 @@ function SortableRow({
 }: {
   item: SetlistItem;
   number: number | null;
+  seguedFromPrev?: boolean;
   isExpanded: boolean;
   onToggleExpand: () => void;
   onRemove: (id: string) => void;
@@ -293,6 +314,7 @@ function SortableRow({
       <ItemContent
         item={item}
         number={number}
+        seguedFromPrev={seguedFromPrev}
         isExpanded={isExpanded}
         onToggleExpand={onToggleExpand}
         onSetNumbering={(exclude) => onSetNumbering(item.id, exclude)}
@@ -336,6 +358,71 @@ function ItemTechNoteForm({
   );
 }
 
+/** Zusatzbereich im aufgeklappten SONG-Eintrag: Dokumente des Songs, Sync aus
+ * der Song-Notiz und (nur bearbeitbar) der Segue-Schalter. */
+function SongItemExtras({
+  item,
+  readOnly,
+  syncing,
+  onSync,
+  onToggleSegue,
+}: {
+  item: SetlistItem;
+  readOnly: boolean;
+  syncing: boolean;
+  onSync: () => void;
+  onToggleSegue: (segueToNext: boolean) => void;
+}) {
+  const t = useTranslations("setlists.builder");
+  const files = item.song?.files ?? [];
+
+  return (
+    <div className="mt-3 space-y-2 border-t border-border pt-3 text-xs">
+      {files.length > 0 && (
+        <div>
+          <p className="mb-1 flex items-center gap-1.5 font-medium text-muted">
+            <FileText className="h-3.5 w-3.5" />
+            {t("songDocuments", { count: files.length })}
+          </p>
+          <ul className="space-y-1">
+            {files.map((f) => (
+              <li key={f.id}>
+                <a
+                  href={`/api/song-files/${f.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-primary hover:underline"
+                >
+                  {f.filename}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-2">
+        <Button type="button" size="sm" variant="secondary" onClick={onSync} disabled={syncing}>
+          <RefreshCcw className="h-3.5 w-3.5" />
+          {syncing ? t("syncing") : t("syncFromSong")}
+        </Button>
+        {!readOnly && (
+          <label className="flex items-center gap-1.5 text-muted">
+            <input
+              type="checkbox"
+              checked={item.segueToNext}
+              onChange={(e) => onToggleSegue(e.target.checked)}
+              className="h-3.5 w-3.5 rounded border-border accent-primary"
+            />
+            <CornerDownRight className="h-3.5 w-3.5" />
+            {t("segueToggle")}
+          </label>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function SetlistBuilder({
   bandId,
   setlistId,
@@ -367,7 +454,9 @@ export function SetlistBuilder({
   const [sectionLabel, setSectionLabel] = useState("");
   const [expandedItemId, setExpandedItemId] = useState<string | null>(null);
   const [, startTransition] = useTransition();
+  const [syncingItemId, setSyncingItemId] = useState<string | null>(null);
   const optimisticIdCounter = useRef(0);
+  const router = useRouter();
   const t = useTranslations("setlists.builder");
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
@@ -399,6 +488,38 @@ export function SetlistBuilder({
     startTransition(() => setItemNumberingAction(bandId, setlistId, itemId, exclude));
   }
 
+  function handleToggleSegue(itemId: string, segueToNext: boolean) {
+    setItems((current) =>
+      current.map((i) => (i.id === itemId ? { ...i, segueToNext } : i))
+    );
+    startTransition(() => toggleSegueAction(bandId, setlistId, itemId, segueToNext));
+  }
+
+  /** Uebernimmt die aktuellen Song-Notiz-Vorgaben (Kurznotiz/Farbe/Cues) lokal
+   * und serverseitig in die persoenliche Annotation dieses Eintrags. */
+  function handleSyncFromSongNote(itemId: string) {
+    setSyncingItemId(itemId);
+    setItems((current) =>
+      current.map((i) => {
+        if (i.id !== itemId) return i;
+        const n = i.song?.myNote;
+        return {
+          ...i,
+          myAnnotation: {
+            note: n?.shortNote ?? null,
+            color: n?.color ?? null,
+            cues: n?.cues ?? null,
+          },
+        };
+      })
+    );
+    startTransition(async () => {
+      await syncItemFromSongNoteAction(bandId, setlistId, itemId, eventId);
+      setSyncingItemId(null);
+      router.refresh();
+    });
+  }
+
   function handleAddSong(song: LibrarySong) {
     const optimisticId = `optimistic-${optimisticIdCounter.current++}`;
     setItems((current) => [
@@ -411,6 +532,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        segueToNext: false,
         techNotes: null,
         song: { ...song, durationSec: null },
       },
@@ -439,6 +561,7 @@ export function SetlistBuilder({
         durationSec,
         excludeFromNumbering: customExcludeFromNumbering,
         songDeleted: false,
+        segueToNext: false,
         techNotes: null,
         song: null,
       },
@@ -467,6 +590,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        segueToNext: false,
         techNotes: null,
         song: null,
       },
@@ -492,6 +616,7 @@ export function SetlistBuilder({
         durationSec: null,
         excludeFromNumbering: false,
         songDeleted: false,
+        segueToNext: false,
         techNotes: null,
         song: null,
       },
@@ -528,6 +653,99 @@ export function SetlistBuilder({
     s.title.toLowerCase().includes(search.toLowerCase())
   );
   const numbers = computeSetlistNumbers(items);
+  const isPlayable = (i?: SetlistItem) => Boolean(i && i.kind !== "COMMENT" && i.kind !== "SECTION");
+  const seguedFromPrev = (index: number) =>
+    Boolean(items[index - 1]?.segueToNext && isPlayable(items[index - 1]) && isPlayable(items[index]));
+  // Zusammenhaengende Segue-Laeufe fuer die optische Buendelung: jeder Eintrag
+  // bildet eine eigene Einheit, ausser er haengt per Segue am Vorgaenger.
+  const segueUnits: number[][] = [];
+  items.forEach((_, index) => {
+    if (index > 0 && seguedFromPrev(index)) segueUnits[segueUnits.length - 1].push(index);
+    else segueUnits.push([index]);
+  });
+
+  const expandedPanel = (item: SetlistItem, editable: boolean) =>
+    expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" ? (
+      <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
+        <CueAnnotationEditor
+          defaultValues={{
+            note: item.myAnnotation?.note ?? "",
+            color: item.myAnnotation?.color ?? null,
+            cues: parseCues(item.myAnnotation?.cues),
+          }}
+          onSave={(data) => handleSaveAnnotation(item.id, data)}
+          compact
+          equipmentOptions={equipmentOptions}
+        />
+        {item.kind === "SONG" && (
+          <>
+            {editable && (
+              <ItemTechNoteForm
+                key={item.id}
+                defaultValue={item.techNotes ?? ""}
+                onSave={(formData) => saveItemTechNoteAction(bandId, setlistId, item.id, formData)}
+              />
+            )}
+            <SongItemExtras
+              item={item}
+              readOnly={!editable}
+              syncing={syncingItemId === item.id}
+              onSync={() => handleSyncFromSongNote(item.id)}
+              onToggleSegue={(v) => handleToggleSegue(item.id, v)}
+            />
+          </>
+        )}
+      </div>
+    ) : null;
+
+  // Rendert eine Segue-Einheit: einzelner Eintrag oder - bei einem Segue-Lauf -
+  // ein gemeinsam umrahmter Block mit Klammer-Balken und "Segue"-Markierung.
+  const renderUnit = (unit: number[], editable: boolean) => {
+    const rows = unit.map((index) => {
+      const item = items[index];
+      const toggleExpand = () =>
+        setExpandedItemId((current) => (current === item.id ? null : item.id));
+      return (
+        <div key={item.id}>
+          {editable ? (
+            <SortableRow
+              item={item}
+              number={numbers[index]}
+              seguedFromPrev={seguedFromPrev(index)}
+              isExpanded={expandedItemId === item.id}
+              onToggleExpand={toggleExpand}
+              onRemove={handleRemove}
+              onSetNumbering={handleSetNumbering}
+              equipmentIconDisplay={equipmentIconDisplay}
+            />
+          ) : (
+            <ReadOnlyRow
+              item={item}
+              number={numbers[index]}
+              seguedFromPrev={seguedFromPrev(index)}
+              isExpanded={expandedItemId === item.id}
+              onToggleExpand={toggleExpand}
+              equipmentIconDisplay={equipmentIconDisplay}
+            />
+          )}
+          {expandedPanel(item, editable)}
+        </div>
+      );
+    });
+    if (unit.length === 1) return rows[0];
+    return (
+      <div
+        key={`seg-${items[unit[0]].id}`}
+        className="space-y-1.5 rounded-lg border border-l-[3px] border-primary/30 border-l-primary bg-primary/5 p-2"
+      >
+        <p className="flex items-center gap-1 pl-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+          <CornerDownRight className="h-3 w-3" />
+          {t("segueGroupLabel")}
+        </p>
+        {rows}
+      </div>
+    );
+  };
 
   return (
     <div className={readOnly ? "" : "grid gap-6 lg:grid-cols-[1fr_320px]"}>
@@ -539,74 +757,13 @@ export function SetlistBuilder({
           </p>
         ) : readOnly ? (
           <div className="mt-3 space-y-2">
-            {items.map((item, index) => (
-              <div key={item.id}>
-                <ReadOnlyRow
-                  item={item}
-                  number={numbers[index]}
-                  isExpanded={expandedItemId === item.id}
-                  onToggleExpand={() =>
-                    setExpandedItemId((current) => (current === item.id ? null : item.id))
-                  }
-                  equipmentIconDisplay={equipmentIconDisplay}
-                />
-                {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
-                  <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
-                    <CueAnnotationEditor
-                      defaultValues={{
-                        note: item.myAnnotation?.note ?? "",
-                        color: item.myAnnotation?.color ?? null,
-                        cues: parseCues(item.myAnnotation?.cues),
-                      }}
-                      onSave={(data) => handleSaveAnnotation(item.id, data)}
-                      compact
-                      equipmentOptions={equipmentOptions}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
+            {segueUnits.map((unit) => renderUnit(unit, false))}
           </div>
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <div className="mt-3 space-y-2">
-                {items.map((item, index) => (
-                  <div key={item.id}>
-                    <SortableRow
-                      item={item}
-                      number={numbers[index]}
-                      isExpanded={expandedItemId === item.id}
-                      onToggleExpand={() =>
-                        setExpandedItemId((current) => (current === item.id ? null : item.id))
-                      }
-                      onRemove={handleRemove}
-                      onSetNumbering={handleSetNumbering}
-                      equipmentIconDisplay={equipmentIconDisplay}
-                    />
-                    {expandedItemId === item.id && item.kind !== "COMMENT" && item.kind !== "SECTION" && (
-                      <div className="mt-2 rounded-lg border border-border bg-surface-muted p-3">
-                        <CueAnnotationEditor
-                          defaultValues={{
-                            note: item.myAnnotation?.note ?? "",
-                            color: item.myAnnotation?.color ?? null,
-                            cues: parseCues(item.myAnnotation?.cues),
-                          }}
-                          onSave={(data) => handleSaveAnnotation(item.id, data)}
-                          compact
-                          equipmentOptions={equipmentOptions}
-                        />
-                        {item.kind === "SONG" && (
-                          <ItemTechNoteForm
-                            key={item.id}
-                            defaultValue={item.techNotes ?? ""}
-                            onSave={(formData) => saveItemTechNoteAction(bandId, setlistId, item.id, formData)}
-                          />
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
+                {segueUnits.map((unit) => renderUnit(unit, true))}
               </div>
             </SortableContext>
           </DndContext>

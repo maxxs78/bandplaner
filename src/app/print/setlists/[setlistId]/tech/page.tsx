@@ -44,6 +44,15 @@ export default async function SetlistTechPrintPage({
 
   const t = await getTranslations("setlists.techPrint");
   const numbers = computeSetlistNumbers(setlist.items);
+  const isPlayableKind = (k?: string | null) => k === "SONG" || k === "CUSTOM";
+  const seguedFromPrev = (index: number) => {
+    const p = setlist.items[index - 1];
+    return Boolean(p?.segueToNext && isPlayableKind(p.kind) && isPlayableKind(setlist.items[index]?.kind));
+  };
+  const seguesToNext = (index: number) => {
+    const cur = setlist.items[index];
+    return Boolean(cur?.segueToNext && isPlayableKind(cur.kind) && isPlayableKind(setlist.items[index + 1]?.kind));
+  };
 
   return (
     <main className="mx-auto max-w-[297mm] bg-white px-8 py-8 text-black print:max-w-none print:px-0 print:py-0">
@@ -111,10 +120,23 @@ export default async function SetlistTechPrintPage({
                 );
               }
               const notes = [item.song?.techNotes, item.techNotes].filter(Boolean).join(" · ");
+              const linkedUp = seguedFromPrev(index);
+              const linkedDown = seguesToNext(index);
               return (
-                <tr key={item.id} className="border-b border-gray-200 break-inside-avoid">
-                  <td className="py-1 pr-2 align-top font-mono text-gray-500">
-                    {numbers[index] !== null ? `${numbers[index]}.` : ""}
+                <tr
+                  key={item.id}
+                  className={`break-inside-avoid ${linkedDown ? "" : "border-b border-gray-200"}`}
+                >
+                  <td
+                    className={`py-1 pr-2 align-top font-mono text-gray-500 ${
+                      linkedUp || linkedDown ? "border-l-2 border-l-black pl-1.5" : ""
+                    }`}
+                  >
+                    {linkedUp
+                      ? "↳"
+                      : numbers[index] !== null
+                        ? `${numbers[index]}.`
+                        : ""}
                   </td>
                   <td className="py-1 pr-2 align-top font-medium">
                     {item.song?.title ?? item.customTitle}

@@ -1,7 +1,17 @@
 import Link from "next/link";
-import { Globe, Link2, Mail, MapPin, Music2 } from "lucide-react";
+import {
+  CalendarClock,
+  CalendarCheck,
+  Globe,
+  Link2,
+  ListChecks,
+  Mail,
+  MapPin,
+  Music2,
+  ThumbsUp,
+} from "lucide-react";
 import { getTranslations, getFormatter } from "next-intl/server";
-import { requireMembership } from "@/lib/access";
+import { requireMembership, canManageContent } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card, Badge } from "@/components/ui/card";
 import {
@@ -19,28 +29,90 @@ export default async function BandOverviewPage({
   params: Promise<{ bandId: string }>;
 }) {
   const { bandId } = await params;
-  const { membership } = await requireMembership(bandId);
+  const { user, membership } = await requireMembership(bandId);
   const band = membership.band;
+  const canManage = canManageContent(membership.role);
   const t = await getTranslations("overview");
   const tEventTypes = await getTranslations("calendar.eventTypes");
   const eventTypeLabels = getEventTypeLabels(tEventTypes);
   const format = await getFormatter();
 
-  const [upcomingEvents, songCount, setlistCount, memberCount] = await Promise.all([
+  const now = new Date();
+  const in30Days = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  const [
+    upcomingEvents,
+    songCount,
+    setlistCount,
+    memberCount,
+    upcomingEventCount,
+    availabilityGapEvents,
+    proposals,
+    songsNeedingInfo,
+  ] = await Promise.all([
     prisma.event.findMany({
-      where: { bandId, startsAt: { gte: new Date() } },
+      where: { bandId, startsAt: { gte: now } },
       orderBy: { startsAt: "asc" },
       take: 5,
       include: {
         participants: { select: { userId: true } },
         availabilities: { select: { userId: true, status: true } },
         place: { select: { name: true } },
+        setlists: { select: { id: true, name: true } },
       },
     }),
     prisma.song.count({ where: { bandId, status: { not: "ARCHIVED" } } }),
     prisma.setlist.count({ where: { bandId } }),
     prisma.membership.count({ where: { bandId } }),
+    prisma.event.count({ where: { bandId, startsAt: { gte: now } } }),
+    prisma.event.findMany({
+      where: { bandId, startsAt: { gte: now, lte: in30Days } },
+      select: { id: true, availabilities: { where: { userId: user.id }, select: { id: true } } },
+    }),
+    prisma.song.findMany({
+      where: { bandId, status: "PROPOSED" },
+      select: { id: true, votes: { where: { userId: user.id }, select: { id: true } } },
+    }),
+    canManage
+      ? prisma.song.count({
+          where: { bandId, status: { not: "ARCHIVED" }, OR: [{ key: null }, { bpm: null }] },
+        })
+      : Promise.resolve(0),
   ]);
+
+  const availabilityGapCount = availabilityGapEvents.filter((e) => e.availabilities.length === 0).length;
+  const pendingProposalCount = proposals.filter((p) => p.votes.length === 0).length;
+
+  const actionItems = [
+    availabilityGapCount > 0 && {
+      key: "availability",
+      href: `/bands/${bandId}/availability`,
+      icon: CalendarCheck,
+      label: t("actionAvailability", { count: availabilityGapCount }),
+    },
+    pendingProposalCount > 0 && {
+      key: "proposals",
+      href: `/bands/${bandId}/songs?status=PROPOSED`,
+      icon: ThumbsUp,
+      label: t("actionProposals", { count: pendingProposalCount }),
+    },
+    canManage &&
+      songsNeedingInfo > 0 && {
+        key: "songInfo",
+        href: `/bands/${bandId}/songs`,
+        icon: ListChecks,
+        label: t("actionSongInfo", { count: songsNeedingInfo }),
+      },
+  ].filter(Boolean) as { key: string; href: string; icon: typeof CalendarCheck; label: string }[];
+
+  const relativeDayLabel = (date: Date) => {
+    const days = Math.round((date.getTime() - startOfToday.getTime()) / (24 * 60 * 60 * 1000));
+    if (days <= 0) return t("today");
+    if (days === 1) return t("tomorrow");
+    if (days <= 30) return t("inDays", { count: days });
+    return null;
+  };
 
   const hasProfileInfo =
     band.genre ||
@@ -55,6 +127,25 @@ export default async function BandOverviewPage({
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2">
+        {actionItems.length > 0 && (
+          <Card className="mb-6 border-primary/40 bg-primary/5">
+            <h2 className="text-sm font-semibold text-foreground">{t("actionRequired")}</h2>
+            <ul className="mt-2 space-y-1.5">
+              {actionItems.map((item) => (
+                <li key={item.key}>
+                  <Link
+                    href={item.href}
+                    className="inline-flex items-center gap-2 text-sm text-foreground hover:text-primary"
+                  >
+                    <item.icon className="h-4 w-4 shrink-0 text-primary" />
+                    {item.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        )}
+
         <h2 className="font-semibold text-foreground">{t("upcomingEvents")}</h2>
         <div className="mt-3 space-y-3">
           {upcomingEvents.length === 0 && (
@@ -66,6 +157,13 @@ export default async function BandOverviewPage({
               event.participants.map((p) => p.userId),
               event.availabilities
             );
+            const confirmStatus: "new" | "partial" | "confirmed" =
+              event.availabilities.length === 0
+                ? "new"
+                : allConfirmed
+                  ? "confirmed"
+                  : "partial";
+            const relDay = relativeDayLabel(event.startsAt);
             return (
               <Link key={event.id} href={`/bands/${bandId}/calendar/${event.id}`}>
                 <Card
@@ -75,16 +173,42 @@ export default async function BandOverviewPage({
                   )}
                   style={{ borderLeftColor: color.borderVar }}
                 >
-                  <div>
-                    <p className="font-medium text-foreground">{event.title}</p>
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="font-medium text-foreground">{event.title}</p>
+                      {relDay && (
+                        <span className="rounded-full bg-surface-muted px-2 py-0.5 text-xs font-medium text-muted">
+                          {relDay}
+                        </span>
+                      )}
+                    </div>
                     <p className="text-sm text-muted">
                       {format.dateTime(event.startsAt, { dateStyle: "medium", timeStyle: "short" })}
                       {eventLocationLabel(event) ? ` · ${eventLocationLabel(event)}` : ""}
                     </p>
+                    {event.setlists.length > 0 && (
+                      <p className="mt-1 flex items-center gap-1 text-xs text-muted">
+                        <ListChecks className="h-3.5 w-3.5 shrink-0" />
+                        {event.setlists.map((s) => s.name).join(", ")}
+                      </p>
+                    )}
                   </div>
-                  <Badge variant={eventTypeBadgeVariant[event.type]}>
-                    {eventTypeLabels[event.type]}
-                  </Badge>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <Badge variant={eventTypeBadgeVariant[event.type]}>
+                      {eventTypeLabels[event.type]}
+                    </Badge>
+                    <Badge
+                      variant={
+                        confirmStatus === "confirmed"
+                          ? "success"
+                          : confirmStatus === "partial"
+                            ? "warning"
+                            : "default"
+                      }
+                    >
+                      {t(`confirmStatus.${confirmStatus}`)}
+                    </Badge>
+                  </div>
                 </Card>
               </Link>
             );
@@ -168,24 +292,35 @@ export default async function BandOverviewPage({
             )}
           </Card>
         )}
-        <Link href={`/bands/${bandId}/members`}>
-          <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">{t("members")}</p>
-            <p className="text-2xl font-semibold text-foreground">{memberCount}</p>
-          </Card>
-        </Link>
-        <Link href={`/bands/${bandId}/songs`}>
-          <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">{t("songsInRepertoire")}</p>
-            <p className="text-2xl font-semibold text-foreground">{songCount}</p>
-          </Card>
-        </Link>
-        <Link href={`/bands/${bandId}/setlists`}>
-          <Card className="transition hover:border-primary">
-            <p className="text-sm text-muted">{t("setlists")}</p>
-            <p className="text-2xl font-semibold text-foreground">{setlistCount}</p>
-          </Card>
-        </Link>
+        <div className="grid grid-cols-2 gap-3">
+          <Link href={`/bands/${bandId}/calendar`}>
+            <Card className="h-full transition hover:border-primary">
+              <p className="flex items-center gap-1.5 text-sm text-muted">
+                <CalendarClock className="h-3.5 w-3.5" />
+                {t("upcomingCount")}
+              </p>
+              <p className="text-2xl font-semibold text-foreground">{upcomingEventCount}</p>
+            </Card>
+          </Link>
+          <Link href={`/bands/${bandId}/members`}>
+            <Card className="h-full transition hover:border-primary">
+              <p className="text-sm text-muted">{t("members")}</p>
+              <p className="text-2xl font-semibold text-foreground">{memberCount}</p>
+            </Card>
+          </Link>
+          <Link href={`/bands/${bandId}/songs`}>
+            <Card className="h-full transition hover:border-primary">
+              <p className="text-sm text-muted">{t("songsInRepertoire")}</p>
+              <p className="text-2xl font-semibold text-foreground">{songCount}</p>
+            </Card>
+          </Link>
+          <Link href={`/bands/${bandId}/setlists`}>
+            <Card className="h-full transition hover:border-primary">
+              <p className="text-sm text-muted">{t("setlists")}</p>
+              <p className="text-2xl font-semibold text-foreground">{setlistCount}</p>
+            </Card>
+          </Link>
+        </div>
       </div>
     </div>
   );

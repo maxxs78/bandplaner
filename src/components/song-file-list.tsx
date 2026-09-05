@@ -4,7 +4,14 @@ import { SongAudioPlayer } from "@/components/song-audio-player";
 import { isPlayableAudio } from "@/lib/media";
 import { DeleteButton } from "@/components/delete-button";
 import { FileEditButton } from "@/components/file-edit-button";
-import { deleteSongFileAction, updateSongFileAction } from "@/app/(app)/bands/[bandId]/songs/actions";
+import {
+  deleteSongFileAction,
+  updateSongFileAction,
+  savePracticeLoopAction,
+  deletePracticeLoopAction,
+  updateSongClickSettingsAction,
+} from "@/app/(app)/bands/[bandId]/songs/actions";
+import type { PracticeLoopItem } from "@/components/practice-player";
 import { getSongFileVisibilityOptions } from "@/lib/band-file-categories";
 
 type SongFileItem = {
@@ -40,6 +47,11 @@ export function SongFileList({
   keyDetectionEnabled,
   songKey,
   songBpm,
+  songTimeSignature,
+  songCountInBeats,
+  songClickOffsetMs,
+  canManageSong = false,
+  practiceLoops = [],
 }: {
   bandId: string;
   songId: string;
@@ -50,6 +62,11 @@ export function SongFileList({
   keyDetectionEnabled?: boolean;
   songKey?: string | null;
   songBpm?: number | null;
+  songTimeSignature?: string | null;
+  songCountInBeats?: number | null;
+  songClickOffsetMs?: number | null;
+  canManageSong?: boolean;
+  practiceLoops?: PracticeLoopItem[];
 }) {
   const t = useTranslations("songs.fileList");
   const tUpload = useTranslations("songs.fileUpload");
@@ -121,6 +138,14 @@ export function SongFileList({
                 bandId={bandId}
                 songId={songId}
                 keyDetectionEnabled={keyDetectionEnabled}
+                timeSignature={songTimeSignature}
+                countInBeats={songCountInBeats}
+                clickOffsetMs={songClickOffsetMs}
+                canManageSong={canManageSong}
+                practiceLoops={practiceLoops}
+                saveLoopAction={savePracticeLoopAction.bind(null, bandId, songId)}
+                deleteLoopAction={deletePracticeLoopAction.bind(null, bandId, songId)}
+                saveClickSettingsAction={updateSongClickSettingsAction.bind(null, bandId, songId)}
               />
             </div>
           )}

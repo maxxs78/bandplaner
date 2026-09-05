@@ -79,6 +79,9 @@ async function parseSongForm(formData: FormData) {
     genre: formData.get("genre") || undefined,
     artist: formData.get("artist") || undefined,
     album: formData.get("album") || undefined,
+    cast: formData.get("cast") || undefined,
+    countInBeats: formData.get("countInBeats") || "",
+    clickOffsetMs: formData.get("clickOffsetMs") || "",
     releaseYear: formData.get("releaseYear") || "",
     status: formData.get("status"),
     lyrics: formData.get("lyrics") || undefined,
@@ -162,6 +165,9 @@ export async function createSongAction(
       genre: d.genre || null,
       artist: d.artist || null,
       album: d.album || null,
+      cast: d.cast || null,
+      countInBeats: d.countInBeats === "" ? null : d.countInBeats,
+      clickOffsetMs: d.clickOffsetMs === "" ? null : d.clickOffsetMs,
       releaseYear: d.releaseYear === "" ? null : d.releaseYear,
       status: isAdmin ? (d.status as SongStatus) : "PROPOSED",
       lyrics: d.lyrics || null,
@@ -278,6 +284,9 @@ export async function updateSongAction(
       genre: d.genre || null,
       artist: d.artist || null,
       album: d.album || null,
+      cast: d.cast || null,
+      countInBeats: d.countInBeats === "" ? null : d.countInBeats,
+      clickOffsetMs: d.clickOffsetMs === "" ? null : d.clickOffsetMs,
       releaseYear: d.releaseYear === "" ? null : d.releaseYear,
       status,
       // "Abgelehnt"-Markierung nur relevant, solange der Song archiviert bleibt
@@ -529,6 +538,88 @@ export async function updateSongBpmAction(
   }
 
   await prisma.song.update({ where: { id: songId, bandId }, data: { bpm } });
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  return undefined;
+}
+
+/**
+ * Übernimmt die im Übungsmodus eingestellten Klick-Spur-Parameter (Einzähler-
+ * Schläge, Feinversatz des Downbeats) dauerhaft in die Songdaten.
+ */
+export async function updateSongClickSettingsAction(
+  bandId: string,
+  songId: string,
+  settings: { countInBeats?: number | null; clickOffsetMs?: number | null }
+): Promise<{ error?: string } | undefined> {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) {
+    const t = await getTranslations("songs.actions");
+    return { error: t("guestsCannotChangeBpm") };
+  }
+
+  const data: { countInBeats?: number | null; clickOffsetMs?: number | null } = {};
+  if (settings.countInBeats !== undefined) {
+    const n = settings.countInBeats;
+    data.countInBeats = n === null ? null : Math.max(0, Math.min(16, Math.round(n)));
+  }
+  if (settings.clickOffsetMs !== undefined) {
+    const n = settings.clickOffsetMs;
+    data.clickOffsetMs = n === null ? null : Math.max(-2000, Math.min(2000, Math.round(n)));
+  }
+  await prisma.song.update({ where: { id: songId, bandId }, data });
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  return undefined;
+}
+
+/**
+ * Speichert einen benannten Übungsabschnitt (Loop) für einen Song - bandweit
+ * geteilt. Jedes Mitglied darf einen Abschnitt anlegen.
+ */
+export async function savePracticeLoopAction(
+  bandId: string,
+  songId: string,
+  input: { name: string; startSec: number; endSec: number }
+): Promise<{ error?: string; id?: string } | undefined> {
+  const { user } = await requireMembership(bandId);
+  const t = await getTranslations("songs.actions");
+
+  const song = await prisma.song.findUnique({ where: { id: songId, bandId }, select: { id: true } });
+  if (!song) return { error: t("songNotFound") };
+
+  const name = input.name.trim().slice(0, 60);
+  const start = Math.max(0, input.startSec);
+  const end = input.endSec;
+  if (!name || !Number.isFinite(start) || !Number.isFinite(end) || end - start < 0.2) {
+    return { error: t("invalidInput") };
+  }
+
+  const loop = await prisma.practiceLoop.create({
+    data: { songId, name, startSec: start, endSec: end, createdById: user.id },
+    select: { id: true },
+  });
+  revalidatePath(`/bands/${bandId}/songs/${songId}`);
+  return { id: loop.id };
+}
+
+/** Löscht einen Übungsabschnitt - erlaubt für die anlegende Person oder Content-Manager. */
+export async function deletePracticeLoopAction(
+  bandId: string,
+  songId: string,
+  loopId: string
+): Promise<{ error?: string } | undefined> {
+  const { user, membership } = await requireMembership(bandId);
+  const t = await getTranslations("songs.actions");
+
+  const loop = await prisma.practiceLoop.findFirst({
+    where: { id: loopId, songId, song: { bandId } },
+    select: { createdById: true },
+  });
+  if (!loop) return { error: t("songNotFound") };
+  if (loop.createdById !== user.id && !canManageContent(membership.role)) {
+    return { error: t("guestsCannotCreate") };
+  }
+
+  await prisma.practiceLoop.delete({ where: { id: loopId } });
   revalidatePath(`/bands/${bandId}/songs/${songId}`);
   return undefined;
 }

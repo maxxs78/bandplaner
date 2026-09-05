@@ -18,6 +18,7 @@ export function FeatureTogglesForm({
   initialMediaPlayerEnabled,
   initialKeyDetectionEnabled,
   initialLocationsEnabled,
+  initialRehearsalTrackingEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
@@ -28,6 +29,7 @@ export function FeatureTogglesForm({
   initialMediaPlayerEnabled: boolean;
   initialKeyDetectionEnabled: boolean;
   initialLocationsEnabled: boolean;
+  initialRehearsalTrackingEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
@@ -38,6 +40,7 @@ export function FeatureTogglesForm({
   const [mediaPlayerEnabled, setMediaPlayerEnabled] = useState(initialMediaPlayerEnabled);
   const [keyDetectionEnabled, setKeyDetectionEnabled] = useState(initialKeyDetectionEnabled);
   const [locationsEnabled, setLocationsEnabled] = useState(initialLocationsEnabled);
+  const [rehearsalTrackingEnabled, setRehearsalTrackingEnabled] = useState(initialRehearsalTrackingEnabled);
   const t = useTranslations("bandSettings");
 
   const settlementModes = [
@@ -140,6 +143,13 @@ export function FeatureTogglesForm({
         description={t("features.locations.description")}
         checked={locationsEnabled}
         onChange={setLocationsEnabled}
+      />
+      <ToggleRow
+        name="rehearsalTrackingEnabled"
+        label={t("features.rehearsalTracking.label")}
+        description={t("features.rehearsalTracking.description")}
+        checked={rehearsalTrackingEnabled}
+        onChange={setRehearsalTrackingEnabled}
       />
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>

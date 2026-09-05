@@ -7,7 +7,17 @@ import { prisma } from "@/lib/prisma";
 import { getEnabledFeatures } from "@/lib/features";
 import { Card, Badge } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { respondAvailabilityAction, deleteEventAction, uploadEventFileAction, saveLineupAction } from "../actions";
+import {
+  respondAvailabilityAction,
+  deleteEventAction,
+  uploadEventFileAction,
+  saveLineupAction,
+  addRehearsalSongAction,
+  removeRehearsalSongAction,
+  saveRehearsalSongNoteAction,
+} from "../actions";
+import { getRehearsalSongs } from "@/lib/rehearsal-songs";
+import { RehearsalSongsEditor } from "@/components/rehearsal-songs-editor";
 import {
   deleteBandFileAction,
   updateBandFileAction,
@@ -128,6 +138,17 @@ export default async function EventDetailPage({
     : [];
   const canEdit = canManageBandContent(membership.role, isFinanceAdmin) || (canManage && event.createdById === user.id);
   const isAdmin = canManageBandContent(membership.role, isFinanceAdmin);
+
+  const showRehearsalSongs = features.rehearsalTracking && event.type === "REHEARSAL";
+  const rehearsalSongs = showRehearsalSongs ? await getRehearsalSongs(eventId) : [];
+  const rehearsalLibrary =
+    showRehearsalSongs && canManage
+      ? await prisma.song.findMany({
+          where: { bandId, status: { notIn: ["PROPOSED", "ARCHIVED"] } },
+          select: { id: true, title: true },
+          orderBy: { title: "asc" },
+        })
+      : [];
 
   const shareText = [
     `${membership.band.name}: ${event.title}`,
@@ -382,6 +403,42 @@ export default async function EventDetailPage({
           </form>
         )}
       </Card>
+
+      {showRehearsalSongs && (
+        <Card>
+          <h2 className="font-semibold text-foreground">{t("rehearsalSongs.title")}</h2>
+          <p className="mt-1 text-sm text-muted">{t("rehearsalSongs.hint")}</p>
+          {canManage ? (
+            <RehearsalSongsEditor
+              bandId={bandId}
+              entries={rehearsalSongs}
+              librarySongs={rehearsalLibrary}
+              addAction={addRehearsalSongAction.bind(null, bandId, eventId)}
+              removeAction={removeRehearsalSongAction.bind(null, bandId, eventId)}
+              saveNoteAction={saveRehearsalSongNoteAction.bind(null, bandId, eventId)}
+            />
+          ) : rehearsalSongs.length === 0 ? (
+            <p className="mt-3 text-sm text-muted">{t("rehearsalSongs.empty")}</p>
+          ) : (
+            <ul className="mt-3 space-y-1.5">
+              {rehearsalSongs.map((e) => (
+                <li
+                  key={e.songId}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+                >
+                  <Link
+                    href={`/bands/${bandId}/songs/${e.songId}`}
+                    className="min-w-0 truncate text-foreground hover:underline"
+                  >
+                    {e.title}
+                  </Link>
+                  {e.note && <span className="shrink-0 text-xs italic text-muted">{e.note}</span>}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       {features.packlists && (
         <Card>

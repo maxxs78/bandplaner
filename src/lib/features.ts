@@ -9,6 +9,7 @@ export type BandFeatureFlags = Pick<
   | "mediaPlayerEnabled"
   | "keyDetectionEnabled"
   | "locationsEnabled"
+  | "rehearsalTrackingEnabled"
 >;
 
 export type EnabledFeatures = {
@@ -19,6 +20,7 @@ export type EnabledFeatures = {
   mediaPlayer: boolean;
   keyDetection: boolean;
   locations: boolean;
+  rehearsalTracking: boolean;
 };
 
 /**
@@ -38,5 +40,6 @@ export function getEnabledFeatures(band: BandFeatureFlags): EnabledFeatures {
     mediaPlayer,
     keyDetection: mediaPlayer && band.keyDetectionEnabled,
     locations: band.locationsEnabled,
+    rehearsalTracking: band.rehearsalTrackingEnabled,
   };
 }

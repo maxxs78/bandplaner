@@ -42,6 +42,9 @@ export function SongForm({
     genre?: string;
     artist?: string;
     album?: string;
+    cast?: string;
+    countInBeats?: string;
+    clickOffsetMs?: string;
     releaseYear?: string;
     status?: string;
     lyrics?: string;
@@ -419,6 +422,48 @@ export function SongForm({
           />
         </div>
       </div>
+
+      <div>
+        <Label htmlFor="cast">{tf("cast")}</Label>
+        <Input
+          id="cast"
+          name="cast"
+          placeholder={tf("castPlaceholder")}
+          defaultValue={defaultValues?.cast}
+        />
+      </div>
+
+      <fieldset className="rounded-lg border border-border p-3">
+        <legend className="px-1 text-xs font-medium text-muted">{tf("practiceSection")}</legend>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <Label htmlFor="countInBeats">{tf("countInBeats")}</Label>
+            <Input
+              id="countInBeats"
+              name="countInBeats"
+              type="number"
+              min={0}
+              max={16}
+              placeholder={tf("countInBeatsPlaceholder")}
+              defaultValue={defaultValues?.countInBeats}
+            />
+          </div>
+          <div>
+            <Label htmlFor="clickOffsetMs">{tf("clickOffsetMs")}</Label>
+            <Input
+              id="clickOffsetMs"
+              name="clickOffsetMs"
+              type="number"
+              min={-2000}
+              max={2000}
+              step={10}
+              placeholder="0"
+              defaultValue={defaultValues?.clickOffsetMs}
+            />
+          </div>
+        </div>
+        <p className="mt-2 text-xs text-muted">{tf("practiceHint")}</p>
+      </fieldset>
 
       {canEditStatus ? (
         <div>

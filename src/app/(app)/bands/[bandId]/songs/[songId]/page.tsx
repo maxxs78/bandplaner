@@ -31,6 +31,7 @@ import { SongVoteList } from "@/components/song-vote-list";
 import { AdminProposalDecision } from "@/components/admin-proposal-decision";
 import { parseCues } from "@/lib/setlist-cues";
 import { getEnabledFeatures } from "@/lib/features";
+import { getSongRehearsalHistory } from "@/lib/rehearsal-songs";
 import { equipmentVisibleInBand } from "@/lib/equipment-visibility";
 import { detectStreamingEmbed } from "@/lib/media";
 import { SongEmbed } from "@/components/song-embed";
@@ -68,6 +69,10 @@ export default async function SongDetailPage({
         orderBy: { createdAt: "asc" },
         include: { user: { select: { name: true } } },
       },
+      practiceLoops: {
+        orderBy: { startSec: "asc" },
+        select: { id: true, name: true, startSec: true, endSec: true, createdById: true },
+      },
     },
   });
   if (!song) notFound();
@@ -99,6 +104,10 @@ export default async function SongDetailPage({
     song.status === "PROPOSED"
       ? await prisma.membership.count({ where: { bandId, role: { not: "GUEST" } } })
       : 0;
+
+  const rehearsalHistory = features.rehearsalTracking
+    ? await getSongRehearsalHistory(songId, bandId)
+    : [];
 
   const formatDuration = (sec: number | null) => {
     if (!sec) return null;
@@ -221,6 +230,12 @@ export default async function SongDetailPage({
           <Info label={td("album")} value={song.album} noValue={td("noValue")} />
           <Info label={td("releaseYear")} value={song.releaseYear?.toString()} noValue={td("noValue")} />
         </dl>
+        {song.cast && (
+          <div className="mt-4">
+            <h3 className="text-sm font-medium text-foreground">{td("cast")}</h3>
+            <p className="mt-1 whitespace-pre-wrap text-sm text-muted">{song.cast}</p>
+          </div>
+        )}
         {song.remarks && (
           <div className="mt-4">
             <h3 className="text-sm font-medium text-foreground">{td("notes")}</h3>
@@ -291,6 +306,17 @@ export default async function SongDetailPage({
             keyDetectionEnabled={features.keyDetection}
             songKey={song.key}
             songBpm={song.bpm}
+            songTimeSignature={song.timeSignature}
+            songCountInBeats={song.countInBeats}
+            songClickOffsetMs={song.clickOffsetMs}
+            canManageSong={canManage}
+            practiceLoops={song.practiceLoops.map((l) => ({
+              id: l.id,
+              name: l.name,
+              startSec: l.startSec,
+              endSec: l.endSec,
+              canDelete: canManage || l.createdById === user.id,
+            }))}
           />
         </div>
         {canManage && (
@@ -299,6 +325,36 @@ export default async function SongDetailPage({
           </div>
         )}
       </Card>
+
+      {features.rehearsalTracking && rehearsalHistory.length > 0 && (
+        <Card>
+          <h2 className="font-semibold text-foreground">{td("rehearsalHistory.title")}</h2>
+          <ul className="mt-3 space-y-1.5">
+            {rehearsalHistory.map((h) => (
+              <li
+                key={h.eventId}
+                className="flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border px-3 py-2 text-sm"
+              >
+                <span className="shrink-0 font-mono text-xs text-muted">
+                  {h.startsAt.toISOString().slice(0, 10)}
+                </span>
+                <Link
+                  href={`/bands/${bandId}/calendar/${h.eventId}`}
+                  className="min-w-0 truncate text-foreground hover:underline"
+                >
+                  {h.title}
+                </Link>
+                {h.source === "setlist" && (
+                  <span className="shrink-0 rounded-full bg-surface-muted px-2 py-0.5 text-[10px] font-medium text-muted">
+                    {td("rehearsalHistory.fromSetlist")}
+                  </span>
+                )}
+                {h.note && <span className="w-full text-xs italic text-muted">{h.note}</span>}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       <Card>
         <h2 className="font-semibold text-foreground">{td("myNotes")}</h2>

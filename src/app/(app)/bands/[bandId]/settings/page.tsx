@@ -52,7 +52,7 @@ export default async function BandSettingsPage({
         <p className="mt-1 text-sm text-muted">{t("hint")}</p>
         <Card className="mt-4">
           <FeatureTogglesForm
-            key={`${membership.band.equipmentEnabled}-${membership.band.packlistsEnabled}-${membership.band.financeEnabled}-${membership.band.financeSettlementMode}-${membership.band.communicationEnabled}-${membership.band.mediaPlayerEnabled}-${membership.band.keyDetectionEnabled}-${membership.band.locationsEnabled}`}
+            key={`${membership.band.equipmentEnabled}-${membership.band.packlistsEnabled}-${membership.band.financeEnabled}-${membership.band.financeSettlementMode}-${membership.band.communicationEnabled}-${membership.band.mediaPlayerEnabled}-${membership.band.keyDetectionEnabled}-${membership.band.locationsEnabled}-${membership.band.rehearsalTrackingEnabled}`}
             action={updateBandFeaturesAction.bind(null, bandId)}
             initialEquipmentEnabled={membership.band.equipmentEnabled}
             initialPacklistsEnabled={membership.band.packlistsEnabled}
@@ -62,6 +62,7 @@ export default async function BandSettingsPage({
             initialMediaPlayerEnabled={membership.band.mediaPlayerEnabled}
             initialKeyDetectionEnabled={membership.band.keyDetectionEnabled}
             initialLocationsEnabled={membership.band.locationsEnabled}
+            initialRehearsalTrackingEnabled={membership.band.rehearsalTrackingEnabled}
           />
         </Card>
       </div>

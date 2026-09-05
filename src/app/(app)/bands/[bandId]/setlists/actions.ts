@@ -111,6 +111,7 @@ async function freezePastSetlistSnapshotsIfNeeded(setlistId: string) {
       bpm: item.song?.bpm ?? null,
       durationSec: item.song?.durationSec ?? item.durationSec ?? null,
       excludeFromNumbering: item.excludeFromNumbering,
+      segueToNext: item.segueToNext,
     }))
   );
 
@@ -164,6 +165,7 @@ export async function createSetlistAction(
           durationSec: item.durationSec,
           excludeFromNumbering: item.excludeFromNumbering,
           songDeleted: item.songDeleted,
+          segueToNext: item.segueToNext,
           order: item.order,
         })),
       });
@@ -472,4 +474,88 @@ export async function saveItemAnnotationAction(
 
   revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
   return undefined;
+}
+
+/**
+ * Segue/Medley: markiert den Uebergang ohne Pause zum unmittelbar folgenden
+ * Eintrag. Aufeinanderfolgende markierte Eintraege werden in Ansicht, Druck
+ * und Text-Export als zusammenhaengender Block dargestellt.
+ */
+export async function toggleSegueAction(
+  bandId: string,
+  setlistId: string,
+  itemId: string,
+  segueToNext: boolean
+) {
+  const { membership } = await requireMembership(bandId);
+  if (!canManageContent(membership.role)) return;
+  await freezePastSetlistSnapshotsIfNeeded(setlistId);
+
+  await prisma.setlistItem.update({
+    where: { id: itemId, setlistId },
+    data: { segueToNext },
+  });
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+  revalidatePath(`/print/setlists/${setlistId}`);
+  revalidatePath(`/print/setlists/${setlistId}/tech`);
+}
+
+/**
+ * Uebernimmt die aktuellen Vorgabewerte aus der persoenlichen Song-Notiz
+ * (Kurznotiz, Farbe, Hinweis-Icons) in die persoenliche Annotation eines
+ * Setlist-Eintrags - fuer Songs, deren Notiz sich geaendert hat, seit sie der
+ * Setlist hinzugefuegt wurden. Ueberschreibt vorhandene Werte; ohne Song-Notiz
+ * werden die Felder geleert (Sync = "Stand der Song-Notiz uebernehmen").
+ */
+async function syncOneItemFromSongNote(
+  itemId: string,
+  songId: string,
+  userId: string,
+  eventId: string | null
+) {
+  const songNote = await prisma.songNote.findUnique({
+    where: { songId_userId: { songId, userId } },
+  });
+  const patch = {
+    note: songNote?.shortNote ?? null,
+    color: songNote?.color ?? null,
+    cues: songNote?.cues ?? null,
+  };
+  if (eventId) {
+    await upsertOrPruneItemEventAnnotation(itemId, eventId, userId, patch);
+  } else {
+    await upsertOrPruneItemAnnotation(itemId, userId, patch);
+  }
+}
+
+export async function syncItemFromSongNoteAction(
+  bandId: string,
+  setlistId: string,
+  itemId: string,
+  eventId: string | null
+) {
+  const { user } = await requireMembership(bandId);
+  const item = await prisma.setlistItem.findUnique({
+    where: { id: itemId, setlistId },
+    select: { songId: true, kind: true },
+  });
+  if (!item?.songId || item.kind !== "SONG") return;
+  await syncOneItemFromSongNote(itemId, item.songId, user.id, eventId);
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
+}
+
+export async function syncAllItemsFromSongNotesAction(
+  bandId: string,
+  setlistId: string,
+  eventId: string | null
+) {
+  const { user } = await requireMembership(bandId);
+  const items = await prisma.setlistItem.findMany({
+    where: { setlistId, kind: "SONG", songId: { not: null } },
+    select: { id: true, songId: true },
+  });
+  for (const it of items) {
+    if (it.songId) await syncOneItemFromSongNote(it.id, it.songId, user.id, eventId);
+  }
+  revalidatePath(`/bands/${bandId}/setlists/${setlistId}`);
 }

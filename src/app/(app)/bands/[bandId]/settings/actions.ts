@@ -26,6 +26,7 @@ export async function updateBandFeaturesAction(
   const mediaPlayerEnabled = formData.get("mediaPlayerEnabled") === "on";
   const keyDetectionEnabled = formData.get("keyDetectionEnabled") === "on";
   const locationsEnabled = formData.get("locationsEnabled") === "on";
+  const rehearsalTrackingEnabled = formData.get("rehearsalTrackingEnabled") === "on";
   const wasFinanceEnabled = membership.band.financeEnabled;
   const settlementModeRaw = formData.get("financeSettlementMode");
   const financeSettlementMode = settlementModeRaw === "BAND_BALANCE" ? "BAND_BALANCE" : "NO_BALANCE";
@@ -50,6 +51,7 @@ export async function updateBandFeaturesAction(
       mediaPlayerEnabled,
       keyDetectionEnabled,
       locationsEnabled,
+      rehearsalTrackingEnabled,
     },
   });
 

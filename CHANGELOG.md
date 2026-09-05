@@ -6,7 +6,56 @@ All notable changes to Bandplaner are documented here. The format is based on
 
 ## [1.5.0] – 2026-09-05
 
+### Added
+
+- **Song field "Lead vocals / cast"** – free text (e.g. `Lead: Anna, BGV: Ben`),
+  shown on the song detail page.
+- **Rehearsal tracking** – a new per-band module (off by default). On a
+  rehearsal event you record which songs were worked on (assigned individually,
+  and/or taken automatically from linked setlists); the song detail page shows a
+  "Practiced at …" history. Turning the module off hides the sections without
+  deleting data.
+- **Song library search & sorting** – a search box (title / artist / genre /
+  album) and a sort selector (title, tempo, key, recently added); the sort
+  choice is remembered per browser.
+- **Setlist: copy to clipboard** – the plain-text setlist next to the WhatsApp
+  share and print buttons.
+- **Setlist: segue / medley marker** – mark an entry as running into the next
+  without a pause; segued entries render as a connected block in the builder,
+  the frozen view, the print layouts and the text export.
+- **Setlist: re-sync personal cues from the song note** – per entry and a
+  "update all" button, for songs whose personal note changed after they were
+  added to the setlist.
+- **Setlist: song documents** – a song's charts / lyrics / audio files are now
+  reachable directly from the expanded setlist entry.
+- **Setlist: segued entries are grouped visually** – a segue run now renders
+  inside one bracketed "Segue / medley" block instead of loosely stacked cards,
+  in the builder, the frozen view and both print layouts.
+- **Practice mode: saved sections** – name and store loop ranges per song
+  ("Solo", "Bridge"), shared band-wide, recall or delete them with one click.
+- **Practice mode: click track** – a metronome synced to the song (tempo from
+  the detected/stored BPM, downbeat phase auto-detected, fine offset adjustable
+  and savable to the song), with a bar-one accent from the time signature.
+- **Practice mode: count-in** – N count-in clicks before playback and before
+  each loop repeat; the number of beats is stored on the song (default: the
+  time-signature numerator).
+- **Practice mode: tempo staircase** – automatically raise the tempo step by
+  step on each loop pass up to a target.
+- **Song fields "count-in beats" and "click offset"** for practice mode, in the
+  song form and adjustable from the practice player itself.
+- **Overview: personal "action required" panel** – events awaiting your
+  availability, song proposals awaiting your vote, songs missing key/tempo.
+- **Overview: richer event cards** – relative day ("today" / "in 3 days"),
+  linked setlist name and a confirmation-status badge (no responses / partly
+  confirmed / all confirmed).
+- **Song list: sort direction toggle** – every sort order can be reversed; the
+  direction is remembered per browser.
+
 ### Changed
+
+- **Setlist: the clipboard "copy" button moved** into the header button row
+  next to share / print / tech, leaving only "update all from song notes" above
+  the list.
 
 - **New-song assistant: richer, pickable result list.** The online lookup now
   queries MusicBrainz, Discogs and Spotify in parallel and shows all matches
