@@ -4,6 +4,23 @@ All notable changes to Bandplaner are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [semantic](https://semver.org/spec/v2.0.0.html). Dates are ISO 8601.
 
+## [1.4.1] – 2026-09-05
+
+### Security
+
+- Bumped `nodemailer` 8 → 10 (fixes a message-level `raw`-option bypass of
+  `disableFileAccess`/`disableUrlAccess` that could allow arbitrary file read
+  / SSRF via a crafted outgoing message).
+- Forced `fast-uri` (transitive, via `ajv`) to `>=3.1.6`, fixing several host
+  confusion / SSRF issues in URI normalization.
+- Forced `mysql2` (transitive, via Prisma's optional MySQL driver – unused by
+  this app, which only runs SQLite) to `>=3.23.1`, fixing an auth-downgrade
+  credential leak and a decompression-bomb DoS.
+- Forced `deepmerge-ts` (transitive, via Prisma's CLI config loader) to
+  `>=8.0.0`, fixing a stack-exhaustion DoS when merging recursive objects.
+
+[1.4.1]: https://github.com/maxxs78/bandplaner/releases/tag/v1.4.1
+
 ## [1.4.0] – 2026-09-05
 
 ### Added
