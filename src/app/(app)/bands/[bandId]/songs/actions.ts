@@ -21,7 +21,7 @@ import { isPlayableAudio } from "@/lib/media";
 import {
   searchMusicBrainzCandidates,
   searchDiscogsGenre,
-  searchSpotifyLink,
+  searchSpotifyTrack,
   getCoverArt,
   fetchRemoteCoverBytes,
   hasRefreshableSongGaps,
@@ -657,9 +657,10 @@ export type SongMetadataSearchResult = {
 
 /**
  * Kombiniert MusicBrainz (primäre Quelle), Discogs (Fallback für Genre/Cover,
- * falls MusicBrainz nichts liefert) und Spotify (nur der Track-Link) zu einer
- * Kandidatenliste fürs UI. Alle drei Quellen sind einzeln optional
- * konfiguriert und degradieren still, siehe song-metadata-lookup.ts.
+ * falls MusicBrainz nichts liefert) und Spotify (Track-Link, plus dessen
+ * Album-Cover als letzter Cover-Fallback) zu einer Kandidatenliste fürs UI.
+ * Alle drei Quellen sind einzeln optional konfiguriert und degradieren
+ * still, siehe song-metadata-lookup.ts.
  */
 export async function searchSongMetadataAction(
   bandId: string,
@@ -669,9 +670,9 @@ export async function searchSongMetadataAction(
   const { membership } = await requireMembership(bandId);
   if (!canManageContent(membership.role) || !title.trim()) return { candidates: [] };
 
-  const [mbCandidates, spotifyUrl] = await Promise.all([
+  const [mbCandidates, spotifyTrack] = await Promise.all([
     searchMusicBrainzCandidates(title, artist),
-    searchSpotifyLink(title, artist),
+    searchSpotifyTrack(title, artist),
   ]);
 
   let candidates = mbCandidates;
@@ -688,10 +689,19 @@ export async function searchSongMetadataAction(
           coverImageUrl: discogsResult.coverImageUrl,
         },
       ];
+    } else if (spotifyTrack?.coverImageUrl) {
+      candidates = [
+        {
+          title,
+          artist,
+          mbid: "spotify-fallback",
+          coverImageUrl: spotifyTrack.coverImageUrl,
+        },
+      ];
     }
   }
 
-  return { candidates, spotifyUrl: spotifyUrl ?? undefined };
+  return { candidates, spotifyUrl: spotifyTrack?.url };
 }
 
 /**
@@ -722,6 +732,16 @@ export async function fetchCandidateCoverAction(
     const discogsResult = await searchDiscogsGenre(candidate.title, candidate.artist);
     if (discogsResult?.coverImageUrl) {
       result = await fetchRemoteCoverBytes(discogsResult.coverImageUrl);
+    }
+  }
+
+  // Letzter Fallback: Spotifys Katalog-Cover (aus derselben Suche, die schon
+  // fuer den Track-Link laeuft) - deckt vor allem aktuelle Songs ab, bei
+  // denen weder Cover Art Archive noch Discogs ein Bild hatten.
+  if (!result) {
+    const spotifyTrack = await searchSpotifyTrack(candidate.title, candidate.artist);
+    if (spotifyTrack?.coverImageUrl) {
+      result = await fetchRemoteCoverBytes(spotifyTrack.coverImageUrl);
     }
   }
 
@@ -821,6 +841,10 @@ export async function refreshSongMetadataAction(
           if (!song.releaseYear && !patch.releaseYear && discogsResult.year) patch.releaseYear = discogsResult.year;
           if (discogsResult.coverImageUrl) bytes = await fetchRemoteCoverBytes(discogsResult.coverImageUrl);
         }
+      }
+      if (!bytes) {
+        const spotifyTrack = await searchSpotifyTrack(song.title, effectiveArtist);
+        if (spotifyTrack?.coverImageUrl) bytes = await fetchRemoteCoverBytes(spotifyTrack.coverImageUrl);
       }
       if (bytes) {
         const stored = await storeRemoteImage(bytes.bytes, bytes.mimeType, "songs");

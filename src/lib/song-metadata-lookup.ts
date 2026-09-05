@@ -198,11 +198,15 @@ async function getSpotifyToken(clientId: string, clientSecret: string): Promise<
 }
 
 /**
- * Liefert nur den Track-Link, nicht die frueher genutzten Audio-Features -
- * dieser Endpoint ist seit Ende 2024 fuer neue Apps gesperrt, die Search API
- * bleibt aber weiterhin frei nutzbar.
+ * Liefert Track-Link und, aus derselben Antwort, das Album-Cover - keine
+ * Audio-Features (dieser Endpoint ist seit Ende 2024 fuer neue Apps
+ * gesperrt), die Search API bleibt aber weiterhin frei nutzbar und liefert
+ * das Cover ohnehin schon mit, kein zusaetzlicher Request noetig.
  */
-export async function searchSpotifyLink(title: string, artist?: string): Promise<string | null> {
+export async function searchSpotifyTrack(
+  title: string,
+  artist?: string
+): Promise<{ url: string; coverImageUrl?: string } | null> {
   const clientId = process.env.SPOTIFY_CLIENT_ID;
   const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
   if (!clientId || !clientSecret || !title.trim()) return null;
@@ -220,9 +224,23 @@ export async function searchSpotifyLink(title: string, artist?: string): Promise
     if (!res.ok) return null;
 
     const data = (await res.json()) as {
-      tracks?: { items?: { external_urls?: { spotify?: string } }[] };
+      tracks?: {
+        items?: {
+          external_urls?: { spotify?: string };
+          album?: { images?: { url: string }[] };
+        }[];
+      };
     };
-    return data.tracks?.items?.[0]?.external_urls?.spotify ?? null;
+    const trackUrl = data.tracks?.items?.[0]?.external_urls?.spotify;
+    if (!trackUrl) return null;
+
+    // Spotify liefert i. d. R. drei Groessen (640/300/64px), absteigend
+    // sortiert - die mittlere reicht als Cover, ohne unnoetig viele Bytes zu
+    // laden.
+    const images = data.tracks?.items?.[0]?.album?.images ?? [];
+    const coverImageUrl = images[1]?.url ?? images[0]?.url;
+
+    return { url: trackUrl, coverImageUrl };
   } catch {
     return null;
   }
