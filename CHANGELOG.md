@@ -51,6 +51,19 @@ All notable changes to Bandplaner are documented here. The format is based on
 - **Song list: sort direction toggle** – every sort order can be reversed; the
   direction is remembered per browser.
 
+### Security
+
+- Bumped `next` 16.3.0 → 16.3.5, fixing an unauthenticated RCE on
+  Windows-hosted servers (GHSA-p293-qw3h-jr36) and an unauthenticated RCE in
+  the Image Optimization API when handling AVIF files (GHSA-2xp9-vwfh-vxw4).
+  Both critical; the second does not apply directly here (no user-controlled
+  image upload feeds the Optimization API), but the fix is taken either way.
+- Forced `sharp` (transitive, via `next`'s Image Optimization) to `>=0.35.4`,
+  fixing libheif vulnerabilities (GHSA-g89c-p67h-r497, GHSA-2jg2-4ch7-h545).
+- Forced `js-yaml` (transitive, via ESLint's `@eslint/eslintrc`; build-time
+  only, not shipped) to `>=4.3.2`, fixing a CPU-exhaustion DoS with empty
+  YAML merge sources (GHSA-2883-xcg3-v3hh).
+
 ### Changed
 
 - **Setlist: the clipboard "copy" button moved** into the header button row
