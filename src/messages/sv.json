@@ -212,6 +212,11 @@
       "invalidSelection": "Ogiltigt val",
       "onlyAdminsManageSettings": "Endast administratörer kan hantera inställningar för bandet",
       "invalidGuestAccessDays": "Gaståtkomstens varaktighet måste vara ett tal mellan 1 och 3650 dagar"
+    },
+    "backup": {
+      "title": "Säkerhetskopia",
+      "hint": "Ladda ner en fullständig säkerhetskopia av detta band (all data och uppladdade filer) – för att spara eller flytta bandet till en annan server. En återställning skapar alltid ett nytt band, inget skrivs över.",
+      "download": "Ladda ner säkerhetskopia"
     }
   },
   "auth": {
@@ -917,7 +922,21 @@
     "hint": "Du blir automatiskt administratör för det här bandet.",
     "name": "Bandnamn",
     "creating": "Skapar…",
-    "create": "Skapa band"
+    "create": "Skapa band",
+    "restore": {
+      "link": "Återställ från säkerhetskopia istället",
+      "title": "Återställ från säkerhetskopia",
+      "hint": "Ladda upp en säkerhetskopia för att återställa den som ett nytt band. Du blir automatiskt administratör för detta nya band.",
+      "fileLabel": "Säkerhetskopia (.zip)",
+      "submit": "Återställ",
+      "uploading": "Importerar…",
+      "genericError": "Säkerhetskopian kunde inte importeras.",
+      "resultTitle": "”{name}” har återställts",
+      "rowsImported": "{count, plural, one {# post importerad} other {# poster importerade}}",
+      "rowsDropped": "{count, plural, one {# post kopplad till ett konto som inte längre finns hoppades över} other {# poster kopplade till konton som inte längre finns hoppades över}}",
+      "filesCopied": "{count, plural, one {# fil återställd} other {# filer återställda}}",
+      "goToBand": "Till bandet"
+    }
   },
   "notifications": {
     "unsubscribeHint": "Du kan stänga av dessa aviseringar i din profil:"

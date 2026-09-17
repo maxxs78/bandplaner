@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
+import { Download } from "lucide-react";
 import { requireMembership, canManageBand } from "@/lib/access";
 import { prisma } from "@/lib/prisma";
 import { Card } from "@/components/ui/card";
@@ -104,6 +105,21 @@ export default async function BandSettingsPage({
             initialRoles={lineupRoles.map((r) => ({ name: r.name, defaultAssigneeId: r.defaultAssigneeId }))}
             members={members}
           />
+        </Card>
+      </div>
+
+      <div>
+        <h2 className="text-lg font-semibold text-foreground">{t("backup.title")}</h2>
+        <p className="mt-1 text-sm text-muted">{t("backup.hint")}</p>
+        <Card className="mt-4">
+          <a
+            href={`/api/bands/${bandId}/backup`}
+            download
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition hover:bg-primary-hover"
+          >
+            <Download className="h-4 w-4" />
+            {t("backup.download")}
+          </a>
         </Card>
       </div>
     </div>

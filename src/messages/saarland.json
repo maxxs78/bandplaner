@@ -212,6 +212,11 @@
       "invalidSelection": "Des passt net",
       "onlyAdminsManageSettings": "Nur Admins dürfe Eischtellunge fer die Band verwalte",
       "invalidGuestAccessDays": "Gaschtzugangsdauer muss e Zahl zwische 1 unn 3650 Daache sei"
+    },
+    "backup": {
+      "title": "Backup",
+      "hint": "Lad e komplett Backup vun dere Band runner (alli Date unn hochgelaadni Datein) – fer se se sichere odder die Band uff en annere Server umzeziehe. E Wiederherstelle legt immer e neii Band aa, nix werd iwwerschriwwe.",
+      "download": "Backup runnerlaade"
     }
   },
   "auth": {
@@ -917,7 +922,21 @@
     "hint": "De werscht automatisch Admin vun dere Band.",
     "name": "Bandname",
     "creating": "Werd aagelegt…",
-    "create": "Band aalege"
+    "create": "Band aalege",
+    "restore": {
+      "link": "Stattdesse aus'm Backup wiederherstelle",
+      "title": "Aus Backup wiederherstelle",
+      "hint": "Lad e Backup-Datei hoch, fer se als neii Band wiederherzestelle. Du werscht automatisch Administrator:in vun dere neie Band.",
+      "fileLabel": "Backup-Datei (.zip)",
+      "submit": "Wiederherstelle",
+      "uploading": "Werd importiert…",
+      "genericError": "Backup hot net importiert wern kenne.",
+      "resultTitle": "„{name}“ is wiederhergestellt wor",
+      "rowsImported": "{count, plural, one {# Datesatz importiert} other {# Datesätz importiert}}",
+      "rowsDropped": "{count, plural, one {# Datesatz mit Bezug uff e net meh vorhannt Nutzerkonto is ausgelosst wor} other {# Datesätz mit Bezug uff net meh vorhanni Nutzerkonte sinn ausgelosst wor}}",
+      "filesCopied": "{count, plural, one {# Datei iwwernumm} other {# Datein iwwernumm}}",
+      "goToBand": "Zer Band"
+    }
   },
   "notifications": {
     "unsubscribeHint": "De kannscht die Bscheide in deim Profil abschalte:"

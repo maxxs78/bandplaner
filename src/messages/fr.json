@@ -212,6 +212,11 @@
       "invalidSelection": "Sélection invalide",
       "onlyAdminsManageSettings": "Seuls les administrateurs/trices peuvent gérer les réglages du groupe",
       "invalidGuestAccessDays": "La durée d'accès invité doit être un nombre compris entre 1 et 3650 jours"
+    },
+    "backup": {
+      "title": "Sauvegarde",
+      "hint": "Téléchargez une sauvegarde complète de ce groupe (toutes les données et fichiers) – pour la conserver ou migrer le groupe vers un autre serveur. La restauration crée toujours un nouveau groupe, rien n'est écrasé.",
+      "download": "Télécharger la sauvegarde"
     }
   },
   "auth": {
@@ -917,7 +922,21 @@
     "hint": "Tu deviendras automatiquement administrateur/trice de ce groupe.",
     "name": "Nom du groupe",
     "creating": "Création…",
-    "create": "Créer le groupe"
+    "create": "Créer le groupe",
+    "restore": {
+      "link": "Restaurer depuis une sauvegarde à la place",
+      "title": "Restaurer depuis une sauvegarde",
+      "hint": "Téléversez un fichier de sauvegarde pour le restaurer en tant que nouveau groupe. Vous deviendrez automatiquement administrateur·rice de ce nouveau groupe.",
+      "fileLabel": "Fichier de sauvegarde (.zip)",
+      "submit": "Restaurer",
+      "uploading": "Importation…",
+      "genericError": "La sauvegarde n'a pas pu être importée.",
+      "resultTitle": "« {name} » a été restauré",
+      "rowsImported": "{count, plural, one {# entrée importée} other {# entrées importées}}",
+      "rowsDropped": "{count, plural, one {# entrée liée à un compte disparu a été ignorée} other {# entrées liées à des comptes disparus ont été ignorées}}",
+      "filesCopied": "{count, plural, one {# fichier restauré} other {# fichiers restaurés}}",
+      "goToBand": "Aller au groupe"
+    }
   },
   "notifications": {
     "unsubscribeHint": "Tu peux désactiver ces notifications dans ton profil :"

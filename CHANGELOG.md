@@ -50,6 +50,14 @@ All notable changes to Bandplaner are documented here. The format is based on
   confirmed / all confirmed).
 - **Song list: sort direction toggle** – every sort order can be reversed; the
   direction is remembered per browser.
+- **Band backup & restore** – a band admin can download a complete backup of
+  the band (all data and uploaded files) as a `.zip`, and restore it later –
+  as a copy on the same server, or by uploading it to a different Bandplaner
+  instance to migrate the band. Restoring always creates a brand-new band
+  (the importing account becomes its admin); nothing is ever overwritten.
+  Members whose accounts still exist on the target server are re-attached
+  with their original role; data tied to accounts that no longer exist is
+  skipped, with a summary shown after the import.
 
 ### Security
 

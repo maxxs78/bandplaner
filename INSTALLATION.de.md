@@ -276,6 +276,8 @@ Die Header `X-Forwarded-For`, `X-Forwarded-Proto` sowie der ursprüngliche `Host
 
 `NEXT_PUBLIC_APP_URL` in der `.env` auf die neue `https://…`-Adresse setzen und das Projekt neu starten, damit z. B. Links im ICS-Kalenderfeed, in WhatsApp-Teilen-Buttons und in Benachrichtigungs-Mails korrekt sind.
 
+**Upload-Größe für Band-Backups:** Das Wiederherstellen einer Band aus einem Backup (*Neue Band anlegen → Aus Backup wiederherstellen*) kann den Upload eines mehrere Gigabyte großen `.zip` bedeuten (die Dateien einer Band sind auf 2 GB gedeckelt, dazu kommt der Datenbank-Export). Bandplaner selbst hat dafür kein festes Limit, viele Reverse Proxys aber schon – z. B. nginx' `client_max_body_size` (Standard 1 MB) oder die entsprechende Einstellung im Nginx Proxy Manager. Schlägt das Wiederherstellen eines großen Backups sofort mit einem Verbindungs- oder Gateway-Fehler fehl, muss dieses Limit am vorgeschalteten Reverse Proxy angehoben werden (DSMs eigener Reverse-Proxy hat von Haus aus keine solche Grenze).
+
 **5. Verifizieren**
 
 Nach dem Umstellen einloggen und in den Browser-Entwicklertools unter *Application → Cookies* prüfen, ob der Session-Cookie mit `__Secure-` beginnt (`__Secure-authjs.session-token`). Ist das Präfix da, hat NextAuth HTTPS korrekt erkannt. Fehlt es, kommt der `X-Forwarded-Proto`-Header nicht an – typisches Symptom ist dann eine Login-Redirect-Schleife (siehe Fehlerbehebung unten). Anschließend auch von außerhalb des eigenen Netzes testen (z. B. Mobilfunknetz statt Heim-WLAN), da lokale Auflösung/Firewall-Effekte einen falschen Erfolg vortäuschen können.

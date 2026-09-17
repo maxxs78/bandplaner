@@ -228,6 +228,11 @@
       "noRoles": "Noch keine Rollen angelegt.",
       "saving": "Wird gespeichert…",
       "save": "Speichern"
+    },
+    "backup": {
+      "title": "Backup",
+      "hint": "Lade ein vollständiges Backup dieser Band herunter (alle Daten und hochgeladenen Dateien) – zum Sichern oder um die Band auf einen anderen Server umzuziehen. Ein Wiederherstellen legt immer eine neue Band an, nichts wird überschrieben.",
+      "download": "Backup herunterladen"
     }
   },
   "auth": {
@@ -972,7 +977,21 @@
     "hint": "Du wirst automatisch Administrator:in dieser Band.",
     "name": "Bandname",
     "creating": "Wird erstellt…",
-    "create": "Band erstellen"
+    "create": "Band erstellen",
+    "restore": {
+      "link": "Stattdessen aus Backup wiederherstellen",
+      "title": "Aus Backup wiederherstellen",
+      "hint": "Lade eine Backup-Datei hoch, um sie als neue Band wiederherzustellen. Du wirst automatisch Administrator:in dieser neuen Band.",
+      "fileLabel": "Backup-Datei (.zip)",
+      "submit": "Wiederherstellen",
+      "uploading": "Wird importiert…",
+      "genericError": "Backup konnte nicht importiert werden.",
+      "resultTitle": "„{name}“ wurde wiederhergestellt",
+      "rowsImported": "{count, plural, one {# Datensatz importiert} other {# Datensätze importiert}}",
+      "rowsDropped": "{count, plural, one {# Datensatz mit Bezug zu einem nicht mehr vorhandenen Nutzerkonto wurde ausgelassen} other {# Datensätze mit Bezug zu nicht mehr vorhandenen Nutzerkonten wurden ausgelassen}}",
+      "filesCopied": "{count, plural, one {# Datei übernommen} other {# Dateien übernommen}}",
+      "goToBand": "Zur Band"
+    }
   },
   "notifications": {
     "unsubscribeHint": "Du kannst diese Benachrichtigungen in deinem Profil abschalten:"

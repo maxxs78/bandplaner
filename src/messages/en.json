@@ -228,6 +228,11 @@
       "noRoles": "No roles yet.",
       "saving": "Saving…",
       "save": "Save"
+    },
+    "backup": {
+      "title": "Backup",
+      "hint": "Download a complete backup of this band (all data and uploaded files) – to keep as a backup or to migrate the band to another server. Restoring always creates a new band; nothing is overwritten.",
+      "download": "Download backup"
     }
   },
   "auth": {
@@ -972,7 +977,21 @@
     "hint": "You'll automatically become an administrator of this band.",
     "name": "Band name",
     "creating": "Creating…",
-    "create": "Create band"
+    "create": "Create band",
+    "restore": {
+      "link": "Restore from backup instead",
+      "title": "Restore from backup",
+      "hint": "Upload a backup file to restore it as a new band. You'll automatically become an administrator of this new band.",
+      "fileLabel": "Backup file (.zip)",
+      "submit": "Restore",
+      "uploading": "Importing…",
+      "genericError": "The backup could not be imported.",
+      "resultTitle": "\"{name}\" has been restored",
+      "rowsImported": "{count, plural, one {# row imported} other {# rows imported}}",
+      "rowsDropped": "{count, plural, one {# row referencing an account that no longer exists was skipped} other {# rows referencing accounts that no longer exist were skipped}}",
+      "filesCopied": "{count, plural, one {# file restored} other {# files restored}}",
+      "goToBand": "Go to band"
+    }
   },
   "notifications": {
     "unsubscribeHint": "You can turn off these notifications in your profile:"

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
+import Link from "next/link";
 import { createBandAction } from "./actions";
 import { Button } from "@/components/ui/button";
 import { Input, Label, FieldError } from "@/components/ui/input";
@@ -29,6 +30,11 @@ export default function NewBandPage() {
           </Button>
         </form>
       </Card>
+      <p className="mt-4 text-center text-sm text-muted">
+        <Link href="/bands/new/restore" className="underline hover:text-foreground">
+          {t("restore.link")}
+        </Link>
+      </p>
     </div>
   );
 }
