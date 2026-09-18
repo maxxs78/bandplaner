@@ -4,7 +4,7 @@ All notable changes to Bandplaner are documented here. The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning is
 [semantic](https://semver.org/spec/v2.0.0.html). Dates are ISO 8601.
 
-## [1.5.0] – 2026-09-05
+## [1.5.0] – 2026-09-18
 
 ### Added
 
