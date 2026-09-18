@@ -59,6 +59,7 @@ export interface BackupBand {
   publicFileLinksEnabled: boolean;
   locationsEnabled: boolean;
   rehearsalTrackingEnabled: boolean;
+  chatEnabled: boolean;
 }
 
 export interface BackupMembership {
@@ -391,6 +392,28 @@ export interface BackupFinanceAllocation {
   createdAt: string;
 }
 
+export interface BackupChatMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  authorId: string | null;
+}
+
+export interface BackupChatReadMarker {
+  id: string;
+  userId: string;
+  lastReadAt: string;
+}
+
+export interface BackupDirectMessage {
+  id: string;
+  content: string;
+  createdAt: string;
+  readAt: string | null;
+  senderId: string;
+  recipientId: string;
+}
+
 export interface BackupManifest {
   backupFormatVersion: number;
   appVersion: string;
@@ -430,6 +453,9 @@ export interface BackupManifest {
   bandFiles: BackupBandFile[];
   financeEntries: BackupFinanceEntry[];
   financeAllocations: BackupFinanceAllocation[];
+  chatMessages: BackupChatMessage[];
+  chatReadMarkers: BackupChatReadMarker[];
+  directMessages: BackupDirectMessage[];
 }
 
 export type BandBackupImportResult = {

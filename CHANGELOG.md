@@ -58,6 +58,13 @@ All notable changes to Bandplaner are documented here. The format is based on
   Members whose accounts still exist on the target server are re-attached
   with their original role; data tied to accounts that no longer exist is
   skipped, with a summary shown after the import.
+- **Band-internal chat** – a new per-band module (off by default). Exactly one
+  shared group chat per band, plus private 1:1 messages between individual
+  members (never across bands, even for two people who share more than one
+  band); guests can take part like regular members. Live updates via polling
+  (a few seconds' delay, no new server infrastructure); an unread indicator on
+  the Chat tab covers both the group chat and direct messages. Included in the
+  band backup/restore.
 
 ### Security
 

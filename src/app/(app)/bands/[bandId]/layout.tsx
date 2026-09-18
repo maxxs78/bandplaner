@@ -29,6 +29,25 @@ export default async function BandLayout({
   const features = getEnabledFeatures(membership.band);
   const t = await getTranslations("bandNav");
 
+  let hasUnreadChat = false;
+  if (features.chat) {
+    const [marker, latestMessage, unreadDmCount] = await Promise.all([
+      prisma.chatReadMarker.findUnique({
+        where: { bandId_userId: { bandId, userId: user.id } },
+        select: { lastReadAt: true },
+      }),
+      prisma.chatMessage.findFirst({
+        where: { bandId },
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      }),
+      prisma.directMessage.count({ where: { bandId, recipientId: user.id, readAt: null } }),
+    ]);
+    const hasUnreadGroupChat =
+      latestMessage != null && (!marker || latestMessage.createdAt > marker.lastReadAt);
+    hasUnreadChat = hasUnreadGroupChat || unreadDmCount > 0;
+  }
+
   return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -68,6 +87,8 @@ export default async function BandLayout({
           showEquipment={features.equipment}
           showFinance={features.finance && canManageContent(membership.role)}
           showLocations={features.locations}
+          showChat={features.chat}
+          hasUnreadChat={hasUnreadChat}
         />
       </div>
 

@@ -29,6 +29,7 @@
     "equipment": "Utrustning",
     "locations": "Platser",
     "finance": "Ekonomi",
+    "chat": "Chatt",
     "band": "Band"
   },
   "languageSwitcher": {
@@ -187,7 +188,8 @@
       "mediaPlayer": { "label": "Mediaspelare", "description": "Spela upp sparade ljudfiler direkt i appen, inklusive övningsläge med tempo, transponering och sektionsloop. Länkade YouTube- och Spotify-källor bäddas in." },
       "keyDetection": { "label": "Tonartsigenkänning", "description": "Uppskattar ljudfilens tonart med ett klick i övningsläget (en approximation, inte alltid tillförlitlig – parallella dur-/molltonarter är svåra att skilja algoritmiskt). Ändrar aldrig låtdata automatiskt; resultatet måste aktivt tillämpas." },
       "locations": { "label": "Platser", "description": "Katalog över spelplatser med adress, karta, kontakt- och teknisk information samt filer – kan länkas till händelser." },
-      "rehearsalTracking": { "label": "Repetitionsspårning", "description": "Registrera vilka låtar som övades vid varje repetition – tilldelade individuellt och/eller härledda från länkade låtlistor. Låtsidan visar då en historik \"Övad den …\"." }
+      "rehearsalTracking": { "label": "Repetitionsspårning", "description": "Registrera vilka låtar som övades vid varje repetition – tilldelade individuellt och/eller härledda från länkade låtlistor. Låtsidan visar då en historik \"Övad den …\"." },
+      "chat": { "label": "Chatt", "description": "Bandintern chatt: en gemensam gruppchatt för alla medlemmar samt privata meddelanden mellan enskilda medlemmar. Skild från kommunikationsfunktionen ovan (e-postaviseringar/WhatsApp-delning)." }
     },
     "settlementModes": {
       "title": "Avräkningsläge",
@@ -1297,5 +1299,20 @@
     "reasonPlaceholder": "t.ex. semester",
     "saving": "Sparar…",
     "submit": "Lägg till"
+  },
+  "chat": {
+    "groupChat": "Gruppchatt",
+    "directMessages": "Privata meddelanden",
+    "directMessagesHint": "Privata meddelanden med en enskild medlem – bara ni två ser dem.",
+    "noOtherMembers": "Inga andra medlemmar i detta band.",
+    "composerPlaceholder": "Skriv ett meddelande…",
+    "emptyGroupChat": "Inga meddelanden ännu – skriv det första!",
+    "emptyDirectMessages": "Inga meddelanden i den här konversationen ännu.",
+    "formerMember": "Tidigare medlem",
+    "featureDisabled": "Chatten är inte aktiverad för detta band.",
+    "emptyMessage": "Meddelandet får inte vara tomt.",
+    "messageTooLong": "Meddelandet är för långt (max 2000 tecken).",
+    "cannotMessageSelf": "Du kan inte skicka ett meddelande till dig själv.",
+    "recipientNotAMember": "Den här personen är inte medlem i detta band."
   }
 }

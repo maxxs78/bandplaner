@@ -47,6 +47,7 @@ async function dispatch(options: {
         keyDetectionEnabled: true,
         locationsEnabled: true,
         rehearsalTrackingEnabled: true,
+        chatEnabled: true,
       },
     });
     if (!band || !getEnabledFeatures(band).communication) return;

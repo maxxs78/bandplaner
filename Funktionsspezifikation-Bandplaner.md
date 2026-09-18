@@ -1,6 +1,6 @@
 # Funktionsspezifikation: Band-Planer-Software
 
-Version 1.17 — Stand 17.09.2026
+Version 1.18 — Stand 18.09.2026
 
 *Änderungen gegenüber Version 1.0: um bereits in der Anwendung umgesetzte Funktionen ergänzt, die in Version 1.0 noch nicht beschrieben waren — u. a. Songvorschläge mit Abstimmung (3.3), personalisierte Setlist-Kennzeichnung inkl. Bühnen-Hinweis-Icons (3.4), öffentliche Datei-Freigabelinks (3.7), Equipment-Kategorisierung und Zuständigkeiten (3.9) sowie Bandprofil/Stammdaten (3.11, neu).*
 
@@ -35,6 +35,8 @@ Version 1.17 — Stand 17.09.2026
 *Änderungen gegenüber Version 1.16: Band-Backup & -Restore (3.11) ergänzt — Band-Admins können ein vollständiges Backup einer Band (alle Datensätze und hochgeladenen Dateien) als Zip-Archiv herunterladen und später wieder hochladen; das Wiederherstellen legt dabei immer eine neue Band an (nie ein Überschreiben einer bestehenden), wahlweise auf demselben oder einem anderen Server — dient damit sowohl dem Server-Umzug als auch dem Zurückholen eines früheren Stands als Kopie. Noch existierende Mitgliedschaften werden mit ihrer ursprünglichen Rolle übernommen, Datensätze mit Bezug zu nicht mehr vorhandenen Konten ausgelassen (mit Zusammenfassung nach dem Import).*
 
 *Änderungen gegenüber Version 1.13: Gig-spezifische Detailinformationen und Statusverfolgung (3.5) umgesetzt — bislang als Ausbaustufe markiert, jetzt vollständig verfügbar: Ankunfts-/Soundcheck-Zeit, technische Anforderungen sowie ein Gig-Status (Anfrage/Bestätigt/Abgesagt/Erledigt) je Auftritt; dazu eine strukturierte Besetzung auf Basis eines band-weiten, in den Bandeinstellungen gepflegten Rollen-Katalogs (optional mit üblicher Person je Rolle), der beim Anlegen eines Auftritts als Startpunkt übernommen wird und dort unabhängig vom Katalog frei änderbar ist (Rollen hinzufügen/entfernen/umbenennen, Zuweisung an ein Mitglied oder Freitext für Aushilfen). Der Abrechnungsstatus wird bewusst nicht als weiterer manueller Status gepflegt, sondern aus den bereits vorhandenen Gagen-/Kostenanteil-Bestätigungen der Finanzverwaltung (3.8) abgeleitet.*
+
+*Änderungen gegenüber Version 1.17: Bandinterner Chat (3.6) umgesetzt — neues, standardmäßig deaktiviertes Modul mit genau einem Gruppenchat je Band (kein Anlegen weiterer Gruppen, kein bandübergreifender Chat) sowie privaten 1:1-Nachrichten zwischen einzelnen Mitgliedern, jeweils strikt auf die jeweilige Band begrenzt; Gäste können wie reguläre Mitglieder teilnehmen. Live-Aktualisierung per Polling (keine WebSocket-/SSE-Infrastruktur), Ungelesen-Kennzeichnung am Chat-Reiter für Gruppenchat und Direktnachrichten gemeinsam. Die frühere, unspezifischere Beschreibung „bandweit sowie in themen- oder terminbezogenen Gruppen" in 3.6 ist damit überholt und entsprechend präzisiert; Chat-Inhalte sind Teil des Band-Backups (3.11).*
 
 ## 1. Zweck und Zielgruppe
 
@@ -147,7 +149,7 @@ Leitprinzip: Ein ausgeschaltetes Modul verschwindet aus der Navigation, **lösch
 ### 3.6 Kommunikation und Zusammenarbeit
 
 - Kommentarfunktion an zentralen Objekten (Termine, Songs, Setlisten, Dateien), um Absprachen im Kontext zu führen.
-- Band-interner Chat, sowohl bandweit als auch in themen- oder terminbezogenen Gruppen.
+- **Bandinterner Chat** (abschaltbares Modul, Standard aus): genau ein Gruppenchat je Band — es lassen sich bewusst keine weiteren Gruppen anlegen und es gibt keinen bandübergreifenden Chat — sowie private 1:1-Nachrichten zwischen einzelnen Mitgliedern, strikt auf die jeweilige Band begrenzt (zwei Personen mit mehreren gemeinsamen Bands haben je Band einen eigenen, getrennten Verlauf). Gäste können wie reguläre Mitglieder teilnehmen. Neue Nachrichten werden per Kurzintervall-Abfrage (Polling) nachgeladen statt per WebSocket/Server-Sent Events, mit einer Ungelesen-Kennzeichnung am Chat-Reiter für Gruppenchat und Direktnachrichten gemeinsam. Chat-Inhalte sind Teil des Band-Backups (3.11).
 - Umfragen/Abstimmungen für Bandentscheidungen (z. B. Terminfindung, Repertoire-Auswahl, sonstige Beschlüsse).
 - Aufgaben-/To-Do-Listen mit Zuweisung an einzelne Mitglieder und Fälligkeitsdatum.
 - Benachrichtigungen per E-Mail, konfigurierbar je Ereignistyp und Person (neuer Termin, Terminänderung/-absage, neuer Songvorschlag, neue Datei, eigene Gagen und Kostenanteile). Über eigene Aktionen wird bewusst nicht benachrichtigt; bei Rundmails stehen die Empfänger im BCC, damit keine Adressen offengelegt werden. Der Versand setzt einen konfigurierten Mailserver voraus — fehlt dieser, bleibt die Anwendung uneingeschränkt nutzbar und überspringt lediglich den Versand. Push-Benachrichtigungen sind bislang nicht umgesetzt.

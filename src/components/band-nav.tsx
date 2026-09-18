@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users, MapPin } from "lucide-react";
+import { LayoutDashboard, Calendar, CalendarCheck, Music, ListMusic, Folder, Package, Wallet, Users, MapPin, MessageCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import clsx from "clsx";
 
@@ -11,11 +11,15 @@ export function BandNav({
   showEquipment = true,
   showFinance = false,
   showLocations = false,
+  showChat = false,
+  hasUnreadChat = false,
 }: {
   bandId: string;
   showEquipment?: boolean;
   showFinance?: boolean;
   showLocations?: boolean;
+  showChat?: boolean;
+  hasUnreadChat?: boolean;
 }) {
   const pathname = usePathname();
   const t = useTranslations("bandNav");
@@ -29,6 +33,7 @@ export function BandNav({
     { href: "/equipment", label: t("equipment"), icon: Package },
     { href: "/locations", label: t("locations"), icon: MapPin },
     { href: "/finance", label: t("finance"), icon: Wallet },
+    { href: "/chat", label: t("chat"), icon: MessageCircle },
     { href: "/members", label: t("band"), icon: Users },
   ];
   const base = `/bands/${bandId}`;
@@ -36,7 +41,8 @@ export function BandNav({
     (tab) =>
       (showEquipment || tab.href !== "/equipment") &&
       (showFinance || tab.href !== "/finance") &&
-      (showLocations || tab.href !== "/locations")
+      (showLocations || tab.href !== "/locations") &&
+      (showChat || tab.href !== "/chat")
   );
 
   return (
@@ -50,13 +56,18 @@ export function BandNav({
             key={tab.href}
             href={href}
             className={clsx(
-              "inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition",
+              "relative inline-flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2.5 text-sm font-medium transition",
               active
                 ? "border-primary text-primary"
                 : "border-transparent text-muted hover:text-foreground"
             )}
           >
-            <tab.icon className="h-4 w-4" />
+            <span className="relative inline-flex">
+              <tab.icon className="h-4 w-4" />
+              {tab.href === "/chat" && hasUnreadChat && (
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-primary" />
+              )}
+            </span>
             {tab.label}
           </Link>
         );

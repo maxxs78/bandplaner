@@ -120,10 +120,15 @@ model User {
   setlistEventNotes                 SetlistEventNote[]
   assignedLineupEntries             EventLineupEntry[]
   defaultLineupRoles                BandLineupRole[]
-  rehearsalSongsAdded               RehearsalSong[]             @relation("RehearsalSongAddedBy")
-  practiceLoopsCreated              PracticeLoop[]             @relation("PracticeLoopCreatedBy")
+  rehearsalSongsAdded               RehearsalSong[]              @relation("RehearsalSongAddedBy")
+  practiceLoopsCreated              PracticeLoop[]               @relation("PracticeLoopCreatedBy")
 
   passwordResetTokens PasswordResetToken[]
+
+  chatMessagesAuthored   ChatMessage[]
+  chatReadMarkers        ChatReadMarker[]
+  directMessagesSent     DirectMessage[]  @relation("DirectMessageSender")
+  directMessagesReceived DirectMessage[]  @relation("DirectMessageRecipient")
 }
 
 /// Self-Service-Passwort-Reset per E-Mail-Link (siehe src/lib/password-reset.ts).
@@ -210,19 +215,27 @@ model Band {
   /// mit Historie auf der Song-Detailseite. Neues Feature, Standard aus.
   rehearsalTrackingEnabled Boolean @default(false)
 
-  memberships    Membership[]
-  events         Event[]
-  songs          Song[]
-  setlists       Setlist[]
-  absences       Absence[]
-  invitations    Invitation[]
-  files          BandFile[]
-  ownedEquipment Equipment[]        @relation("EquipmentOwnerBand")
-  packlists      Packlist[]
-  financeAdmins  BandFinanceAdmin[]
-  financeEntries FinanceEntry[]
-  locations      Location[]
-  lineupRoles    BandLineupRole[]
+  /// Bandinterner Chat: genau ein Gruppenchat pro Band plus private 1:1-Nachrichten
+  /// zwischen Mitgliedern. Kein Anlegen weiterer Gruppen, kein banduebergreifender
+  /// Chat - siehe ChatMessage/DirectMessage. "Advanced Feature", daher Standard aus.
+  chatEnabled Boolean @default(false)
+
+  memberships     Membership[]
+  events          Event[]
+  songs           Song[]
+  setlists        Setlist[]
+  absences        Absence[]
+  invitations     Invitation[]
+  files           BandFile[]
+  ownedEquipment  Equipment[]        @relation("EquipmentOwnerBand")
+  packlists       Packlist[]
+  financeAdmins   BandFinanceAdmin[]
+  financeEntries  FinanceEntry[]
+  locations       Location[]
+  lineupRoles     BandLineupRole[]
+  chatMessages    ChatMessage[]
+  chatReadMarkers ChatReadMarker[]
+  directMessages  DirectMessage[]
 }
 
 /// Finanzberechtigte Person einer Band - bewusst losgeloest von Role (Admin/Mitglied),
@@ -459,8 +472,8 @@ model EventLineupEntry {
   role  String
   order Int
 
-  assignedTo   User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
-  assignedToId String?
+  assignedTo     User?   @relation(fields: [assignedToId], references: [id], onDelete: SetNull)
+  assignedToId   String?
   /// Freitext fuer Aushilfen/Deps ohne Benutzerkonto, analog PacklistItem.customName.
   assignedToName String?
 
@@ -1033,4 +1046,60 @@ model Location {
 
   files  BandFile[]
   events Event[]
+}
+
+/// Bandinterner Gruppenchat - Advanced Feature, siehe Band.chatEnabled. Es gibt
+/// genau einen Gruppenchat pro Band (kein Anlegen weiterer Gruppen). author ist
+/// optional/SetNull, damit eine Nachricht nach Loeschung des Autoren-Accounts fuer
+/// die Gruppe sichtbar bleibt (wie bereits erstellter Inhalt, z.B. BandFile).
+model ChatMessage {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  author   User?   @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  authorId String?
+
+  @@index([bandId, createdAt])
+}
+
+/// Zeitpunkt, bis zu dem ein Mitglied den Gruppenchat einer Band gelesen hat -
+/// treibt den Ungelesen-Indikator im Chat-Tab (siehe BandNav).
+model ChatReadMarker {
+  id         String   @id @default(cuid())
+  lastReadAt DateTime
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+
+  @@unique([bandId, userId])
+}
+
+/// Private 1:1-Nachricht zwischen zwei Mitgliedern derselben Band - Advanced
+/// Feature, siehe Band.chatEnabled. Anders als ChatMessage sind Sender und
+/// Empfaenger hier fuer die Existenz der Nachricht zwingend (kein Empfaenger =
+/// keine private Nachricht mehr), daher beide FKs required mit Cascade statt
+/// SetNull. Strikt an bandId gebunden, damit zwei Personen mit mehreren
+/// gemeinsamen Bands getrennte Verlaeufe je Band haben.
+model DirectMessage {
+  id        String    @id @default(cuid())
+  content   String
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  band   Band   @relation(fields: [bandId], references: [id], onDelete: Cascade)
+  bandId String
+
+  sender      User   @relation("DirectMessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  senderId    String
+  recipient   User   @relation("DirectMessageRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  recipientId String
+
+  @@index([bandId, senderId, recipientId, createdAt])
+  @@index([bandId, recipientId, readAt])
 }

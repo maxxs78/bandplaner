@@ -78,6 +78,9 @@ export async function buildBandBackupArchive(
     bandFiles,
     financeEntries,
     financeAllocations,
+    chatMessages,
+    chatReadMarkers,
+    directMessages,
   ] = await Promise.all([
     prisma.membership.findMany({ where: { bandId } }),
     prisma.bandFinanceAdmin.findMany({ where: { bandId } }),
@@ -118,6 +121,9 @@ export async function buildBandBackupArchive(
     }),
     prisma.financeEntry.findMany({ where: { bandId } }),
     prisma.financeAllocation.findMany({ where: { financeEntry: { bandId } } }),
+    prisma.chatMessage.findMany({ where: { bandId } }),
+    prisma.chatReadMarker.findMany({ where: { bandId } }),
+    prisma.directMessage.findMany({ where: { bandId } }),
   ]);
 
   // Dateien planen (frische Archiv-Namen vergeben) - passiert vor dem Zusammenbau
@@ -157,6 +163,7 @@ export async function buildBandBackupArchive(
       publicFileLinksEnabled: band.publicFileLinksEnabled,
       locationsEnabled: band.locationsEnabled,
       rehearsalTrackingEnabled: band.rehearsalTrackingEnabled,
+      chatEnabled: band.chatEnabled,
     },
     memberships: memberships.map((m) => ({
       id: m.id,
@@ -450,6 +457,25 @@ export async function buildBandBackupArchive(
       note: a.note,
       confirmedAt: a.confirmedAt?.toISOString() ?? null,
       createdAt: a.createdAt.toISOString(),
+    })),
+    chatMessages: chatMessages.map((m) => ({
+      id: m.id,
+      content: m.content,
+      createdAt: m.createdAt.toISOString(),
+      authorId: m.authorId,
+    })),
+    chatReadMarkers: chatReadMarkers.map((m) => ({
+      id: m.id,
+      userId: m.userId,
+      lastReadAt: m.lastReadAt.toISOString(),
+    })),
+    directMessages: directMessages.map((m) => ({
+      id: m.id,
+      content: m.content,
+      createdAt: m.createdAt.toISOString(),
+      readAt: m.readAt?.toISOString() ?? null,
+      senderId: m.senderId,
+      recipientId: m.recipientId,
     })),
   };
 

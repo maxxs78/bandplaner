@@ -251,6 +251,12 @@ async function createBandFromManifest(
   manifest.bandFiles.forEach((f) => collect(f.uploadedById));
   manifest.financeEntries.forEach((e) => collect(e.createdById));
   manifest.financeAllocations.forEach((a) => collect(a.userId));
+  manifest.chatMessages.forEach((m) => collect(m.authorId));
+  manifest.chatReadMarkers.forEach((m) => collect(m.userId));
+  manifest.directMessages.forEach((m) => {
+    collect(m.senderId);
+    collect(m.recipientId);
+  });
 
   const existingUsers = await tx.user.findMany({
     where: { id: { in: [...referencedUserIds] } },
@@ -285,6 +291,7 @@ async function createBandFromManifest(
       publicFileLinksEnabled: band.publicFileLinksEnabled,
       locationsEnabled: band.locationsEnabled,
       rehearsalTrackingEnabled: band.rehearsalTrackingEnabled,
+      chatEnabled: band.chatEnabled,
     },
   });
   const bandId = newBand.id;
@@ -813,6 +820,43 @@ async function createBandFromManifest(
       },
     });
     inc(rowCounts, "financeAllocations");
+  }
+
+  // 19. ChatMessage (Autor optional - Zeile bleibt fuer die Gruppe erhalten, wenn
+  // der Account fehlt) / ChatReadMarker (optional, faellt sonst weg) /
+  // DirectMessage (Sender+Empfaenger zwingend, Zeile faellt weg wenn einer fehlt)
+  for (const m of manifest.chatMessages) {
+    await tx.chatMessage.create({
+      data: { bandId, content: m.content, createdAt: new Date(m.createdAt), authorId: remapUser(m.authorId) },
+    });
+    inc(rowCounts, "chatMessages");
+  }
+  for (const m of manifest.chatReadMarkers) {
+    if (!existingUserIds.has(m.userId)) {
+      inc(droppedRows, "chatReadMarkers");
+      continue;
+    }
+    await tx.chatReadMarker.create({
+      data: { bandId, userId: m.userId, lastReadAt: new Date(m.lastReadAt) },
+    });
+    inc(rowCounts, "chatReadMarkers");
+  }
+  for (const m of manifest.directMessages) {
+    if (!existingUserIds.has(m.senderId) || !existingUserIds.has(m.recipientId)) {
+      inc(droppedRows, "directMessages");
+      continue;
+    }
+    await tx.directMessage.create({
+      data: {
+        bandId,
+        content: m.content,
+        createdAt: new Date(m.createdAt),
+        readAt: m.readAt ? new Date(m.readAt) : null,
+        senderId: m.senderId,
+        recipientId: m.recipientId,
+      },
+    });
+    inc(rowCounts, "directMessages");
   }
 
   return { bandId, rowCounts, droppedRows };

@@ -19,6 +19,7 @@ export function FeatureTogglesForm({
   initialKeyDetectionEnabled,
   initialLocationsEnabled,
   initialRehearsalTrackingEnabled,
+  initialChatEnabled,
 }: {
   action: (prevState: FormState, formData: FormData) => Promise<FormState>;
   initialEquipmentEnabled: boolean;
@@ -30,6 +31,7 @@ export function FeatureTogglesForm({
   initialKeyDetectionEnabled: boolean;
   initialLocationsEnabled: boolean;
   initialRehearsalTrackingEnabled: boolean;
+  initialChatEnabled: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, undefined);
   const [equipmentEnabled, setEquipmentEnabled] = useState(initialEquipmentEnabled);
@@ -41,6 +43,7 @@ export function FeatureTogglesForm({
   const [keyDetectionEnabled, setKeyDetectionEnabled] = useState(initialKeyDetectionEnabled);
   const [locationsEnabled, setLocationsEnabled] = useState(initialLocationsEnabled);
   const [rehearsalTrackingEnabled, setRehearsalTrackingEnabled] = useState(initialRehearsalTrackingEnabled);
+  const [chatEnabled, setChatEnabled] = useState(initialChatEnabled);
   const t = useTranslations("bandSettings");
 
   const settlementModes = [
@@ -150,6 +153,13 @@ export function FeatureTogglesForm({
         description={t("features.rehearsalTracking.description")}
         checked={rehearsalTrackingEnabled}
         onChange={setRehearsalTrackingEnabled}
+      />
+      <ToggleRow
+        name="chatEnabled"
+        label={t("features.chat.label")}
+        description={t("features.chat.description")}
+        checked={chatEnabled}
+        onChange={setChatEnabled}
       />
       <FieldError>{state?.error}</FieldError>
       <Button type="submit" disabled={pending}>

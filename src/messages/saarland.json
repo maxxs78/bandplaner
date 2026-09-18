@@ -29,6 +29,7 @@
     "equipment": "S'Gelump",
     "locations": "Ortschafte",
     "finance": "S'Geld",
+    "chat": "Chat",
     "band": "Band"
   },
   "languageSwitcher": {
@@ -187,7 +188,8 @@
       "mediaPlayer": { "label": "Medieplayer", "description": "Hinterlegti Audiodateie direkt in de App abspiele, mit Ibbungsmodus fer Tempo, Transponiere unn Abschnitts-Loop. Verlinkti YouTube- unn Spotify-Quelle werre eigebettet." },
       "keyDetection": { "label": "Tonart-Erkennung", "description": "Schätzt im Ibbungsmodus per Knopfdruck die Tonart vun de Audiodatei (nur ungefähr, net immer sicher – Dur/Moll-Paralleltonarte kann mer algorithmisch kaum unnerscheide). Ännert nie automatisch die Songdate, s'Ergebnis muss mer selwer iwwernemme." },
       "locations": { "label": "Ortschafte", "description": "Katalog vun Uftrittsortschafte mit Adress, Kaart, Kontakt- unn Technik-Infos unn Dateie – kannscht mit Termine verknüppe." },
-      "rehearsalTracking": { "label": "Prow-Tracking", "description": "Je Prowtermin festhalle, welsche Songs geübt worre sinn – einzeln zugeordnet unn/oder aus verknüppte Setliste abgeleit. Uff de Song-Seit steht dann e Historie „Geübt am …“." }
+      "rehearsalTracking": { "label": "Prow-Tracking", "description": "Je Prowtermin festhalle, welsche Songs geübt worre sinn – einzeln zugeordnet unn/oder aus verknüppte Setliste abgeleit. Uff de Song-Seit steht dann e Historie „Geübt am …“." },
+      "chat": { "label": "Chat", "description": "Bandinterner Chat: ee gemeinsamer Gruppechat fer alli Mitglieder unn private Nochrichte zwische eizelne Mitglieder. Getrennt vun de Kommunikations-Funktion driwwer (E-Mail-Bscheid/WhatsApp-Deele)." }
     },
     "settlementModes": {
       "title": "Abrechnungsmodus",
@@ -1297,5 +1299,20 @@
     "reasonPlaceholder": "z. B. Urlaub",
     "saving": "Werd gespeichert…",
     "submit": "Eidraage"
+  },
+  "chat": {
+    "groupChat": "Gruppechat",
+    "directMessages": "Private Nochrichte",
+    "directMessagesHint": "Private Nochrichte mit ee eenzelne Mitglied – nur ihr zwaa sehnt die.",
+    "noOtherMembers": "Kaa annere Mitglieder in dere Band.",
+    "composerPlaceholder": "Nochricht schreiwe…",
+    "emptyGroupChat": "Noch kaa Nochrichte – schreib die erschte!",
+    "emptyDirectMessages": "Noch kaa Nochrichte in dem Verlaaf.",
+    "formerMember": "Ehemolichs Mitglied",
+    "featureDisabled": "De Chat is fer die Band net aageschalt.",
+    "emptyMessage": "Nochricht derf net leer sinn.",
+    "messageTooLong": "Nochricht is ze lang (maximal 2000 Zeiche).",
+    "cannotMessageSelf": "De kannscht dir selwer kaa Nochricht schicke.",
+    "recipientNotAMember": "Die Person is kaa Mitglied vun dere Band."
   }
 }

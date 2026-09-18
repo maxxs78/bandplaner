@@ -29,6 +29,7 @@
     "equipment": "Matériel",
     "locations": "Lieux",
     "finance": "Finances",
+    "chat": "Discussion",
     "band": "Groupe"
   },
   "languageSwitcher": {
@@ -187,7 +188,8 @@
       "mediaPlayer": { "label": "Lecteur multimédia", "description": "Lire les fichiers audio enregistrés directement dans l'application, avec un mode entraînement offrant tempo, transposition et boucle de section. Les sources YouTube et Spotify liées sont intégrées." },
       "keyDetection": { "label": "Détection de tonalité", "description": "Estime la tonalité du fichier audio en mode entraînement d'un clic (une approximation, pas toujours fiable – les tonalités relatives majeure/mineure sont difficiles à distinguer algorithmiquement). Ne modifie jamais automatiquement les données du morceau ; le résultat doit être repris activement." },
       "locations": { "label": "Lieux", "description": "Catalogue des lieux de concert avec adresse, carte, informations de contact et techniques, ainsi que des fichiers – peut être lié à des événements." },
-      "rehearsalTracking": { "label": "Suivi des répétitions", "description": "Noter quels morceaux ont été travaillés à chaque répétition – attribués individuellement et/ou déduits des setlists liées. La page du morceau affiche alors un historique « Répété le … »." }
+      "rehearsalTracking": { "label": "Suivi des répétitions", "description": "Noter quels morceaux ont été travaillés à chaque répétition – attribués individuellement et/ou déduits des setlists liées. La page du morceau affiche alors un historique « Répété le … »." },
+      "chat": { "label": "Discussion", "description": "Discussion interne au groupe : un salon de groupe commun à tous les membres, plus des messages privés entre membres. Distinct de la fonctionnalité Communication ci-dessus (notifications e-mail/partage WhatsApp)." }
     },
     "settlementModes": {
       "title": "Mode de règlement",
@@ -1297,5 +1299,20 @@
     "reasonPlaceholder": "ex. vacances",
     "saving": "Enregistrement…",
     "submit": "Ajouter"
+  },
+  "chat": {
+    "groupChat": "Discussion de groupe",
+    "directMessages": "Messages privés",
+    "directMessagesHint": "Messages privés avec un seul membre – vous seuls les voyez.",
+    "noOtherMembers": "Aucun autre membre dans ce groupe.",
+    "composerPlaceholder": "Écrire un message…",
+    "emptyGroupChat": "Pas encore de messages – écrivez le premier !",
+    "emptyDirectMessages": "Pas encore de messages dans cette conversation.",
+    "formerMember": "Ancien membre",
+    "featureDisabled": "La discussion n'est pas activée pour ce groupe.",
+    "emptyMessage": "Le message ne peut pas être vide.",
+    "messageTooLong": "Message trop long (2000 caractères maximum).",
+    "cannotMessageSelf": "Vous ne pouvez pas vous envoyer un message à vous-même.",
+    "recipientNotAMember": "Cette personne n'est pas membre de ce groupe."
   }
 }

@@ -32,6 +32,7 @@
     "equipment": "Equipment",
     "locations": "Locations",
     "finance": "Finance",
+    "chat": "Chat",
     "band": "Band"
   },
   "languageSwitcher": {
@@ -190,7 +191,8 @@
       "mediaPlayer": { "label": "Media player", "description": "Play stored audio files directly in the app, including practice mode with tempo, transposition, and section looping. Linked YouTube and Spotify sources are embedded." },
       "keyDetection": { "label": "Key detection", "description": "Estimates the audio file's key at the press of a button in practice mode (an approximation, not always reliable – major/minor relative keys are hard to distinguish algorithmically). Never changes song data automatically; the result must be actively applied." },
       "locations": { "label": "Locations", "description": "Catalog of gig venues with address, map, contact and technical info, and files – can be linked to events." },
-      "rehearsalTracking": { "label": "Rehearsal tracking", "description": "Record which songs were worked on at each rehearsal – assigned individually and/or derived from linked setlists. The song detail page then shows a \"Practiced at …\" history." }
+      "rehearsalTracking": { "label": "Rehearsal tracking", "description": "Record which songs were worked on at each rehearsal – assigned individually and/or derived from linked setlists. The song detail page then shows a \"Practiced at …\" history." },
+      "chat": { "label": "Chat", "description": "Band-internal chat: one shared group chat for all members plus private messages between individual members. Separate from the Communication feature above (email notifications/WhatsApp sharing)." }
     },
     "settlementModes": {
       "title": "Settlement mode",
@@ -1352,5 +1354,20 @@
     "reasonPlaceholder": "e.g. vacation",
     "saving": "Saving…",
     "submit": "Add"
+  },
+  "chat": {
+    "groupChat": "Group chat",
+    "directMessages": "Direct messages",
+    "directMessagesHint": "Private messages with a single member – only the two of you can see them.",
+    "noOtherMembers": "No other members in this band.",
+    "composerPlaceholder": "Write a message…",
+    "emptyGroupChat": "No messages yet – write the first one!",
+    "emptyDirectMessages": "No messages in this conversation yet.",
+    "formerMember": "Former member",
+    "featureDisabled": "Chat is not enabled for this band.",
+    "emptyMessage": "Message cannot be empty.",
+    "messageTooLong": "Message is too long (2000 characters max).",
+    "cannotMessageSelf": "You can't send a message to yourself.",
+    "recipientNotAMember": "This person is not a member of this band."
   }
 }
